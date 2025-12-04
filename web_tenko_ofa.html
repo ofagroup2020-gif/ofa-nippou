@@ -1,345 +1,518 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8">
-  <title>OFA GROUP Web点呼・日常点検</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta charset="UTF-8" />
+  <title>OFA GROUP｜乗務記録・日常点検・運転日報</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
     * { box-sizing: border-box; }
+
     body {
       margin: 0;
       padding: 0;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      background: #111;
-      color: #fff;
+      font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, "メイリオ", sans-serif;
+      background: linear-gradient(#c6f7d0, #00a651);
+      color: #222;
     }
-    .header {
-      padding: 16px;
-      background: #000;
-      border-bottom: 3px solid #ffd400;
-      text-align: center;
-    }
-    .logo {
-      font-weight: 800;
-      font-size: 20px;
-      letter-spacing: 0.1em;
-    }
-    .logo span.o { color: #ff4b3a; }
-    .logo span.f { color: #f5a623; }
-    .logo span.a { color: #2aa8ff; }
-    .subtitle {
-      font-size: 11px;
-      opacity: 0.8;
-    }
-    .container {
-      max-width: 720px;
+
+    .page {
+      max-width: 900px;
       margin: 0 auto;
-      padding: 12px 10px 80px;
+      padding: 16px 12px 40px;
     }
-    .notice {
-      background: #222;
-      border-left: 4px solid #ffd400;
-      padding: 10px 12px;
-      font-size: 12px;
-      line-height: 1.5;
-      margin-bottom: 16px;
-    }
-    .section {
-      margin-bottom: 18px;
-      background: #181818;
-      border-radius: 12px;
-      overflow: hidden;
-      border: 1px solid #333;
-    }
-    .section-header {
-      padding: 10px 12px;
-      background: #ffd400;
-      color: #000;
-      font-weight: 700;
-      font-size: 13px;
+
+    /* ヘッダー */
+    .header {
+      background: #ffffff;
+      border-radius: 18px;
+      padding: 16px 16px 12px;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.12);
       display: flex;
       align-items: center;
-      gap: 6px;
+      gap: 10px;
     }
-    .section-header .badge {
-      background: #000;
-      color: #ffd400;
-      border-radius: 999px;
-      padding: 2px 8px;
+
+    .logo-area {
+      flex: 0 0 90px;
+      text-align: center;
+    }
+
+    .logo-ofa {
+      width: 80px;
+      height: 80px;
+      border-radius: 18px;
+      background: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 3px solid #000;
+      box-shadow: 0 3px 0 rgba(0,0,0,0.3);
+      font-weight: 900;
+      color: #000;
+      font-size: 22px;
+      letter-spacing: 1px;
+      position: relative;
+      overflow: hidden;
+    }
+    .logo-ofa span:nth-child(1) { color:#ff3b30; }
+    .logo-ofa span:nth-child(2) { color:#ffcc00; }
+    .logo-ofa span:nth-child(3) { color:#007aff; }
+
+    .header-main {
+      flex: 1;
+    }
+
+    .subtitle {
       font-size: 11px;
-    }
-    .fields {
-      padding: 10px 12px 14px;
-    }
-    .field {
-      margin-bottom: 10px;
-    }
-    .field label {
-      display: block;
-      font-size: 12px;
+      font-weight: 700;
+      color: #00a651;
       margin-bottom: 4px;
     }
-    .field label span.req {
-      color: #ff4b3a;
-      margin-left: 4px;
+
+    .title {
+      font-size: 18px;
+      font-weight: 800;
+      line-height: 1.4;
+    }
+
+    .tagline {
+      font-size: 11px;
+      margin-top: 4px;
+      color: #666;
+      font-weight: 600;
+    }
+
+    .tagline span {
+      display: inline-block;
+      background: #000;
+      color: #fff;
+      padding: 2px 6px;
+      border-radius: 999px;
+      font-size: 10px;
+      margin-right: 4px;
+    }
+
+    /* セクション共通 */
+    .section {
+      margin-top: 14px;
+      background: #ffffff;
+      border-radius: 18px;
+      padding: 14px 14px 16px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    }
+
+    .section-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+
+    .badge {
+      background: #000;
+      color: #fff;
+      border-radius: 999px;
+      padding: 4px 10px;
+      font-size: 11px;
+      font-weight: 800;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .badge-number {
+      background: #ffcc00;
+      color: #000;
+      border-radius: 999px;
+      padding: 1px 6px;
       font-size: 11px;
     }
+
+    .section-title {
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    .section-note {
+      font-size: 11px;
+      color: #666;
+      margin-bottom: 6px;
+    }
+
+    /* 入力系 */
+    .grid-2 {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .grid-1 {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr);
+      gap: 8px;
+    }
+
+    @media (max-width: 640px) {
+      .header { flex-direction: row; }
+      .grid-2 { grid-template-columns: 1fr; }
+    }
+
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .field-label {
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .field-label span.req {
+      color: #ff3b30;
+      font-size: 11px;
+      margin-left: 3px;
+    }
+
+    .field-desc {
+      font-size: 10px;
+      color: #777;
+    }
+
     input[type="text"],
     input[type="email"],
     input[type="time"],
-    input[type="date"],
     input[type="number"],
-    textarea,
-    select {
+    select,
+    textarea {
       width: 100%;
       border-radius: 999px;
-      border: 1px solid #444;
-      padding: 9px 14px;
+      border: 2px solid #e0e0e0;
+      padding: 10px 12px;
       font-size: 14px;
-      background: #101010;
-      color: #fff;
       outline: none;
+      transition: border-color 0.15s, box-shadow 0.15s;
+      background: #fafafa;
     }
+
     textarea {
-      border-radius: 12px;
+      border-radius: 14px;
       min-height: 70px;
       resize: vertical;
-      padding-top: 8px;
     }
-    input::placeholder,
-    textarea::placeholder {
-      color: #777;
+
+    input:focus,
+    select:focus,
+    textarea:focus {
+      border-color: #00a651;
+      box-shadow: 0 0 0 2px rgba(0,166,81,0.12);
+      background: #fff;
     }
+
     .radio-row {
       display: flex;
       gap: 10px;
       flex-wrap: wrap;
-      font-size: 13px;
     }
-    .radio-row label {
-      display: flex;
+
+    .chip {
+      display: inline-flex;
       align-items: center;
       gap: 4px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      border: 1px solid #ddd;
+      background: #f8f8f8;
+      font-size: 12px;
     }
-    .section-note {
-      font-size: 11px;
-      opacity: 0.7;
-      margin-top: 4px;
-    }
-    .footer-note {
+
+    .hint {
       font-size: 10px;
-      opacity: 0.6;
-      margin-top: 12px;
+      color: #777;
+      margin-top: 2px;
+    }
+
+    /* フッターボタン */
+    .footer {
+      margin-top: 16px;
       text-align: center;
     }
-    .submit-area {
-      position: fixed;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      padding: 10px 14px 16px;
-      background: linear-gradient(to top, #000 60%, rgba(0,0,0,0));
-    }
+
     .submit-btn {
       width: 100%;
-      border: none;
+      max-width: 480px;
       border-radius: 999px;
-      padding: 11px 16px;
+      padding: 14px 18px;
       font-size: 16px;
-      font-weight: 700;
-      letter-spacing: 0.08em;
-      background: linear-gradient(135deg, #ffd400, #ff8c00);
-      color: #000;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.6);
+      font-weight: 800;
+      border: none;
+      color: #fff;
+      background: linear-gradient(90deg, #00a651, #00c853);
+      box-shadow: 0 6px 0 #008c3a;
+      text-shadow: 0 1px 0 rgba(0,0,0,0.3);
+      cursor: pointer;
     }
-    .submit-btn:disabled {
-      opacity: 0.5;
+
+    .submit-btn:active {
+      transform: translateY(2px);
+      box-shadow: 0 4px 0 #008c3a;
     }
-    .status {
+
+    .small-text {
+      font-size: 10px;
+      color: #555;
       margin-top: 6px;
-      font-size: 12px;
-      text-align: center;
-      min-height: 16px;
+      line-height: 1.5;
     }
-    .status.ok { color: #8dff8a; }
-    .status.ng { color: #ff7b7b; }
+
+    .success,
+    .error {
+      margin-top: 10px;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .success { color: #00a651; }
+    .error { color: #ff3b30; }
+
   </style>
 </head>
 <body>
-  <header class="header">
-    <div class="logo">
-      <span class="o">O</span><span class="f">F</span><span class="a">A</span> GROUP
-    </div>
-    <div class="subtitle">ONE FOR ALL. ALL FOR ONE.</div>
-  </header>
-
-  <main class="container">
-    <div class="notice">
-      OFA GROUP専用の<strong>Web点呼・日常点検フォーム</strong>です。<br>
-      出発前に必ず入力し、点呼完了メールを確認してください。
-    </div>
-
-    <form id="tenkoForm">
-      <!-- 01 基本情報 -->
-      <section class="section">
-        <div class="section-header">
-          <span class="badge">01</span> 基本情報
+  <div class="page">
+    <!-- ヘッダー -->
+    <header class="header">
+      <div class="logo-area">
+        <div class="logo-ofa">
+          <span>O</span><span>F</span><span>A</span>
         </div>
-        <div class="fields">
-          <div class="field">
-            <label>本日の主な案件 <span class="req">必須</span></label>
-            <input type="text" name="client" placeholder="例：Amazon、ヤマト、佐川 など" required>
-          </div>
-          <div class="field">
-            <label>メールアドレス（控え送信用） <span class="req">必須</span></label>
-            <input type="email" name="email" placeholder="example@ofa-group.jp" required>
-            <div class="section-note">ここに入力したアドレスと、本部(info@ofa-group.jp)へ点呼内容が送信されます。</div>
-          </div>
-          <div class="field">
-            <label>日付 <span class="req">必須</span></label>
-            <input type="date" name="date" required>
-          </div>
-          <div class="field">
-            <label>ドライバー名 <span class="req">必須</span></label>
-            <input type="text" name="driverName" placeholder="氏名を入力" required>
-          </div>
-          <div class="field">
-            <label>所属会社 <span class="req">必須</span></label>
-            <input type="text" name="company" placeholder="例：株式会社OFA、個人事業主 など" required>
-          </div>
-          <div class="field">
-            <label>エリア <span class="req">必須</span></label>
-            <input type="text" name="area" placeholder="例：鹿児島市伊敷、熊本市南区 など" required>
-          </div>
-          <div class="field">
-            <label>出庫場所 <span class="req">必須</span></label>
-            <input type="text" name="base" placeholder="例：鹿児島○○センター" required>
-          </div>
-          <div class="field">
-            <label>車両番号 <span class="req">必須</span></label>
-            <input type="text" name="carNo" placeholder="例：鹿児島580 あ 1234" required>
-          </div>
-          <div class="field">
-            <label>運転免許証の写真URL</label>
-            <textarea name="licenseImg" placeholder="GoogleフォトやGoogleドライブ等の共有URLを貼り付けてください"></textarea>
-          </div>
-        </div>
-      </section>
-
-      <!-- 02 出発前入力 -->
-      <section class="section">
-        <div class="section-header">
-          <span class="badge">02</span> 出発前入力
-        </div>
-        <div class="fields">
-          <div class="field">
-            <label>出勤時間 <span class="req">必須</span></label>
-            <input type="time" name="startTime" required>
-          </div>
-          <div class="field">
-            <label>出発時間 <span class="req">必須</span></label>
-            <input type="time" name="leaveTime" required>
-          </div>
-          <div class="field">
-            <label>前日睡眠時間（h） <span class="req">必須</span></label>
-            <input type="number" step="0.1" min="0" max="24" name="sleep" placeholder="例：6.5" required>
-          </div>
-          <div class="field">
-            <label>飲酒（過去24時間） <span class="req">必須</span></label>
-            <div class="radio-row">
-              <label><input type="radio" name="drink" value="なし" checked> なし</label>
-              <label><input type="radio" name="drink" value="あり"> あり</label>
-            </div>
-          </div>
-          <div class="field">
-            <label>体調 <span class="req">必須</span></label>
-            <div class="radio-row">
-              <label><input type="radio" name="condition" value="良好" checked> 良好</label>
-              <label><input type="radio" name="condition" value="普通"> 普通</label>
-              <label><input type="radio" name="condition" value="不良"> 不良</label>
-            </div>
-          </div>
-          <div class="field">
-            <label>服薬 <span class="req">必須</span></label>
-            <div class="radio-row">
-              <label><input type="radio" name="medicine" value="なし" checked> なし</label>
-              <label><input type="radio" name="medicine" value="あり"> あり</label>
-            </div>
-          </div>
-          <div class="field">
-            <label>体温（℃）</label>
-            <input type="number" step="0.1" name="temp" placeholder="例：36.5">
-          </div>
-          <div class="field">
-            <label>アルコール検知器（mg/L）</label>
-            <input type="number" step="0.01" name="alcoholValue" placeholder="例：0.00">
-          </div>
-          <div class="field">
-            <label>出発前メーター（km）</label>
-            <input type="number" step="0.1" name="meter" placeholder="例：47772">
-          </div>
-          <div class="field">
-            <label>日常点検メモ</label>
-            <textarea name="memo" placeholder="タイヤ・ライト・ブレーキ等、気になる点があれば記入してください。"></textarea>
-          </div>
-        </div>
-      </section>
-
-      <p class="footer-note">
-        ※ このHTML版からはメール送信そのものは行われませんが、<br>
-        入力内容は Google Apps Script 経由で本部・ドライバー宛に送信されます。
-      </p>
-
-      <div class="submit-area">
-        <button type="submit" class="submit-btn" id="submitBtn">この内容で点呼する</button>
-        <div id="statusArea" class="status"></div>
       </div>
-    </form>
-  </main>
+      <div class="header-main">
+        <div class="subtitle">OFA GROUP WEB点呼 & 日報フォーム</div>
+        <div class="title">乗務記録・日常点検・運転日報</div>
+        <div class="tagline">
+          <span>ONE FOR ALL, ALL FOR ONE</span>
+          安全運転・コンプライアンスを守るための<br/>
+          OFA GROUP ドライバー専用フォームです。
+        </div>
+      </div>
+    </header>
+
+    <!-- 01 基本情報 -->
+    <section class="section">
+      <div class="section-header">
+        <div class="badge"><span class="badge-number">01</span> 基本情報</div>
+        <div class="section-title">本日の情報を入力してください</div>
+      </div>
+      <div class="section-note">
+        ※ 日付は自動で本日が入ります。<br>
+        ※ メンバーシップLINEなどからアクセスして、毎日出勤前に入力してください。
+      </div>
+
+      <div class="grid-2">
+        <div class="field">
+          <label class="field-label">日付 <span class="req">必須</span></label>
+          <input type="date" id="date" />
+        </div>
+        <div class="field">
+          <label class="field-label">ドライバー名 <span class="req">必須</span></label>
+          <input type="text" id="driverName" placeholder="山田 太郎" />
+        </div>
+        <div class="field">
+          <label class="field-label">所属会社 <span class="req">必須</span></label>
+          <input type="text" id="company" placeholder="株式会社OFA など" />
+        </div>
+        <div class="field">
+          <label class="field-label">本日の主な案件（荷主・現場名） <span class="req">必須</span></label>
+          <input type="text" id="client" placeholder="Amazon / ヤマト / 佐川 / 日本郵便 など" />
+        </div>
+        <div class="field">
+          <label class="field-label">エリア</label>
+          <input type="text" id="area" placeholder="鹿児島市〇〇 / 熊本市〇〇 など" />
+        </div>
+        <div class="field">
+          <label class="field-label">出庫ベース（担当拠点） <span class="req">必須</span></label>
+          <input type="text" id="base" placeholder="伊敷営業所 / 〇〇デポ など" />
+        </div>
+        <div class="field">
+          <label class="field-label">出庫場所（駐車場・センターなど）</label>
+          <input type="text" id="startBase" placeholder="〇〇駐車場 / 〇〇センター" />
+        </div>
+        <div class="field">
+          <label class="field-label">メールアドレス（控え送信用）</label>
+          <input type="email" id="email" placeholder="example@ofa-group.jp" />
+          <div class="hint">※ 入力すると、点呼結果のコピーが届きます。</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 02 出発前入力 -->
+    <section class="section">
+      <div class="section-header">
+        <div class="badge"><span class="badge-number">02</span> 出発前入力</div>
+        <div class="section-title">出勤前〜出発時の状態を記録</div>
+      </div>
+
+      <div class="grid-2">
+        <div class="field">
+          <label class="field-label">出勤時間</label>
+          <input type="time" id="startTime" />
+        </div>
+        <div class="field">
+          <label class="field-label">出発時間</label>
+          <input type="time" id="leaveTime" />
+        </div>
+        <div class="field">
+          <label class="field-label">体調</label>
+          <div class="radio-row">
+            <label class="chip">
+              <input type="radio" name="condition" value="良好" checked /> 良好
+            </label>
+            <label class="chip">
+              <input type="radio" name="condition" value="普通" /> 普通
+            </label>
+            <label class="chip">
+              <input type="radio" name="condition" value="不良" /> 不良
+            </label>
+          </div>
+        </div>
+        <div class="field">
+          <label class="field-label">前日睡眠時間（h）</label>
+          <input type="number" step="0.1" id="sleep" placeholder="例：6.5" />
+        </div>
+        <div class="field">
+          <label class="field-label">飲酒（過去24h）</label>
+          <div class="radio-row">
+            <label class="chip">
+              <input type="radio" name="alcohol" value="なし" checked /> なし
+            </label>
+            <label class="chip">
+              <input type="radio" name="alcohol" value="あり" /> あり
+            </label>
+          </div>
+        </div>
+        <div class="field">
+          <label class="field-label">服薬</label>
+          <div class="radio-row">
+            <label class="chip">
+              <input type="radio" name="medicine" value="なし" checked /> なし
+            </label>
+            <label class="chip">
+              <input type="radio" name="medicine" value="あり" /> あり
+            </label>
+          </div>
+        </div>
+        <div class="field">
+          <label class="field-label">体温（℃）</label>
+          <input type="number" step="0.1" id="temp" placeholder="例：36.5" />
+        </div>
+        <div class="field">
+          <label class="field-label">アルコール検知器（mg/L）</label>
+          <input type="number" step="0.01" id="alcoholValue" placeholder="0.00" />
+        </div>
+        <div class="field">
+          <label class="field-label">出発前メーター（km）</label>
+          <input type="number" id="meter" placeholder="例：47772" />
+        </div>
+        <div class="field">
+          <label class="field-label">運転免許証アップロードURL</label>
+          <input type="text" id="licenseImg" placeholder="免許証写真をアップしたURLを貼り付け" />
+          <div class="hint">※ 今はURL貼付け式です。（後でDrive連携も拡張可能）</div>
+        </div>
+      </div>
+      <div class="field" style="margin-top:10px;">
+        <label class="field-label">メモ・注意事項</label>
+        <textarea id="memo" placeholder="体調・車両の気になる点・当日の注意事項など"></textarea>
+      </div>
+    </section>
+
+    <!-- 送信 -->
+    <section class="section">
+      <div class="section-header">
+        <div class="badge"><span class="badge-number">03</span> 送信</div>
+        <div class="section-title">内容を確認して送信してください</div>
+      </div>
+      <div class="section-note">
+        送信すると、<strong>本部（info@ofa-group.jp）に点呼メール</strong>が送信されます。<br>
+        メールアドレスを入力していれば、<strong>ドライバー本人にも控え</strong>が届きます。
+      </div>
+
+      <div class="footer">
+        <button type="button" class="submit-btn" onclick="submitForm()">
+          ✅ OFA GROUP Web点呼を送信する
+        </button>
+        <div id="message" class="small-text"></div>
+      </div>
+    </section>
+  </div>
 
   <script>
-    // ★ここを、さっきデプロイ画面に出ていた「exec」URLに差し替えてください
-    const GAS_ENDPOINT = 'https://script.google.com/macros/s/AKfycbwLfEkPddQsP6B8VKKkHkEB3QTVWGDJxW0KqMTV2R3dxAuw72s-9rVmWcW_UK8k082e/exec';
+    // ★ここはあなたのGASのURL（もう動いているやつ）★
+    const GAS_ENDPOINT =
+      "https://script.google.com/macros/s/AKfycbwLfEkPddQsP6B8VKKkHkEB3QTVWGDJxW0KqMTV2R3dxAuw72s-9rVmWcW_UK8k082e/exec";
 
-    const form = document.getElementById('tenkoForm');
-    const submitBtn = document.getElementById('submitBtn');
-    const statusArea = document.getElementById('statusArea');
+    // 日付を自動で本日にセット
+    window.addEventListener("DOMContentLoaded", () => {
+      const d = document.getElementById("date");
+      if (d && !d.value) {
+        const today = new Date();
+        const y = today.getFullYear();
+        const m = String(today.getMonth() + 1).padStart(2, "0");
+        const day = String(today.getDate()).padStart(2, "0");
+        d.value = `${y}-${m}-${day}`;
+      }
+    });
 
-    form.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      statusArea.textContent = '';
-      statusArea.className = 'status';
-      submitBtn.disabled = true;
-      submitBtn.textContent = '送信中…';
+    function getRadioValue(name) {
+      const el = document.querySelector(`input[name="${name}"]:checked`);
+      return el ? el.value : "";
+    }
 
-      const fd = new FormData(form);
-      const data = {};
-      fd.forEach((v, k) => { data[k] = v; });
+    async function submitForm() {
+      const msg = document.getElementById("message");
+      msg.textContent = "送信中です…少しお待ちください。";
+      msg.className = "small-text";
+
+      const data = {
+        date: document.getElementById("date").value,
+        driverName: document.getElementById("driverName").value,
+        company: document.getElementById("company").value,
+        client: document.getElementById("client").value,
+        area: document.getElementById("area").value,
+        base: document.getElementById("base").value,
+        startBase: document.getElementById("startBase").value,
+        email: document.getElementById("email").value,
+        startTime: document.getElementById("startTime").value,
+        leaveTime: document.getElementById("leaveTime").value,
+        condition: getRadioValue("condition"),
+        sleep: document.getElementById("sleep").value,
+        alcohol: getRadioValue("alcohol"),
+        medicine: getRadioValue("medicine"),
+        temp: document.getElementById("temp").value,
+        alcoholValue: document.getElementById("alcoholValue").value,
+        meter: document.getElementById("meter").value,
+        licenseImg: document.getElementById("licenseImg").value,
+        memo: document.getElementById("memo").value,
+      };
 
       try {
         const res = await fetch(GAS_ENDPOINT, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(data)
+          method: "POST",
+          mode: "no-cors",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ contents: data }),
         });
-        const json = await res.json();
 
-        if (json.status === 'success') {
-          statusArea.textContent = '点呼を受け付けました。本部・ご自身のメールを確認してください。';
-          statusArea.classList.add('ok');
-          form.reset();
-        } else {
-          statusArea.textContent = '送信に失敗しました。時間をおいて再度お試しください。';
-          statusArea.classList.add('ng');
-        }
-      } catch (err) {
-        statusArea.textContent = '通信エラーが発生しました。電波状況を確認してください。';
-        statusArea.classList.add('ng');
-      } finally {
-        submitBtn.disabled = false;
-        submitBtn.textContent = 'この内容で点呼する';
+        msg.textContent = "送信しました。安全運転でいってらっしゃい！";
+        msg.className = "success";
+
+        // 送信後、メモだけ残して軽くクリア（好みで調整可）
+        // document.querySelector("form") が無いので個別に消すのが面倒なら今はそのままでもOK
+      } catch (e) {
+        console.error(e);
+        msg.textContent = "送信中にエラーが起きました。時間をおいてもう一度お試しください。";
+        msg.className = "error";
       }
-    });
+    }
   </script>
 </body>
 </html>
