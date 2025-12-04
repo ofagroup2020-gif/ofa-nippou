@@ -55,8 +55,9 @@
       color: #222;
       margin-bottom: 12px;
     }
-    .logo-box span:nth-child(1) { color: #f97316; } /* O: orange */
-    .logo-box span:nth-child(2) { color: #22c55e; } /* F: green */
+    /* OFA = 赤・黄・青 */
+    .logo-box span:nth-child(1) { color: #ef4444; } /* O: red */
+    .logo-box span:nth-child(2) { color: #facc15; } /* F: yellow */
     .logo-box span:nth-child(3) { color: #3b82f6; } /* A: blue  */
 
     h1 {
@@ -91,17 +92,20 @@
       padding: 4px 10px;
       margin-right: 8px;
     }
-    .section-title small {
-      font-weight: 500;
-      font-size: 12px;
-      color: #6b7280;
-      margin-left: 4px;
+    .section-title span {
+      font-size: 14px;
     }
     .note {
       font-size: 11px;
       color: #6b7280;
       line-height: 1.5;
       margin-bottom: 12px;
+    }
+    .subsection-title {
+      font-size: 13px;
+      font-weight: 700;
+      margin-top: 16px;
+      margin-bottom: 4px;
     }
 
     label {
@@ -147,8 +151,7 @@
       margin-top: 2px;
     }
 
-    .radio-group,
-    .check-group {
+    .radio-group {
       display: flex;
       flex-wrap: wrap;
       gap: 8px;
@@ -181,12 +184,6 @@
       gap: 8px;
     }
     .two-col > div { flex: 1; }
-
-    .section-footer-note {
-      font-size: 11px;
-      color: #6b7280;
-      margin-top: 4px;
-    }
 
     .submit-btn {
       width: 100%;
@@ -224,12 +221,6 @@
     }
     .status-error {
       color: #dc2626;
-    }
-
-    @media (max-width: 480px) {
-      .header-card {
-        padding-top: 16px;
-      }
     }
   </style>
 </head>
@@ -343,7 +334,7 @@
       <textarea id="memo" placeholder="体調・車両の気になる点・当日の注意事項など"></textarea>
     </div>
 
-    <!-- 03 日常点検 -->
+    <!-- 03 日常点検 ＋ 一時報告 -->
     <div class="card">
       <div class="section-title">
         <div class="section-chip">03 日常点検</div>
@@ -397,6 +388,23 @@
 
       <label>点検メモ</label>
       <textarea id="check_note" placeholder="気になる箇所・交換予定・整備予約など"></textarea>
+
+      <!-- 一時報告（ここがオレンジのところ） -->
+      <div class="subsection-title">一時報告（任意）</div>
+      <div class="note">
+        出発後〜帰庫までの間に、事故・遅延・トラブルなどがあった場合に入力してください。<br />
+        ※ 写真もその場で撮影して添付できます。
+      </div>
+
+      <label>一時報告時間</label>
+      <input type="time" id="reportTime" />
+
+      <label>一時報告の内容</label>
+      <textarea id="reportComment" placeholder="例：渋滞により◯◯IC〜◯◯IC間で30分遅延 など"></textarea>
+
+      <label>一時報告写真アップロード</label>
+      <input type="file" id="reportImage" accept="image/*" />
+      <div class="help">※ 1枚のみ。Driveに自動保存され、URLが本部と日報に記録されます。</div>
     </div>
 
     <!-- 04 帰庫後入力 -->
@@ -445,10 +453,6 @@
       <label>異常の詳細（あれば）</label>
       <textarea id="abnormalDetail" placeholder="事故・物損・クレームなどの概要と対応"></textarea>
 
-      <div class="section-footer-note">
-        ※ 入力後、「OFA GROUP Web点呼を送信する」を押すと、本部と本人（メール入力時）へ控えが送信されます。
-      </div>
-
       <button id="submitBtn" class="submit-btn">
         <span class="icon">✅</span>
         <span>OFA GROUP Web点呼を送信する</span>
@@ -458,9 +462,8 @@
   </div>
 
   <script>
-    // ★★ ここをあなたの Apps Script exec URL に変えてください ★★
-    // 例）const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxxxxx/exec';
-    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyxnHCrBbbz9yiNp9o69lRBI_KkpSE4MywdRTsIVF_XJQMjLB32Yv3KLRFnepjFJrqT/exec';
+    // ★ あなたのApps Script Webアプリ（exec）のURL
+    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyzpyi0Mw4uDd_Wji1q0VcalWp5_mRMucEDdzaV_Vr6OPx2_ecqh7ZviPARq5MHPQvC/exec';
 
     // 日付を自動セット（YYYY/MM/DD）
     (function setToday() {
@@ -494,13 +497,14 @@
       return r ? r.value : '';
     }
 
+    // 送信処理
     document.getElementById('submitBtn').addEventListener('click', async () => {
       const btn = document.getElementById('submitBtn');
       const status = document.getElementById('status');
       status.textContent = '';
       status.className = 'status-message';
 
-      // 簡易必須チェック（最低限）
+      // 簡易必須チェック
       const requiredIds = ['driverName', 'company', 'client', 'area', 'base', 'startPlace'];
       for (const id of requiredIds) {
         const el = document.getElementById(id);
@@ -515,6 +519,7 @@
       btn.disabled = true;
       btn.innerHTML = '<span class="icon">⏳</span><span>送信中です…</span>';
 
+      // まずテキスト系を集める
       const payload = {
         date: document.getElementById('date').value,
         driverName: document.getElementById('driverName').value.trim(),
@@ -545,6 +550,9 @@
         check_other: getRadioValue('check_other'),
         check_note: document.getElementById('check_note').value,
 
+        reportTime: document.getElementById('reportTime').value,
+        reportComment: document.getElementById('reportComment').value,
+
         returnPlace: document.getElementById('returnPlace').value.trim(),
         returnTime: document.getElementById('returnTime').value,
         returnMeter: document.getElementById('returnMeter').value,
@@ -556,17 +564,33 @@
         abnormalDetail: document.getElementById('abnormalDetail').value
       };
 
+      // 一時報告写真（あれば）を base64 へ
+      const fileInput = document.getElementById('reportImage');
+      payload.reportImageData = '';
+
+      if (fileInput.files && fileInput.files[0]) {
+        const file = fileInput.files[0];
+        payload.reportImageData = await new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => {
+            const result = reader.result || '';
+            const base64 = result.split(',')[1] || '';
+            resolve(base64);
+          };
+          reader.onerror = () => reject(reader.error);
+          reader.readAsDataURL(file);
+        });
+      }
+
       try {
-        const res = await fetch(SCRIPT_URL, {
+        await fetch(SCRIPT_URL, {
           method: 'POST',
           mode: 'no-cors',
-          headers: {
-            'Content-Type': 'application/json'
-          },
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ contents: payload })
         });
 
-        // no-cors のためレスポンスは見えないが、送信完了とみなす
+        // no-cors のためレスポンスは見えないが、送信成功とみなす
         status.textContent = '送信しました。お疲れ様でした！';
         status.classList.add('status-success');
       } catch (err) {
