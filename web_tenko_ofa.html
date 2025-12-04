@@ -2,809 +2,344 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <title>OFA GROUP｜乗務記録・日常点検・運転日報 Web点呼</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>OFA GROUP Web点呼・日常点検</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <style>
     * { box-sizing: border-box; }
     body {
       margin: 0;
       padding: 0;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
       background: #111;
-      color: #222;
-      font-size: 16px;
+      color: #fff;
     }
-    header {
-      background: linear-gradient(135deg,#000000,#333333);
-      color: #ffd700;
-      padding: 10px 14px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
+    .header {
+      padding: 16px;
+      background: #000;
+      border-bottom: 3px solid #ffd400;
+      text-align: center;
     }
-    header .left {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      font-weight: 700;
-      font-size: 16px;
+    .logo {
+      font-weight: 800;
+      font-size: 20px;
+      letter-spacing: 0.1em;
     }
-    .logo-pill {
-      background: #ffd700;
-      color: #000;
-      padding: 3px 8px;
-      border-radius: 999px;
+    .logo span.o { color: #ff4b3a; }
+    .logo span.f { color: #f5a623; }
+    .logo span.a { color: #2aa8ff; }
+    .subtitle {
       font-size: 11px;
-      font-weight: 700;
-    }
-    .tagline {
-      font-size: 10px;
-      color: #ccc;
+      opacity: 0.8;
     }
     .container {
-      max-width: 900px;
+      max-width: 720px;
       margin: 0 auto;
-      padding: 10px 10px 26px;
+      padding: 12px 10px 80px;
     }
-    .ofalogo-box {
-      background: #fff;
-      border-radius: 10px;
-      padding: 8px;
-      margin-bottom: 10px;
+    .notice {
+      background: #222;
+      border-left: 4px solid #ffd400;
+      padding: 10px 12px;
+      font-size: 12px;
+      line-height: 1.5;
+      margin-bottom: 16px;
+    }
+    .section {
+      margin-bottom: 18px;
+      background: #181818;
+      border-radius: 12px;
+      overflow: hidden;
+      border: 1px solid #333;
+    }
+    .section-header {
+      padding: 10px 12px;
+      background: #ffd400;
+      color: #000;
+      font-weight: 700;
+      font-size: 13px;
       display: flex;
-      align-items: center;
-      justify-content: center;
-      border: 2px solid #ffd700;
-    }
-    .ofalogo {
-      font-size: 28px;
-      font-weight: 900;
-      letter-spacing: 2px;
-      background: linear-gradient(90deg,#ff4500,#ffa500,#1e90ff);
-      -webkit-background-clip: text;
-      color: transparent;
-      margin-right: 8px;
-    }
-    .ofalogo-sub {
-      font-size: 10px;
-      font-weight: 600;
-      color: #555;
-    }
-    .card {
-      background: #ffffff;
-      border-radius: 14px;
-      padding: 14px 14px 12px;
-      margin-bottom: 12px;
-      box-shadow: 0 4px 12px rgba(0,0,0,.2);
-      border: 1px solid #f0f0f0;
-    }
-    h1 {
-      font-size: 18px;
-      margin: 0 0 4px;
-    }
-    .subtitle {
-      font-size: 12px;
-      color: #555;
-      line-height: 1.6;
-      margin: 4px 0 6px;
-    }
-    .notice-list {
-      font-size: 12px;
-      color: #333;
-      margin: 6px 0 2px 18px;
-      padding-left: 4px;
-    }
-    .notice-list li { margin-bottom: 2px; }
-    .section-title {
-      display: inline-flex;
       align-items: center;
       gap: 6px;
-      font-weight: 700;
-      margin-bottom: 6px;
     }
-    .section-chip {
-      font-size: 11px;
-      padding: 2px 8px;
-      border-radius: 999px;
+    .section-header .badge {
       background: #000;
-      color: #ffd700;
+      color: #ffd400;
+      border-radius: 999px;
+      padding: 2px 8px;
+      font-size: 11px;
     }
-    .section-label {
-      font-size: 14px;
-    }
-    .row {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px 16px;
-      margin-bottom: 10px;
+    .fields {
+      padding: 10px 12px 14px;
     }
     .field {
-      flex: 1;
-      min-width: 150px;
+      margin-bottom: 10px;
     }
-    label {
+    .field label {
       display: block;
       font-size: 12px;
       margin-bottom: 4px;
-      color: #444;
-      font-weight: 500;
+    }
+    .field label span.req {
+      color: #ff4b3a;
+      margin-left: 4px;
+      font-size: 11px;
     }
     input[type="text"],
-    input[type="number"],
-    input[type="date"],
-    input[type="time"],
     input[type="email"],
+    input[type="time"],
+    input[type="date"],
+    input[type="number"],
+    textarea,
     select {
       width: 100%;
-      padding: 9px 10px;
-      font-size: 15px;
       border-radius: 999px;
-      border: 1px solid #ccc;
-      background: #fafafa;
-    }
-    input[type="number"] { text-align: right; }
-    textarea {
-      width: 100%;
-      min-height: 80px;
-      padding: 9px 10px;
+      border: 1px solid #444;
+      padding: 9px 14px;
       font-size: 14px;
-      border-radius: 10px;
-      border: 1px solid #ccc;
-      background: #fafafa;
+      background: #101010;
+      color: #fff;
+      outline: none;
     }
-    .radio-group,
-    .check-group {
+    textarea {
+      border-radius: 12px;
+      min-height: 70px;
+      resize: vertical;
+      padding-top: 8px;
+    }
+    input::placeholder,
+    textarea::placeholder {
+      color: #777;
+    }
+    .radio-row {
       display: flex;
+      gap: 10px;
       flex-wrap: wrap;
-      gap: 8px 14px;
       font-size: 13px;
     }
-    .radio-group label,
-    .check-group label {
+    .radio-row label {
       display: flex;
       align-items: center;
       gap: 4px;
-      margin: 0;
     }
-    .small-note {
+    .section-note {
       font-size: 11px;
-      color: #777;
+      opacity: 0.7;
       margin-top: 4px;
-      line-height: 1.5;
     }
-    .matrix-table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 11px;
-      margin-top: 6px;
-    }
-    .matrix-table th,
-    .matrix-table td {
-      border: 1px solid #eee;
-      padding: 4px 3px;
+    .footer-note {
+      font-size: 10px;
+      opacity: 0.6;
+      margin-top: 12px;
       text-align: center;
     }
-    .matrix-table th {
-      background: #fff9c4;
-      font-weight: 600;
+    .submit-area {
+      position: fixed;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      padding: 10px 14px 16px;
+      background: linear-gradient(to top, #000 60%, rgba(0,0,0,0));
     }
-    .matrix-table td:first-child {
-      text-align: left;
-      font-weight: 500;
-    }
-    .btn-row {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-      margin-top: 8px;
-    }
-    button {
+    .submit-btn {
+      width: 100%;
       border: none;
       border-radius: 999px;
-      padding: 10px 14px;
-      font-size: 14px;
-      cursor: pointer;
-    }
-    .btn-main {
-      background: #ffd700;
-      color: #000;
+      padding: 11px 16px;
+      font-size: 16px;
       font-weight: 700;
-      box-shadow: 0 3px 6px rgba(0,0,0,.28);
-      flex: 1;
+      letter-spacing: 0.08em;
+      background: linear-gradient(135deg, #ffd400, #ff8c00);
+      color: #000;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.6);
     }
-    .btn-sub {
-      background: #f2f2f2;
-      color: #333;
+    .submit-btn:disabled {
+      opacity: 0.5;
     }
-    .status-ok {
-      color: #2e7d32;
-      font-size: 13px;
-      font-weight: 600;
-      margin-top: 5px;
+    .status {
+      margin-top: 6px;
+      font-size: 12px;
+      text-align: center;
+      min-height: 16px;
     }
-    .status-ng {
-      color: #d32f2f;
-      font-size: 13px;
-      font-weight: 600;
-      margin-top: 5px;
-    }
-    .history-note {
-      font-size: 11px;
-      color: #777;
-      margin-bottom: 4px;
-    }
-    table.log-table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 11px;
-      margin-top: 4px;
-    }
-    table.log-table th,
-    table.log-table td {
-      border: 1px solid #eee;
-      padding: 3px 4px;
-      text-align: left;
-    }
-    table.log-table th {
-      background: #fff8cf;
-      font-weight: 600;
-    }
-    @media (max-width: 640px) {
-      header .left { font-size: 14px; }
-      body { font-size: 15px; }
-      .container { padding: 8px 8px 20px; }
-      .ofalogo { font-size: 24px; }
-    }
+    .status.ok { color: #8dff8a; }
+    .status.ng { color: #ff7b7b; }
   </style>
 </head>
 <body>
-<header>
-  <div class="left">
-    <div class="logo-pill">OFA GROUP</div>
-    <div>乗務記録・日常点検・運転日報 Web点呼</div>
-  </div>
-  <div class="tagline">ONE FOR ALL. ALL FOR ONE.</div>
-</header>
-
-<div class="container">
-
-  <!-- OFA GROUP ロゴ -->
-  <div class="ofalogo-box">
-    <div>
-      <div class="ofalogo">OFA GROUP</div>
-      <div class="ofalogo-sub">ONE FOR ALL. ALL FOR ONE.</div>
+  <header class="header">
+    <div class="logo">
+      <span class="o">O</span><span class="f">F</span><span class="a">A</span> GROUP
     </div>
-  </div>
+    <div class="subtitle">ONE FOR ALL. ALL FOR ONE.</div>
+  </header>
 
-  <!-- 説明 -->
-  <div class="card">
-    <h1>OFA GROUP 専用 Web点呼フォーム</h1>
-    <p class="subtitle">
-      本フォームは、OFA GROUP のドライバーが毎日入力する
-      <strong>「乗務記録・日常点検・運転日報」</strong>です。<br>
-      出発前入力・日常点検・帰庫後入力までを一つの画面で完結できるようにしています。
-    </p>
-    <ol class="notice-list">
-      <li>出発前に<strong>出発前入力＋日常点検</strong>を行ってください。</li>
-      <li>業務終了後に<strong>帰庫後入力</strong>を行ってください。</li>
-      <li>入力内容はこの端末（ブラウザ）内にも保存され、下部の「点呼履歴」から確認できます。</li>
-      <li>会社一括管理やメール自動送信（info@ofa-group.jp 宛て）は、別途 Googleフォーム／スプレッドシート側の設定で行ってください。</li>
-    </ol>
-  </div>
-
-  <!-- 基本情報 -->
-  <div class="card">
-    <div class="section-title">
-      <span class="section-chip">01</span>
-      <span class="section-label">基本情報</span>
+  <main class="container">
+    <div class="notice">
+      OFA GROUP専用の<strong>Web点呼・日常点検フォーム</strong>です。<br>
+      出発前に必ず入力し、点呼完了メールを確認してください。
     </div>
 
-    <div class="row" style="margin-top:6px;">
-      <div class="field">
-        <label for="fDate">日付</label>
-        <input type="date" id="fDate">
-      </div>
-      <div class="field">
-        <label for="fDriverName">ドライバー氏名</label>
-        <input type="text" id="fDriverName" placeholder="例：山田 太郎">
-      </div>
-    </div>
-
-    <div class="row">
-      <div class="field">
-        <label for="fCompany">所属会社</label>
-        <input type="text" id="fCompany" placeholder="例：株式会社OFA / 協力会社名など">
-      </div>
-      <div class="field">
-        <label for="fArea">担当エリア・拠点</label>
-        <input type="text" id="fArea" placeholder="例：鹿児島市伊敷">
-      </div>
-    </div>
-
-    <div class="row">
-      <div class="field">
-        <label for="fCarNo">車両番号</label>
-        <input type="text" id="fCarNo" placeholder="例：鹿児島 580 あ 1234">
-      </div>
-      <div class="field">
-        <label for="fClient">本日の主な案件</label>
-        <input type="text" id="fClient" placeholder="例：Amazon / ヤマト運輸など">
-      </div>
-    </div>
-
-    <div class="row">
-      <div class="field">
-        <label for="fEmail">メールアドレス（控え送信用）</label>
-        <input type="email" id="fEmail" placeholder="例：driver@example.com">
-      </div>
-    </div>
-
-    <p class="small-note">
-      ※ このHTML版だけではメール送信は行いません。<br>
-      ※ Googleフォームと連携した際に info@ofa-group.jp ＋ドライバー本人宛てに控えが飛ぶ想定です。
-    </p>
-  </div>
-
-  <!-- 出発前入力 -->
-  <div class="card">
-    <div class="section-title">
-      <span class="section-chip">02</span>
-      <span class="section-label">出発前入力</span>
-    </div>
-
-    <div class="row" style="margin-top:6px;">
-      <div class="field">
-        <label for="fStartBase">出庫場所</label>
-        <input type="text" id="fStartBase" placeholder="例：鹿児島倉庫 / 熊本倉庫 / 自宅など">
-      </div>
-      <div class="field">
-        <label for="fStartTime">出勤時間</label>
-        <input type="time" id="fStartTime">
-      </div>
-    </div>
-
-    <div class="row">
-      <div class="field">
-        <label for="fLeaveTime">出発時間</label>
-        <input type="time" id="fLeaveTime">
-      </div>
-      <div class="field">
-        <label for="fSleep">前日睡眠時間（h）</label>
-        <input type="number" id="fSleep" step="0.5" min="0" max="24" placeholder="例：6.5">
-      </div>
-    </div>
-
-    <div class="row">
-      <div class="field">
-        <label>体調</label>
-        <div class="radio-group">
-          <label><input type="radio" name="condition" value="良好" checked>良好</label>
-          <label><input type="radio" name="condition" value="普通">普通</label>
-          <label><input type="radio" name="condition" value="不良">不良</label>
+    <form id="tenkoForm">
+      <!-- 01 基本情報 -->
+      <section class="section">
+        <div class="section-header">
+          <span class="badge">01</span> 基本情報
         </div>
-      </div>
-      <div class="field">
-        <label>飲酒（過去24時間）</label>
-        <div class="radio-group">
-          <label><input type="radio" name="alcohol" value="なし" checked>なし</label>
-          <label><input type="radio" name="alcohol" value="あり">あり</label>
+        <div class="fields">
+          <div class="field">
+            <label>本日の主な案件 <span class="req">必須</span></label>
+            <input type="text" name="client" placeholder="例：Amazon、ヤマト、佐川 など" required>
+          </div>
+          <div class="field">
+            <label>メールアドレス（控え送信用） <span class="req">必須</span></label>
+            <input type="email" name="email" placeholder="example@ofa-group.jp" required>
+            <div class="section-note">ここに入力したアドレスと、本部(info@ofa-group.jp)へ点呼内容が送信されます。</div>
+          </div>
+          <div class="field">
+            <label>日付 <span class="req">必須</span></label>
+            <input type="date" name="date" required>
+          </div>
+          <div class="field">
+            <label>ドライバー名 <span class="req">必須</span></label>
+            <input type="text" name="driverName" placeholder="氏名を入力" required>
+          </div>
+          <div class="field">
+            <label>所属会社 <span class="req">必須</span></label>
+            <input type="text" name="company" placeholder="例：株式会社OFA、個人事業主 など" required>
+          </div>
+          <div class="field">
+            <label>エリア <span class="req">必須</span></label>
+            <input type="text" name="area" placeholder="例：鹿児島市伊敷、熊本市南区 など" required>
+          </div>
+          <div class="field">
+            <label>出庫場所 <span class="req">必須</span></label>
+            <input type="text" name="base" placeholder="例：鹿児島○○センター" required>
+          </div>
+          <div class="field">
+            <label>車両番号 <span class="req">必須</span></label>
+            <input type="text" name="carNo" placeholder="例：鹿児島580 あ 1234" required>
+          </div>
+          <div class="field">
+            <label>運転免許証の写真URL</label>
+            <textarea name="licenseImg" placeholder="GoogleフォトやGoogleドライブ等の共有URLを貼り付けてください"></textarea>
+          </div>
         </div>
-      </div>
-    </div>
+      </section>
 
-    <div class="row">
-      <div class="field">
-        <label>服薬</label>
-        <div class="radio-group">
-          <label><input type="radio" name="medicine" value="なし" checked>なし</label>
-          <label><input type="radio" name="medicine" value="あり">あり</label>
+      <!-- 02 出発前入力 -->
+      <section class="section">
+        <div class="section-header">
+          <span class="badge">02</span> 出発前入力
         </div>
-      </div>
-      <div class="field">
-        <label for="fTemp">体温（℃）</label>
-        <input type="number" id="fTemp" step="0.1" min="34" max="42" placeholder="例：36.5">
-      </div>
-    </div>
-
-    <div class="row">
-      <div class="field">
-        <label for="fAlcoholValue">アルコール検知器（mg/L）</label>
-        <input type="number" id="fAlcoholValue" step="0.01" min="0" placeholder="例：0.00">
-      </div>
-      <div class="field">
-        <label for="fOdoStart">出発前メーター（km）</label>
-        <input type="number" id="fOdoStart" step="0.1" min="0" placeholder="例：12345.6">
-      </div>
-    </div>
-  </div>
-
-  <!-- 日常点検 -->
-  <div class="card">
-    <div class="section-title">
-      <span class="section-chip">03</span>
-      <span class="section-label">日常点検チェック</span>
-    </div>
-    <p class="small-note">
-      ○：異常なし　／　✕：異常あり（※異常がある場合は原因と対応を備考に記入してください）
-    </p>
-
-    <table class="matrix-table">
-      <thead>
-        <tr>
-          <th>点検項目</th>
-          <th>○</th>
-          <th>✕</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr>
-          <td>ブレーキ</td>
-          <td><input type="radio" name="chk_brake" value="○" checked></td>
-          <td><input type="radio" name="chk_brake" value="✕"></td>
-        </tr>
-        <tr>
-          <td>タイヤ・ホイール</td>
-          <td><input type="radio" name="chk_tire" value="○" checked></td>
-          <td><input type="radio" name="chk_tire" value="✕"></td>
-        </tr>
-        <tr>
-          <td>ライト・ウインカー類</td>
-          <td><input type="radio" name="chk_light" value="○" checked></td>
-          <td><input type="radio" name="chk_light" value="✕"></td>
-        </tr>
-        <tr>
-          <td>ワイパー・ウォッシャー</td>
-          <td><input type="radio" name="chk_wiper" value="○" checked></td>
-          <td><input type="radio" name="chk_wiper" value="✕"></td>
-        </tr>
-        <tr>
-          <td>バックブザー・バックランプ</td>
-          <td><input type="radio" name="chk_back" value="○" checked></td>
-          <td><input type="radio" name="chk_back" value="✕"></td>
-        </tr>
-        <tr>
-          <td>シートベルト</td>
-          <td><input type="radio" name="chk_belt" value="○" checked></td>
-          <td><input type="radio" name="chk_belt" value="✕"></td>
-        </tr>
-        <tr>
-          <td>荷室固定・積荷の状態</td>
-          <td><input type="radio" name="chk_cargo" value="○" checked></td>
-          <td><input type="radio" name="chk_cargo" value="✕"></td>
-        </tr>
-        <tr>
-          <td>燃料残量</td>
-          <td><input type="radio" name="chk_fuel" value="○" checked></td>
-          <td><input type="radio" name="chk_fuel" value="✕"></td>
-        </tr>
-      </tbody>
-    </table>
-
-    <div class="row" style="margin-top:8px;">
-      <div class="field">
-        <label for="fInspectMemo">点検に関する特記事項</label>
-        <textarea id="fInspectMemo" placeholder="異音・警告灯・オイル滲み等があれば記入してください。"></textarea>
-      </div>
-    </div>
-  </div>
-
-  <!-- 帰庫後入力 -->
-  <div class="card">
-    <div class="section-title">
-      <span class="section-chip">04</span>
-      <span class="section-label">帰庫後入力</span>
-    </div>
-
-    <div class="row" style="margin-top:6px;">
-      <div class="field">
-        <label for="fReturnBase">帰庫地</label>
-        <input type="text" id="fReturnBase" placeholder="例：鹿児島営業所">
-      </div>
-      <div class="field">
-        <label for="fReturnTime">帰庫時間</label>
-        <input type="time" id="fReturnTime">
-      </div>
-    </div>
-
-    <div class="row">
-      <div class="field">
-        <label for="fOdoEnd">帰庫時メーター（km）</label>
-        <input type="number" id="fOdoEnd" step="0.1" min="0" placeholder="例：12458.9">
-      </div>
-      <div class="field">
-        <label for="fDistance">本日の走行距離（km）</label>
-        <input type="number" id="fDistance" step="0.1" min="0" placeholder="出発前との差分が自動計算されます" readonly>
-      </div>
-    </div>
-
-    <div class="row">
-      <div class="field">
-        <label for="fRestInfo">休憩時間・休憩場所</label>
-        <input type="text" id="fRestInfo" placeholder="例：合計60分／〇〇PAなど">
-      </div>
-    </div>
-
-    <div class="row">
-      <div class="field">
-        <label>代金集金分入金</label>
-        <div class="radio-group">
-          <label><input type="radio" name="payment" value="入金済" checked>入金済</label>
-          <label><input type="radio" name="payment" value="未入金">未入金</label>
+        <div class="fields">
+          <div class="field">
+            <label>出勤時間 <span class="req">必須</span></label>
+            <input type="time" name="startTime" required>
+          </div>
+          <div class="field">
+            <label>出発時間 <span class="req">必須</span></label>
+            <input type="time" name="leaveTime" required>
+          </div>
+          <div class="field">
+            <label>前日睡眠時間（h） <span class="req">必須</span></label>
+            <input type="number" step="0.1" min="0" max="24" name="sleep" placeholder="例：6.5" required>
+          </div>
+          <div class="field">
+            <label>飲酒（過去24時間） <span class="req">必須</span></label>
+            <div class="radio-row">
+              <label><input type="radio" name="drink" value="なし" checked> なし</label>
+              <label><input type="radio" name="drink" value="あり"> あり</label>
+            </div>
+          </div>
+          <div class="field">
+            <label>体調 <span class="req">必須</span></label>
+            <div class="radio-row">
+              <label><input type="radio" name="condition" value="良好" checked> 良好</label>
+              <label><input type="radio" name="condition" value="普通"> 普通</label>
+              <label><input type="radio" name="condition" value="不良"> 不良</label>
+            </div>
+          </div>
+          <div class="field">
+            <label>服薬 <span class="req">必須</span></label>
+            <div class="radio-row">
+              <label><input type="radio" name="medicine" value="なし" checked> なし</label>
+              <label><input type="radio" name="medicine" value="あり"> あり</label>
+            </div>
+          </div>
+          <div class="field">
+            <label>体温（℃）</label>
+            <input type="number" step="0.1" name="temp" placeholder="例：36.5">
+          </div>
+          <div class="field">
+            <label>アルコール検知器（mg/L）</label>
+            <input type="number" step="0.01" name="alcoholValue" placeholder="例：0.00">
+          </div>
+          <div class="field">
+            <label>出発前メーター（km）</label>
+            <input type="number" step="0.1" name="meter" placeholder="例：47772">
+          </div>
+          <div class="field">
+            <label>日常点検メモ</label>
+            <textarea name="memo" placeholder="タイヤ・ライト・ブレーキ等、気になる点があれば記入してください。"></textarea>
+          </div>
         </div>
+      </section>
+
+      <p class="footer-note">
+        ※ このHTML版からはメール送信そのものは行われませんが、<br>
+        入力内容は Google Apps Script 経由で本部・ドライバー宛に送信されます。
+      </p>
+
+      <div class="submit-area">
+        <button type="submit" class="submit-btn" id="submitBtn">この内容で点呼する</button>
+        <div id="statusArea" class="status"></div>
       </div>
-      <div class="field">
-        <label for="fPaymentAmount">代金入金金額（円）</label>
-        <input type="number" id="fPaymentAmount" min="0" step="1" placeholder="例：12500">
-      </div>
-    </div>
+    </form>
+  </main>
 
-    <div class="row">
-      <div class="field">
-        <label>道路・運行の状況</label>
-        <div class="radio-group">
-          <label><input type="radio" name="abnormal" value="異常なし" checked>異常なし</label>
-          <label><input type="radio" name="abnormal" value="異常あり">異常あり</label>
-        </div>
-      </div>
-    </div>
+  <script>
+    // ★ここを、さっきデプロイ画面に出ていた「exec」URLに差し替えてください
+    const GAS_ENDPOINT = 'https://script.google.com/macros/s/AKfycbwLfEkPddQsP6B8VKKkHkEB3QTVWGDJxW0KqMTV2R3dxAuw72s-9rVmWcW_UK8k082e/exec';
 
-    <div class="row">
-      <div class="field">
-        <label for="fAbnormalDetail">異常ありの場合の詳細（渋滞・事故・遅延・クレーム等）</label>
-        <textarea id="fAbnormalDetail" placeholder="異常があった場合はこちらに概要・原因・対応を記入してください。"></textarea>
-      </div>
-    </div>
-  </div>
+    const form = document.getElementById('tenkoForm');
+    const submitBtn = document.getElementById('submitBtn');
+    const statusArea = document.getElementById('statusArea');
 
-  <!-- 写真アップロード -->
-  <div class="card">
-    <div class="section-title">
-      <span class="section-chip">05</span>
-      <span class="section-label">写真アップロード（任意）</span>
-    </div>
-    <p class="small-note">
-      車両の損傷・荷室の状態・積込状況・免許証など、記録を残したい写真があれば選択してください。<br>
-      このHTMLだけではサーバーには送信されませんが、Googleフォームと組み合わせて運用する想定です。
-    </p>
-    <div class="row" style="margin-top:6px;">
-      <div class="field">
-        <label for="fLicense">運転免許証の写真</label>
-        <input type="file" id="fLicense" accept="image/*">
-      </div>
-      <div class="field">
-        <label for="fPhotoCar">車両・外装の写真</label>
-        <input type="file" id="fPhotoCar" accept="image/*" multiple>
-      </div>
-    </div>
-    <div class="row">
-      <div class="field">
-        <label for="fPhotoCargo">荷室・積込状態の写真</label>
-        <input type="file" id="fPhotoCargo" accept="image/*" multiple>
-      </div>
-    </div>
-  </div>
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      statusArea.textContent = '';
+      statusArea.className = 'status';
+      submitBtn.disabled = true;
+      submitBtn.textContent = '送信中…';
 
-  <!-- 点呼者・備考 & ボタン -->
-  <div class="card">
-    <div class="section-title">
-      <span class="section-chip">06</span>
-      <span class="section-label">点呼者・備考 / 送信</span>
-    </div>
+      const fd = new FormData(form);
+      const data = {};
+      fd.forEach((v, k) => { data[k] = v; });
 
-    <div class="row" style="margin-top:6px;">
-      <div class="field">
-        <label for="fTenkoStaff">点呼者（管理者名）</label>
-        <input type="text" id="fTenkoStaff" placeholder="例：森下（本部）">
-      </div>
-    </div>
+      try {
+        const res = await fetch(GAS_ENDPOINT, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data)
+        });
+        const json = await res.json();
 
-    <div class="row">
-      <div class="field">
-        <label for="fMemo">備考・共有事項（全体連絡）</label>
-        <textarea id="fMemo" placeholder="本日の振り返り・共有事項・注意点などを自由に記入してください。"></textarea>
-      </div>
-    </div>
-
-    <div class="btn-row">
-      <button class="btn-main" id="btnSubmit">この内容で点呼記録を保存</button>
-      <button class="btn-sub" id="btnReset">入力内容をクリア</button>
-      <button class="btn-sub" id="btnPrint">PDF印刷（ブラウザの印刷機能）</button>
-    </div>
-    <div class="small-note">
-      ※ 保存すると、この端末のブラウザ内に記録が残ります。<br>
-      ※ 会社一括管理・info@ofa-group.jp への自動メールは、Googleフォーム側の設定で行ってください。
-    </div>
-    <div id="submitStatus"></div>
-  </div>
-
-  <!-- 履歴 -->
-  <div class="card">
-    <div class="section-title">
-      <span class="section-chip">LOG</span>
-      <span class="section-label">最近の点呼履歴（この端末のみ）</span>
-    </div>
-    <p class="history-note">
-      直近20件までを表示しています。別端末・別ブラウザからは見られません。
-    </p>
-    <div id="historyArea"></div>
-  </div>
-
-</div>
-
-<script>
-  const STORAGE_KEY = "ofa_group_web_tenko_v1";
-
-  const $ = id => document.getElementById(id);
-  const getRadio = name => {
-    const n = document.querySelector('input[name="'+name+'"]:checked');
-    return n ? n.value : "";
-  };
-
-  function loadLogs() {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (!raw) return [];
-      return JSON.parse(raw);
-    } catch(e) {
-      console.error(e);
-      return [];
-    }
-  }
-
-  function saveLogs(logs) {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(logs));
-  }
-
-  function calcDistance() {
-    const start = parseFloat($("fOdoStart").value || "0");
-    const end   = parseFloat($("fOdoEnd").value || "0");
-    if (start > 0 && end > 0 && end >= start) {
-      $("fDistance").value = (end - start).toFixed(1);
-    } else {
-      $("fDistance").value = "";
-    }
-  }
-
-  function renderHistory() {
-    const logs = loadLogs().slice().reverse();
-    const area = $("historyArea");
-    if (!logs.length) {
-      area.innerHTML = "まだ点呼履歴はありません。";
-      return;
-    }
-    let html = '<table class="log-table"><thead><tr>' +
-      '<th>日付</th><th>氏名</th><th>所属</th><th>エリア</th><th>出発</th><th>帰庫</th><th>走行距離</th><th>体調</th><th>異常</th>' +
-      '</tr></thead><tbody>';
-    logs.slice(0,20).forEach(l => {
-      html += "<tr>" +
-        "<td>"+l.date+"</td>" +
-        "<td>"+l.name+"</td>" +
-        "<td>"+l.company+"</td>" +
-        "<td>"+l.area+"</td>" +
-        "<td>"+l.leaveTime+"</td>" +
-        "<td>"+l.returnTime+"</td>" +
-        "<td>"+(l.distance || "")+"</td>" +
-        "<td>"+l.condition+"</td>" +
-        "<td>"+l.abnormal+"</td>" +
-        "</tr>";
-    });
-    html += "</tbody></table>";
-    area.innerHTML = html;
-  }
-
-  function resetForm() {
-    document.querySelectorAll("input, textarea, select").forEach(el => {
-      const type = el.type;
-      if (type === "radio") {
-        // デフォルト状態に戻すのでここではリセットしない
-      } else if (type === "file") {
-        el.value = "";
-      } else if (el.id === "fDistance") {
-        el.value = "";
-      } else {
-        el.value = "";
+        if (json.status === 'success') {
+          statusArea.textContent = '点呼を受け付けました。本部・ご自身のメールを確認してください。';
+          statusArea.classList.add('ok');
+          form.reset();
+        } else {
+          statusArea.textContent = '送信に失敗しました。時間をおいて再度お試しください。';
+          statusArea.classList.add('ng');
+        }
+      } catch (err) {
+        statusArea.textContent = '通信エラーが発生しました。電波状況を確認してください。';
+        statusArea.classList.add('ng');
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'この内容で点呼する';
       }
     });
-
-    document.querySelector('input[name="condition"][value="良好"]').checked = true;
-    document.querySelector('input[name="alcohol"][value="なし"]').checked = true;
-    document.querySelector('input[name="medicine"][value="なし"]').checked = true;
-    document.querySelector('input[name="payment"][value="入金済"]').checked = true;
-    document.querySelector('input[name="abnormal"][value="異常なし"]').checked = true;
-
-    ["chk_brake","chk_tire","chk_light","chk_wiper","chk_back","chk_belt","chk_cargo","chk_fuel"].forEach(n => {
-      const ok = document.querySelector('input[name="'+n+'"][value="○"]');
-      if (ok) ok.checked = true;
-    });
-
-    $("submitStatus").innerHTML = "";
-  }
-
-  $("fOdoStart").addEventListener("input", calcDistance);
-  $("fOdoEnd").addEventListener("input", calcDistance);
-
-  $("btnReset").addEventListener("click", () => {
-    if (confirm("入力内容をすべてクリアしますか？")) {
-      resetForm();
-    }
-  });
-
-  $("btnPrint").addEventListener("click", () => {
-    window.print();
-  });
-
-  $("btnSubmit").addEventListener("click", () => {
-    const date  = $("fDate").value;
-    const name  = $("fDriverName").value.trim();
-    if (!date || !name) {
-      alert("日付と氏名は必須です。");
-      return;
-    }
-
-    const log = {
-      date,
-      name,
-      company: $("fCompany").value.trim(),
-      area: $("fArea").value.trim(),
-      carNo: $("fCarNo").value.trim(),
-      client: $("fClient").value.trim(),
-      email: $("fEmail").value.trim(),
-      startBase: $("fStartBase").value.trim(),
-      startTime: $("fStartTime").value,
-      leaveTime: $("fLeaveTime").value,
-      condition: getRadio("condition"),
-      sleep: $("fSleep").value,
-      alcohol: getRadio("alcohol"),
-      medicine: getRadio("medicine"),
-      temp: $("fTemp").value,
-      alcoholValue: $("fAlcoholValue").value,
-      odoStart: $("fOdoStart").value,
-      inspectMemo: $("fInspectMemo").value.trim(),
-      returnBase: $("fReturnBase").value.trim(),
-      returnTime: $("fReturnTime").value,
-      odoEnd: $("fOdoEnd").value,
-      distance: $("fDistance").value,
-      restInfo: $("fRestInfo").value.trim(),
-      payment: getRadio("payment"),
-      paymentAmount: $("fPaymentAmount").value,
-      abnormal: getRadio("abnormal"),
-      abnormalDetail: $("fAbnormalDetail").value.trim(),
-      tenkoStaff: $("fTenkoStaff").value.trim(),
-      memo: $("fMemo").value.trim(),
-      // 画像はファイル枚数だけログに残す
-      licenseCount: ($("fLicense").files || []).length,
-      photoCarCount: ($("fPhotoCar").files || []).length,
-      photoCargoCount: ($("fPhotoCargo").files || []).length,
-      createdAt: new Date().toISOString()
-    };
-
-    const logs = loadLogs();
-    logs.push(log);
-    saveLogs(logs);
-    renderHistory();
-
-    const isSafeAlcohol = (log.alcohol === "なし") &&
-                          (parseFloat(log.alcoholValue || "0") === 0);
-    const isAbnormal = (log.abnormal === "異常あり");
-
-    let msg = "";
-    if (isSafeAlcohol && !isAbnormal) {
-      msg = '<span class="status-ok">✅ 点呼記録を保存しました。飲酒なし・異常なし。安全運転でお疲れさまでした！</span>';
-    } else {
-      msg = '<span class="status-ng">⚠ 点呼記録を保存しましたが、飲酒・アルコール値・運行異常のいずれかに注意が必要です。必ず管理者の指示を仰いでください。</span>';
-    }
-    $("submitStatus").innerHTML = msg;
-  });
-
-  (function init(){
-    const now = new Date();
-    const y = now.getFullYear();
-    const m = String(now.getMonth()+1).padStart(2,"0");
-    const d = String(now.getDate()).padStart(2,"0");
-    $("fDate").value = `${y}-${m}-${d}`;
-    renderHistory();
-  })();
-</script>
-
+  </script>
 </body>
 </html>
