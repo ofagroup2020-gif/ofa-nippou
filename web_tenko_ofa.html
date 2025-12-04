@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <title>OFAグループ｜乗務記録・日常点検・運転日報 Web点呼</title>
+  <title>OFA GROUP｜乗務記録・日常点検・運転日報 Web点呼</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
     * { box-sizing: border-box; }
@@ -57,7 +57,7 @@
       border: 2px solid #ffd700;
     }
     .ofalogo {
-      font-size: 32px;
+      font-size: 28px;
       font-weight: 900;
       letter-spacing: 2px;
       background: linear-gradient(90deg,#ff4500,#ffa500,#1e90ff);
@@ -80,10 +80,6 @@
     }
     h1 {
       font-size: 18px;
-      margin: 0 0 4px;
-    }
-    h2 {
-      font-size: 16px;
       margin: 0 0 4px;
     }
     .subtitle {
@@ -253,27 +249,18 @@
       background: #fff8cf;
       font-weight: 600;
     }
-    .pill-tag {
-      display: inline-block;
-      font-size: 11px;
-      padding: 2px 6px;
-      border-radius: 999px;
-      background: #000;
-      color: #ffd700;
-      margin-right: 4px;
-    }
     @media (max-width: 640px) {
       header .left { font-size: 14px; }
       body { font-size: 15px; }
       .container { padding: 8px 8px 20px; }
-      .ofalogo { font-size: 26px; }
+      .ofalogo { font-size: 24px; }
     }
   </style>
 </head>
 <body>
 <header>
   <div class="left">
-    <div class="logo-pill">OFA</div>
+    <div class="logo-pill">OFA GROUP</div>
     <div>乗務記録・日常点検・運転日報 Web点呼</div>
   </div>
   <div class="tagline">ONE FOR ALL. ALL FOR ONE.</div>
@@ -281,19 +268,19 @@
 
 <div class="container">
 
-  <!-- OFAロゴ -->
+  <!-- OFA GROUP ロゴ -->
   <div class="ofalogo-box">
     <div>
-      <div class="ofalogo">OFA</div>
+      <div class="ofalogo">OFA GROUP</div>
       <div class="ofalogo-sub">ONE FOR ALL. ALL FOR ONE.</div>
     </div>
   </div>
 
   <!-- 説明 -->
   <div class="card">
-    <h1>OFAグループ専用 Web点呼フォーム</h1>
+    <h1>OFA GROUP 専用 Web点呼フォーム</h1>
     <p class="subtitle">
-      本フォームは、OFAグループのドライバーが毎日入力する
+      本フォームは、OFA GROUP のドライバーが毎日入力する
       <strong>「乗務記録・日常点検・運転日報」</strong>です。<br>
       出発前入力・日常点検・帰庫後入力までを一つの画面で完結できるようにしています。
     </p>
@@ -301,8 +288,7 @@
       <li>出発前に<strong>出発前入力＋日常点検</strong>を行ってください。</li>
       <li>業務終了後に<strong>帰庫後入力</strong>を行ってください。</li>
       <li>入力内容はこの端末（ブラウザ）内にも保存され、下部の「点呼履歴」から確認できます。</li>
-      <li>会社一括管理やメール自動送信を行う場合は、別途 Googleフォーム／スプレッドシートと連携してください。</li>
-      <li>ご不明点があれば、各拠点の責任者までお問い合わせください。</li>
+      <li>会社一括管理やメール自動送信（info@ofa-group.jp 宛て）は、別途 Googleフォーム／スプレッドシート側の設定で行ってください。</li>
     </ol>
   </div>
 
@@ -326,20 +312,27 @@
 
     <div class="row">
       <div class="field">
-        <label for="fArea">担当エリア・拠点</label>
-        <input type="text" id="fArea" placeholder="例：鹿児島市伊敷">
+        <label for="fCompany">所属会社</label>
+        <input type="text" id="fCompany" placeholder="例：株式会社OFA / 協力会社名など">
       </div>
       <div class="field">
-        <label for="fCarNo">車両番号</label>
-        <input type="text" id="fCarNo" placeholder="例：鹿児島 580 あ 1234">
+        <label for="fArea">担当エリア・拠点</label>
+        <input type="text" id="fArea" placeholder="例：鹿児島市伊敷">
       </div>
     </div>
 
     <div class="row">
       <div class="field">
-        <label for="fClient">本日の主な案件</label>
-        <input type="text" id="fClient" placeholder="例：ヤマト運輸｜Amazon（SBS）など">
+        <label for="fCarNo">車両番号</label>
+        <input type="text" id="fCarNo" placeholder="例：鹿児島 580 あ 1234">
       </div>
+      <div class="field">
+        <label for="fClient">本日の主な案件</label>
+        <input type="text" id="fClient" placeholder="例：Amazon / ヤマト運輸など">
+      </div>
+    </div>
+
+    <div class="row">
       <div class="field">
         <label for="fEmail">メールアドレス（控え送信用）</label>
         <input type="email" id="fEmail" placeholder="例：driver@example.com">
@@ -347,7 +340,8 @@
     </div>
 
     <p class="small-note">
-      ※ このHTML版ではメール送信は行いませんが、Googleフォーム連携時のために入力欄を用意しています。
+      ※ このHTML版だけではメール送信は行いません。<br>
+      ※ Googleフォームと連携した際に info@ofa-group.jp ＋ドライバー本人宛てに控えが飛ぶ想定です。
     </p>
   </div>
 
@@ -360,12 +354,23 @@
 
     <div class="row" style="margin-top:6px;">
       <div class="field">
+        <label for="fStartBase">出庫場所</label>
+        <input type="text" id="fStartBase" placeholder="例：鹿児島倉庫 / 熊本倉庫 / 自宅など">
+      </div>
+      <div class="field">
         <label for="fStartTime">出勤時間</label>
         <input type="time" id="fStartTime">
       </div>
+    </div>
+
+    <div class="row">
       <div class="field">
         <label for="fLeaveTime">出発時間</label>
         <input type="time" id="fLeaveTime">
+      </div>
+      <div class="field">
+        <label for="fSleep">前日睡眠時間（h）</label>
+        <input type="number" id="fSleep" step="0.5" min="0" max="24" placeholder="例：6.5">
       </div>
     </div>
 
@@ -379,19 +384,15 @@
         </div>
       </div>
       <div class="field">
-        <label for="fSleep">前日睡眠時間（h）</label>
-        <input type="number" id="fSleep" step="0.5" min="0" max="24" placeholder="例：6.5">
-      </div>
-    </div>
-
-    <div class="row">
-      <div class="field">
         <label>飲酒（過去24時間）</label>
         <div class="radio-group">
           <label><input type="radio" name="alcohol" value="なし" checked>なし</label>
           <label><input type="radio" name="alcohol" value="あり">あり</label>
         </div>
       </div>
+    </div>
+
+    <div class="row">
       <div class="field">
         <label>服薬</label>
         <div class="radio-group">
@@ -399,20 +400,17 @@
           <label><input type="radio" name="medicine" value="あり">あり</label>
         </div>
       </div>
-    </div>
-
-    <div class="row">
       <div class="field">
         <label for="fTemp">体温（℃）</label>
         <input type="number" id="fTemp" step="0.1" min="34" max="42" placeholder="例：36.5">
       </div>
+    </div>
+
+    <div class="row">
       <div class="field">
         <label for="fAlcoholValue">アルコール検知器（mg/L）</label>
         <input type="number" id="fAlcoholValue" step="0.01" min="0" placeholder="例：0.00">
       </div>
-    </div>
-
-    <div class="row">
       <div class="field">
         <label for="fOdoStart">出発前メーター（km）</label>
         <input type="number" id="fOdoStart" step="0.1" min="0" placeholder="例：12345.6">
@@ -565,14 +563,20 @@
       <span class="section-label">写真アップロード（任意）</span>
     </div>
     <p class="small-note">
-      車両の損傷・荷室の状態・積込状況など、記録を残したい写真があれば選択してください。<br>
+      車両の損傷・荷室の状態・積込状況・免許証など、記録を残したい写真があれば選択してください。<br>
       このHTMLだけではサーバーには送信されませんが、Googleフォームと組み合わせて運用する想定です。
     </p>
     <div class="row" style="margin-top:6px;">
       <div class="field">
+        <label for="fLicense">運転免許証の写真</label>
+        <input type="file" id="fLicense" accept="image/*">
+      </div>
+      <div class="field">
         <label for="fPhotoCar">車両・外装の写真</label>
         <input type="file" id="fPhotoCar" accept="image/*" multiple>
       </div>
+    </div>
+    <div class="row">
       <div class="field">
         <label for="fPhotoCargo">荷室・積込状態の写真</label>
         <input type="file" id="fPhotoCargo" accept="image/*" multiple>
@@ -607,8 +611,8 @@
       <button class="btn-sub" id="btnPrint">PDF印刷（ブラウザの印刷機能）</button>
     </div>
     <div class="small-note">
-      ※ 保存すると、この端末のブラウザ内に記録が残ります。  
-      会社一括管理は Googleフォーム／スプレッドシート側で設定してください。
+      ※ 保存すると、この端末のブラウザ内に記録が残ります。<br>
+      ※ 会社一括管理・info@ofa-group.jp への自動メールは、Googleフォーム側の設定で行ってください。
     </div>
     <div id="submitStatus"></div>
   </div>
@@ -628,7 +632,7 @@
 </div>
 
 <script>
-  const STORAGE_KEY = "ofa_web_tenko_ofa_v1";
+  const STORAGE_KEY = "ofa_group_web_tenko_v1";
 
   const $ = id => document.getElementById(id);
   const getRadio = name => {
@@ -662,19 +666,20 @@
   }
 
   function renderHistory() {
-    const logs = loadLogs().slice().reverse(); // 新しい順
+    const logs = loadLogs().slice().reverse();
     const area = $("historyArea");
     if (!logs.length) {
       area.innerHTML = "まだ点呼履歴はありません。";
       return;
     }
     let html = '<table class="log-table"><thead><tr>' +
-      '<th>日付</th><th>氏名</th><th>エリア</th><th>出発</th><th>帰庫</th><th>走行距離</th><th>体調</th><th>異常</th>' +
+      '<th>日付</th><th>氏名</th><th>所属</th><th>エリア</th><th>出発</th><th>帰庫</th><th>走行距離</th><th>体調</th><th>異常</th>' +
       '</tr></thead><tbody>';
     logs.slice(0,20).forEach(l => {
       html += "<tr>" +
         "<td>"+l.date+"</td>" +
         "<td>"+l.name+"</td>" +
+        "<td>"+l.company+"</td>" +
         "<td>"+l.area+"</td>" +
         "<td>"+l.leaveTime+"</td>" +
         "<td>"+l.returnTime+"</td>" +
@@ -691,7 +696,7 @@
     document.querySelectorAll("input, textarea, select").forEach(el => {
       const type = el.type;
       if (type === "radio") {
-        // デフォルト状態に戻したいので何もしない（初期値優先）
+        // デフォルト状態に戻すのでここではリセットしない
       } else if (type === "file") {
         el.value = "";
       } else if (el.id === "fDistance") {
@@ -701,14 +706,12 @@
       }
     });
 
-    // ラジオボタンの初期化
     document.querySelector('input[name="condition"][value="良好"]').checked = true;
     document.querySelector('input[name="alcohol"][value="なし"]').checked = true;
     document.querySelector('input[name="medicine"][value="なし"]').checked = true;
     document.querySelector('input[name="payment"][value="入金済"]').checked = true;
     document.querySelector('input[name="abnormal"][value="異常なし"]').checked = true;
 
-    // 日常点検はすべて○に戻す
     ["chk_brake","chk_tire","chk_light","chk_wiper","chk_back","chk_belt","chk_cargo","chk_fuel"].forEach(n => {
       const ok = document.querySelector('input[name="'+n+'"][value="○"]');
       if (ok) ok.checked = true;
@@ -741,10 +744,12 @@
     const log = {
       date,
       name,
+      company: $("fCompany").value.trim(),
       area: $("fArea").value.trim(),
       carNo: $("fCarNo").value.trim(),
       client: $("fClient").value.trim(),
       email: $("fEmail").value.trim(),
+      startBase: $("fStartBase").value.trim(),
       startTime: $("fStartTime").value,
       leaveTime: $("fLeaveTime").value,
       condition: getRadio("condition"),
@@ -766,6 +771,10 @@
       abnormalDetail: $("fAbnormalDetail").value.trim(),
       tenkoStaff: $("fTenkoStaff").value.trim(),
       memo: $("fMemo").value.trim(),
+      // 画像はファイル枚数だけログに残す
+      licenseCount: ($("fLicense").files || []).length,
+      photoCarCount: ($("fPhotoCar").files || []).length,
+      photoCargoCount: ($("fPhotoCargo").files || []).length,
       createdAt: new Date().toISOString()
     };
 
@@ -787,7 +796,6 @@
     $("submitStatus").innerHTML = msg;
   });
 
-  // 初期化：今日の日付をセット＆履歴表示
   (function init(){
     const now = new Date();
     const y = now.getFullYear();
