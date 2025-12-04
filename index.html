@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <title>OFA 日報＆月次実績ツール（取引先×荷物種別＋単価設定）</title>
+  <title>OFA 日報＆月次実績ツール（OFAデザイン版）</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
     * { box-sizing: border-box; }
@@ -10,387 +10,494 @@
       margin: 0;
       padding: 0;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
-      background: #f5f5f5;
+      background: #111;
+      color: #222;
+      font-size: 16px; /* ベース文字大きめ */
     }
     header {
-      background: #222;
+      background: linear-gradient(135deg, #000000, #222222);
       color: #ffd700;
-      padding: 10px 16px;
-      font-size: 16px;
+      padding: 14px 18px;
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    header span.logo {
+      background: #ffd700;
+      color: #000;
+      padding: 4px 8px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 700;
+      margin-right: 8px;
     }
     .container {
-      max-width: 980px;
+      max-width: 1024px;
       margin: 0 auto;
-      padding: 12px 12px 24px;
+      padding: 14px 10px 28px;
     }
+
+    /* カード風 */
+    .card {
+      background: #ffffff;
+      border-radius: 14px;
+      padding: 14px;
+      margin-bottom: 14px;
+      box-shadow: 0 4px 10px rgba(0,0,0,.18);
+      border: 1px solid #f0f0f0;
+    }
+
     .tabs {
       display: flex;
-      flex-wrap: wrap;
-      gap: 4px;
-      margin-bottom: 12px;
+      flex-wrap: nowrap;
+      overflow-x: auto;
+      gap: 6px;
+      margin-bottom: 10px;
     }
     .tab-btn {
       flex: 1;
-      padding: 8px;
-      font-size: 13px;
+      min-width: 110px;
+      padding: 10px 8px;
+      font-size: 14px;
       border: none;
-      border-radius: 4px 4px 0 0;
-      background: #ddd;
+      border-radius: 999px;
+      background: #333;
+      color: #fff;
       cursor: pointer;
+      white-space: nowrap;
     }
     .tab-btn.active {
-      background: #fff;
-      border-bottom: 2px solid #ffd700;
-      font-weight: bold;
+      background: #ffd700;
+      color: #000;
+      font-weight: 700;
+      box-shadow: 0 3px 8px rgba(0,0,0,.3);
     }
-    .panel {
-      display: none;
-      background: #fff;
-      border-radius: 0 4px 4px 4px;
-      padding: 12px;
-      box-shadow: 0 2px 6px rgba(0,0,0,.06);
-    }
-    .panel.active {
-      display: block;
-    }
+
+    .panel { display: none; }
+    .panel.active { display: block; }
+
     h2 {
-      font-size: 15px;
+      font-size: 16px;
       margin: 0 0 8px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
     }
+    h2 .emoji {
+      font-size: 18px;
+    }
+
     .row {
       display: flex;
       flex-wrap: wrap;
-      gap: 8px 16px;
-      margin-bottom: 12px;
+      gap: 10px 16px;
+      margin-bottom: 10px;
+    }
+    .field {
+      min-width: 140px;
+      flex: 1;
     }
     label {
       font-size: 12px;
       display: block;
-      margin-bottom: 2px;
+      margin-bottom: 4px;
+      color: #555;
     }
     input[type="text"],
     input[type="number"],
     input[type="date"],
     input[type="month"],
     select {
-      padding: 4px 6px;
-      font-size: 13px;
-      border-radius: 4px;
+      width: 100%;
+      padding: 8px 10px;
+      font-size: 15px;
+      border-radius: 999px;
       border: 1px solid #ccc;
-      min-width: 140px;
+      background: #fafafa;
     }
     input[type="number"] { text-align: right; }
+
     table {
       width: 100%;
       border-collapse: collapse;
-      font-size: 12px;
+      font-size: 13px;
       margin-bottom: 8px;
     }
     th, td {
-      border: 1px solid #ddd;
-      padding: 4px;
+      border: 1px solid #eee;
+      padding: 6px 4px;
       text-align: right;
     }
     th:first-child, td:first-child { text-align: left; }
     th {
-      background: #fafafa;
+      background: #fff8cf;
+      font-weight: 600;
+    }
+    tr:nth-child(even) td {
+      background: #fdfdfd;
     }
     tfoot td {
       font-weight: bold;
-      background: #fff8d6;
+      background: #ffe680;
     }
+
     textarea {
       width: 100%;
-      min-height: 60px;
-      padding: 4px 6px;
-      font-size: 12px;
-      border-radius: 4px;
+      min-height: 80px;
+      padding: 8px 10px;
+      font-size: 14px;
+      border-radius: 10px;
       border: 1px solid #ccc;
+      background: #fafafa;
     }
+
     .btn-row {
       display: flex;
       flex-wrap: wrap;
       gap: 8px;
-      margin: 8px 0;
+      margin: 10px 0 4px;
     }
     button {
       border: none;
-      border-radius: 4px;
-      padding: 6px 10px;
-      font-size: 12px;
+      border-radius: 999px;
+      padding: 8px 12px;
+      font-size: 14px;
       cursor: pointer;
     }
-    .btn-main { background: #ffd700; }
-    .btn-sub { background: #eee; }
-    .btn-danger { background: #ffcccc; }
+    .btn-main {
+      background: #ffd700;
+      color: #000;
+      font-weight: 700;
+      box-shadow: 0 3px 6px rgba(0,0,0,.3);
+    }
+    .btn-sub {
+      background: #f2f2f2;
+      color: #222;
+    }
+    .btn-danger {
+      background: #ff4d4f;
+      color: #fff;
+    }
+
     .note {
-      font-size: 10px;
-      color: #666;
+      font-size: 11px;
+      color: #777;
       margin-top: 4px;
     }
     .badge {
       display: inline-block;
-      background: #222;
+      background: #000;
       color: #ffd700;
       padding: 2px 6px;
       font-size: 10px;
-      border-radius: 3px;
+      border-radius: 6px;
       margin-left: 4px;
     }
     .sum-box {
-      font-size: 13px;
-      margin-top: 4px;
+      font-size: 15px;
+      margin-top: 6px;
+      font-weight: 600;
     }
     .sum-box span {
-      font-weight: bold;
+      font-size: 18px;
+      color: #e53935;
     }
+
+    .pill-tag {
+      display: inline-block;
+      background: #000;
+      color: #ffd700;
+      font-size: 11px;
+      padding: 2px 8px;
+      border-radius: 999px;
+      margin-right: 4px;
+    }
+
     @media (max-width:600px) {
-      input[type="text"],
-      input[type="number"],
-      input[type="date"],
-      input[type="month"],
-      select {
-        width: 100%;
+      header {
+        font-size: 16px;
+        padding: 10px 12px;
+      }
+      .container {
+        padding: 10px 8px 22px;
+      }
+      table {
+        font-size: 12px;
+      }
+      .tab-btn {
+        font-size: 13px;
+        padding: 8px 6px;
       }
     }
   </style>
 </head>
 <body>
 <header>
-  OFA 日報入力 &amp; 月次実績表（取引先 × 荷物種別 ＋ 単価設定）
+  <div>
+    <span class="logo">OFA</span>
+    OFA 日報 &amp; 月次実績ツール
+  </div>
 </header>
+
 <div class="container">
-  <div class="tabs">
-    <button class="tab-btn active" data-target="tab-daily">日報入力</button>
-    <button class="tab-btn" data-target="tab-unit">単価設定</button>
-    <button class="tab-btn" data-target="tab-monthly">月次実績</button>
-    <button class="tab-btn" data-target="tab-data">データ管理</button>
+
+  <div class="tabs card" style="margin-bottom:12px;">
+    <button class="tab-btn active" data-target="tab-daily">📅 日報入力</button>
+    <button class="tab-btn" data-target="tab-unit">💰 単価設定</button>
+    <button class="tab-btn" data-target="tab-monthly">📊 月次実績</button>
+    <button class="tab-btn" data-target="tab-data">🗄 バックアップ</button>
   </div>
 
   <!-- 日報入力 -->
   <div id="tab-daily" class="panel active">
-    <h2>日報入力 <span class="badge">単価は「単価設定」から一括読み込み</span></h2>
-    <div class="row">
-      <div>
-        <label for="dDate">日付</label>
-        <input type="date" id="dDate">
+    <div class="card">
+      <h2><span class="emoji">📅</span>日報入力 <span class="badge">単価は「単価設定」から自動反映</span></h2>
+
+      <div class="row">
+        <div class="field">
+          <label for="dDate">日付</label>
+          <input type="date" id="dDate">
+        </div>
+        <div class="field">
+          <label for="dName">氏名</label>
+          <input type="text" id="dName" placeholder="例：田村 紳助">
+        </div>
       </div>
-      <div>
-        <label for="dName">氏名</label>
-        <input type="text" id="dName" placeholder="氏名">
+
+      <div class="row">
+        <div class="field">
+          <label for="dArea">エリア</label>
+          <input type="text" id="dArea" placeholder="例：鹿児島市伊敷">
+        </div>
+        <div class="field">
+          <label for="dClient">取引先</label>
+          <select id="dClient">
+            <option value="">--選択してください--</option>
+            <option>ヤマト運輸</option>
+            <option>佐川急便</option>
+            <option>日本郵便</option>
+            <option>西濃運輸</option>
+            <option>福山通運</option>
+            <option>Amazon（SBS）</option>
+            <option>Amazon（丸和）</option>
+            <option>Amazon（祇園）</option>
+            <option>その他</option>
+          </select>
+        </div>
       </div>
-      <div>
-        <label for="dArea">エリア</label>
-        <input type="text" id="dArea" placeholder="例：鹿児島市伊敷">
-      </div>
-    </div>
-    <div class="row">
-      <div>
-        <label for="dClient">取引先</label>
-        <select id="dClient">
-          <option value="">--選択--</option>
-          <option>ヤマト運輸</option>
-          <option>佐川急便</option>
-          <option>日本郵便</option>
-          <option>西濃運輸</option>
-          <option>福山通運</option>
-          <option>Amazon（SBS）</option>
-          <option>Amazon（丸和）</option>
-          <option>Amazon（祇園）</option>
-          <option>その他</option>
-        </select>
-      </div>
-      <div style="align-self:flex-end;">
+
+      <div class="btn-row" style="margin-top:2px;">
         <button class="btn-sub" id="btnLoadUnitsFromSetting">この取引先の単価を読み込む</button>
+        <button class="btn-sub" id="btnToday">今日の日付にする</button>
       </div>
-    </div>
 
-    <h3 style="font-size:13px;margin:8px 0 4px;">荷物種別ごとの運賃設定</h3>
-    <table>
-      <thead>
-        <tr>
-          <th style="width:150px;">荷物種別</th>
-          <th style="width:90px;">単価（円）</th>
-          <th style="width:80px;">数量</th>
-          <th style="width:100px;">小計（円）</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr data-key="一般荷物（宅配）">
-          <td>一般荷物（宅配）</td>
-          <td><input type="number" min="0" step="1" class="unit" data-key="一般荷物（宅配）"></td>
-          <td><input type="number" min="0" step="1" class="qty" data-key="一般荷物（宅配）"></td>
-          <td class="sub" data-key="一般荷物（宅配）">0</td>
-        </tr>
-        <tr data-key="ポスティング">
-          <td>ポスティング</td>
-          <td><input type="number" min="0" step="1" class="unit" data-key="ポスティング"></td>
-          <td><input type="number" min="0" step="1" class="qty" data-key="ポスティング"></td>
-          <td class="sub" data-key="ポスティング">0</td>
-        </tr>
-        <tr data-key="メール">
-          <td>メール</td>
-          <td><input type="number" min="0" step="1" class="unit" data-key="メール"></td>
-          <td><input type="number" min="0" step="1" class="qty" data-key="メール"></td>
-          <td class="sub" data-key="メール">0</td>
-        </tr>
-        <tr data-key="一般集荷">
-          <td>一般集荷</td>
-          <td><input type="number" min="0" step="1" class="unit" data-key="一般集荷"></td>
-          <td><input type="number" min="0" step="1" class="qty" data-key="一般集荷"></td>
-          <td class="sub" data-key="一般集荷">0</td>
-        </tr>
-        <tr data-key="代引き">
-          <td>代引き</td>
-          <td><input type="number" min="0" step="1" class="unit" data-key="代引き"></td>
-          <td><input type="number" min="0" step="1" class="qty" data-key="代引き"></td>
-          <td class="sub" data-key="代引き">0</td>
-        </tr>
-        <tr data-key="チャーター便">
-          <td>チャーター便</td>
-          <td><input type="number" min="0" step="1" class="unit" data-key="チャーター便"></td>
-          <td><input type="number" min="0" step="1" class="qty" data-key="チャーター便" placeholder="通常は1日1件なら1"></td>
-          <td class="sub" data-key="チャーター便">0</td>
-        </tr>
-        <tr data-key="スポット便">
-          <td>スポット便</td>
-          <td><input type="number" min="0" step="1" class="unit" data-key="スポット便"></td>
-          <td><input type="number" min="0" step="1" class="qty" data-key="スポット便"></td>
-          <td class="sub" data-key="スポット便">0</td>
-        </tr>
-      </tbody>
-      <tfoot>
-        <tr>
-          <td>合計</td>
-          <td id="sum-unit" style="text-align:right;">-</td>
-          <td id="sum-qty" style="text-align:right;">0</td>
-          <td id="sum-amount" style="text-align:right;">0</td>
-        </tr>
-      </tfoot>
-    </table>
-    <div class="sum-box">この日の売上合計：<span id="dDayTotalBig">0</span> 円</div>
+      <h3 style="font-size:14px;margin:10px 0 6px;">
+        荷物種別ごとの内訳
+        <span class="pill-tag">宅配</span>
+        <span class="pill-tag">ポス</span>
+        <span class="pill-tag">メール</span>
+        <span class="pill-tag">チャーター</span>
+      </h3>
 
-    <div style="margin-top:8px;">
-      <label for="dMemo">メモ（クレーム・遅延・事故・備考など）</label>
-      <textarea id="dMemo"></textarea>
-    </div>
+      <table>
+        <thead>
+          <tr>
+            <th style="width:150px;">荷物種別</th>
+            <th style="width:90px;">単価（円）</th>
+            <th style="width:80px;">数量</th>
+            <th style="width:100px;">小計（円）</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr data-key="一般荷物（宅配）">
+            <td>一般荷物（宅配）</td>
+            <td><input type="number" min="0" step="1" class="unit" data-key="一般荷物（宅配）"></td>
+            <td><input type="number" min="0" step="1" class="qty" data-key="一般荷物（宅配）"></td>
+            <td class="sub" data-key="一般荷物（宅配）">0</td>
+          </tr>
+          <tr data-key="ポスティング">
+            <td>ポスティング</td>
+            <td><input type="number" min="0" step="1" class="unit" data-key="ポスティング"></td>
+            <td><input type="number" min="0" step="1" class="qty" data-key="ポスティング"></td>
+            <td class="sub" data-key="ポスティング">0</td>
+          </tr>
+          <tr data-key="メール">
+            <td>メール</td>
+            <td><input type="number" min="0" step="1" class="unit" data-key="メール"></td>
+            <td><input type="number" min="0" step="1" class="qty" data-key="メール"></td>
+            <td class="sub" data-key="メール">0</td>
+          </tr>
+          <tr data-key="一般集荷">
+            <td>一般集荷</td>
+            <td><input type="number" min="0" step="1" class="unit" data-key="一般集荷"></td>
+            <td><input type="number" min="0" step="1" class="qty" data-key="一般集荷"></td>
+            <td class="sub" data-key="一般集荷">0</td>
+          </tr>
+          <tr data-key="代引き">
+            <td>代引き</td>
+            <td><input type="number" min="0" step="1" class="unit" data-key="代引き"></td>
+            <td><input type="number" min="0" step="1" class="qty" data-key="代引き"></td>
+            <td class="sub" data-key="代引き">0</td>
+          </tr>
+          <tr data-key="チャーター便">
+            <td>チャーター便</td>
+            <td><input type="number" min="0" step="1" class="unit" data-key="チャーター便"></td>
+            <td><input type="number" min="0" step="1" class="qty" data-key="チャーター便" placeholder="例：1"></td>
+            <td class="sub" data-key="チャーター便">0</td>
+          </tr>
+          <tr data-key="スポット便">
+            <td>スポット便</td>
+            <td><input type="number" min="0" step="1" class="unit" data-key="スポット便"></td>
+            <td><input type="number" min="0" step="1" class="qty" data-key="スポット便"></td>
+            <td class="sub" data-key="スポット便">0</td>
+          </tr>
+        </tbody>
+        <tfoot>
+          <tr>
+            <td>合計</td>
+            <td id="sum-unit" style="text-align:right;">-</td>
+            <td id="sum-qty" style="text-align:right;">0</td>
+            <td id="sum-amount" style="text-align:right;">0</td>
+          </tr>
+        </tfoot>
+      </table>
 
-    <div class="btn-row">
-      <button class="btn-main" id="btnSave">この日を保存 / 上書き</button>
-      <button class="btn-sub" id="btnLoad">この日を読み込み</button>
-      <button class="btn-sub" id="btnToday">今日</button>
-      <button class="btn-danger" id="btnClearDay">この日のデータ削除</button>
-    </div>
-    <div class="note">
-      データはこのブラウザ内（LocalStorage）に保存されます。端末やブラウザを変えると共有されません。
+      <div class="sum-box">この日の売上合計：<span id="dDayTotalBig">0</span> 円</div>
+
+      <div style="margin-top:10px;">
+        <label for="dMemo">メモ（クレーム・遅延・事故・備考など）</label>
+        <textarea id="dMemo" placeholder="例）○○様 再配達、××番地チャーターなど"></textarea>
+      </div>
+
+      <div class="btn-row">
+        <button class="btn-main" id="btnSave">この日を保存 / 上書き</button>
+        <button class="btn-sub" id="btnLoad">この日を読み込み</button>
+        <button class="btn-danger" id="btnClearDay">この日のデータ削除</button>
+      </div>
+      <div class="note">
+        データはこの端末のブラウザ内（LocalStorage）に保存されます。端末・ブラウザを変えると共有されません。
+      </div>
     </div>
   </div>
 
   <!-- 単価設定 -->
   <div id="tab-unit" class="panel">
-    <h2>単価設定 <span class="badge">取引先 × 荷物種別ごとに事前登録</span></h2>
-    <div class="row">
-      <div>
-        <label for="uClient">取引先</label>
-        <select id="uClient">
-          <option value="">--選択--</option>
-          <option>ヤマト運輸</option>
-          <option>佐川急便</option>
-          <option>日本郵便</option>
-          <option>西濃運輸</option>
-          <option>福山通運</option>
-          <option>Amazon（SBS）</option>
-          <option>Amazon（丸和）</option>
-          <option>Amazon（祇園）</option>
-          <option>その他</option>
-        </select>
+    <div class="card">
+      <h2><span class="emoji">💰</span>単価設定 <span class="badge">取引先 × 荷物種別ごとに登録</span></h2>
+      <div class="row">
+        <div class="field">
+          <label for="uClient">取引先</label>
+          <select id="uClient">
+            <option value="">--選択してください--</option>
+            <option>ヤマト運輸</option>
+            <option>佐川急便</option>
+            <option>日本郵便</option>
+            <option>西濃運輸</option>
+            <option>福山通運</option>
+            <option>Amazon（SBS）</option>
+            <option>Amazon（丸和）</option>
+            <option>Amazon（祇園）</option>
+            <option>その他</option>
+          </select>
+        </div>
+        <div class="field" style="align-self:flex-end;flex:0 0 auto;">
+          <div class="btn-row">
+            <button class="btn-sub" id="btnUnitLoad">読み込み</button>
+            <button class="btn-main" id="btnUnitSave">保存</button>
+          </div>
+        </div>
       </div>
-      <div style="align-self:flex-end;">
-        <button class="btn-sub" id="btnUnitLoad">読み込み</button>
-        <button class="btn-main" id="btnUnitSave">保存</button>
-      </div>
-    </div>
 
-    <table>
-      <thead>
-        <tr>
-          <th style="width:160px;">荷物種別</th>
-          <th style="width:100px;">単価（円）</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr>
-          <td>一般荷物（宅配）</td>
-          <td><input type="number" min="0" step="1" class="u-unit" data-key="一般荷物（宅配）"></td>
-        </tr>
-        <tr>
-          <td>ポスティング</td>
-          <td><input type="number" min="0" step="1" class="u-unit" data-key="ポスティング"></td>
-        </tr>
-        <tr>
-          <td>メール</td>
-          <td><input type="number" min="0" step="1" class="u-unit" data-key="メール"></td>
-        </tr>
-        <tr>
-          <td>一般集荷</td>
-          <td><input type="number" min="0" step="1" class="u-unit" data-key="一般集荷"></td>
-        </tr>
-        <tr>
-          <td>代引き</td>
-          <td><input type="number" min="0" step="1" class="u-unit" data-key="代引き"></td>
-        </tr>
-        <tr>
-          <td>チャーター便</td>
-          <td><input type="number" min="0" step="1" class="u-unit" data-key="チャーター便"></td>
-        </tr>
-        <tr>
-          <td>スポット便</td>
-          <td><input type="number" min="0" step="1" class="u-unit" data-key="スポット便"></td>
-        </tr>
-      </tbody>
-    </table>
-    <div class="note">
-      例）ヤマト運輸：宅配165円、代引き190円、ポスティング64円…などを登録しておくと、日報入力画面で「この取引先の単価を読み込む」ボタンで自動反映されます。
+      <table>
+        <thead>
+          <tr>
+            <th style="width:160px;">荷物種別</th>
+            <th style="width:110px;">単価（円）</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>一般荷物（宅配）</td>
+            <td><input type="number" min="0" step="1" class="u-unit" data-key="一般荷物（宅配）" placeholder="例：165"></td>
+          </tr>
+          <tr>
+            <td>ポスティング</td>
+            <td><input type="number" min="0" step="1" class="u-unit" data-key="ポスティング" placeholder="例：64"></td>
+          </tr>
+          <tr>
+            <td>メール</td>
+            <td><input type="number" min="0" step="1" class="u-unit" data-key="メール"></td>
+          </tr>
+          <tr>
+            <td>一般集荷</td>
+            <td><input type="number" min="0" step="1" class="u-unit" data-key="一般集荷"></td>
+          </tr>
+          <tr>
+            <td>代引き</td>
+            <td><input type="number" min="0" step="1" class="u-unit" data-key="代引き" placeholder="例：190"></td>
+          </tr>
+          <tr>
+            <td>チャーター便</td>
+            <td><input type="number" min="0" step="1" class="u-unit" data-key="チャーター便" placeholder="日額"></td>
+          </tr>
+          <tr>
+            <td>スポット便</td>
+            <td><input type="number" min="0" step="1" class="u-unit" data-key="スポット便"></td>
+          </tr>
+        </tbody>
+      </table>
+      <div class="note">
+        例）ヤマト運輸：宅配165円／代引き190円／ポス64円 などを登録しておくと、<br>
+        日報入力で「この取引先の単価を読み込む」ボタンで自動反映されます。
+      </div>
     </div>
   </div>
 
   <!-- 月次実績 -->
   <div id="tab-monthly" class="panel">
-    <h2>月次実績 表示・集計</h2>
-    <div class="row">
-      <div>
-        <label for="mMonth">表示月</label>
-        <input type="month" id="mMonth">
+    <div class="card">
+      <h2><span class="emoji">📊</span>月次実績</h2>
+      <div class="row">
+        <div class="field">
+          <label for="mMonth">表示月</label>
+          <input type="month" id="mMonth">
+        </div>
+        <div class="field" style="align-self:flex-end;flex:0 0 auto;">
+          <div class="btn-row">
+            <button class="btn-main" id="btnShowMonth">この月の実績を表示</button>
+            <button class="btn-sub" id="btnExportCsv">CSVダウンロード</button>
+          </div>
+        </div>
       </div>
-      <div style="align-self:flex-end;">
-        <button class="btn-main" id="btnShowMonth">この月の実績を表示</button>
+      <div id="monthlyResult" style="margin-top:8px;"></div>
+      <div class="note">
+        日別に「取引先 × 荷物種別」の数量と売上、月合計を表示します。
       </div>
-      <div style="align-self:flex-end;">
-        <button class="btn-sub" id="btnExportCsv">CSVダウンロード</button>
-      </div>
-    </div>
-    <div id="monthlyResult"></div>
-    <div class="note">
-      日別に「取引先 × 荷物種別」の数量と売上、月合計を表示します。
     </div>
   </div>
 
   <!-- データ管理 -->
   <div id="tab-data" class="panel">
-    <h2>データ管理（バックアップ・復元）</h2>
-    <p style="font-size:12px;">
-      保存済み日報データ（LocalStorage）のバックアップと復元ができます。
-    </p>
-    <div class="btn-row">
-      <button class="btn-sub" id="btnBackup">バックアップ（JSON表示）</button>
-      <button class="btn-sub" id="btnImport">JSONから復元</button>
-      <button class="btn-danger" id="btnAllClear">全データ削除</button>
-    </div>
-    <textarea id="dataArea" placeholder="バックアップJSONの表示・貼り付け欄"></textarea>
-    <div class="note">
-      JSONをコピーしてメモ帳などに保存しておくと、端末変更時などに貼り付けて復元できます。
+    <div class="card">
+      <h2><span class="emoji">🗄</span>データ管理（バックアップ・復元）</h2>
+      <p class="note">
+        保存済み日報データ（LocalStorage）のバックアップと復元ができます。
+      </p>
+      <div class="btn-row">
+        <button class="btn-sub" id="btnBackup">バックアップ（JSON表示）</button>
+        <button class="btn-sub" id="btnImport">JSONから復元</button>
+        <button class="btn-danger" id="btnAllClear">全データ削除</button>
+      </div>
+      <textarea id="dataArea" placeholder="バックアップJSONの表示・貼り付け欄"></textarea>
+      <div class="note">
+        JSONをコピーしてメモアプリなどに保存しておくと、端末変更時などに貼り付けて復元できます。
+      </div>
     </div>
   </div>
+
 </div>
 
 <script>
@@ -433,7 +540,7 @@
     return arr[dt.getDay()];
   }
 
-  // Tabs
+  // タブ切り替え
   document.querySelectorAll(".tab-btn").forEach(btn => {
     btn.addEventListener("click", () => {
       document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
@@ -443,6 +550,7 @@
     });
   });
 
+  // 日報計算
   function recalcDaily() {
     let sumQty = 0;
     let sumAmount = 0;
@@ -469,6 +577,7 @@
     }
   });
 
+  // 今日ボタン
   document.getElementById("btnToday").addEventListener("click", () => {
     const today = new Date();
     const y = today.getFullYear();
@@ -584,7 +693,7 @@
     alert("単価を読み込みました（" + client + "）。");
   });
 
-  // 月次実績
+  // 月次実績テーブル
   function buildMonthlyTable(monthStr) {
     const container = document.getElementById("monthlyResult");
     container.innerHTML = "";
@@ -659,6 +768,7 @@
     buildMonthlyTable(month);
   });
 
+  // CSV出力
   document.getElementById("btnExportCsv").addEventListener("click", () => {
     const month = document.getElementById("mMonth").value;
     if (!month) { alert("表示月を選んでください。"); return; }
