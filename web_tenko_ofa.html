@@ -9,12 +9,12 @@
     
     <style>
         /* -------------------------------------------------- */
-        /* CSS: ポップなデザインとOFAカラー (赤、青、黄、ペールグリーン) */
+        /* CSS: ポップなデザインとOFAカラー (赤、青、黄、薄い緑/オレンジ) */
         /* -------------------------------------------------- */
         :root {
-            --color-ofa-red: #E74C3C;      /* 赤 */
-            --color-ofa-blue: #3498DB;     /* 青 */
-            --color-ofa-yellow: #F1C40F;   /* 黄 */
+            --color-ofa-red: #E74C3C;      /* 赤 (ボタン、必須マーク) */
+            --color-ofa-blue: #3498DB;     /* 青 (タイトル) */
+            --color-ofa-yellow: #F1C40F;   /* 黄 (アクセント) */
             --color-background: #E8F8F5;   /* ベース背景色 (薄い緑/ペールグリーン) */
             --color-base-orange: #FDEBD0;  /* ページベース背景 (薄いオレンジ) */
             --color-text-dark: #2C3E50;
@@ -25,12 +25,11 @@
             font-family: 'Noto Sans JP', sans-serif;
             margin: 0;
             padding: 0;
-            background-color: var(--color-background);
+            background-color: var(--color-background); /* 薄い緑 */
             color: var(--color-text-dark);
             line-height: 1.6;
         }
         
-        /* ページベースの背景色を薄いオレンジに */
         .container {
             max-width: 600px;
             margin: 30px auto;
@@ -149,12 +148,12 @@
             font-weight: bold;
             cursor: pointer;
             transition: background-color 0.3s, transform 0.1s;
-            box-shadow: 0 4px 0 var(--color-text-dark);
+            box-shadow: 0 4px 0 #A93226; /* ボタンの影の色を修正 */
         }
         
         button:hover {
             background-color: #C0392B; /* 少し暗い赤 */
-            box-shadow: 0 2px 0 var(--color-text-dark);
+            box-shadow: 0 2px 0 #A93226;
             transform: translateY(2px);
         }
         
@@ -364,14 +363,14 @@
 
 <script>
     /* -------------------------------------------------- */
-    /* JavaScript: データの取得とGASへの送信処理 (変更なし) */
+    /* JavaScript: データの取得とGASへの送信処理 */
     /* -------------------------------------------------- */
 
     // ★★★ 1. 設定情報: ここを修正してください ★★★
-    // 直前に発行された新しいGASのWebアプリURLに置き換えてください
-    const GAS_URL = 'https://script.google.com/macros/s/AKfycbzNysioqG-A027lCsW5mc3hJpwJ15iVERw38hwKmScnm4eqCUROsRCWWvIHfyP5t0K8/exec'; 
+    // 最新のGASのWebアプリURLに置き換えています
+    const GAS_URL = 'https://script.google.com/macros/s/AKfycbxOPZMwBHtDkvTeGpLpX0fMK0c9ufVCvqHc0qfIx0DvcPrmDNpTvgDwrzuIvUgLB5ok/exec'; 
     
-    // 運行管理者グループのLINE Notifyトークンをここに固定で設定します
+    // 運行管理者グループのLINE Notifyトークンをここに固定で設定してください
     const ADMIN_LINE_TOKEN = 'YOUR_ADMIN_GROUP_LINE_TOKEN'; 
     // ★★★ ---------------------------------- ★★★
 
@@ -525,14 +524,14 @@
         const dataToSend = new FormData();
         dataToSend.append('json', JSON.stringify(formData));
         
+        // ファイルデータ (Base64) を文字列としてそのまま送信
         if (licenseBase64) {
-            // ファイルの拡張子とMIMEタイプを指定してBlobを作成 (GAS側で処理できるように)
-            dataToSend.append('licenseFile', Utilities.newBlob(Utilities.base64Decode(licenseBase64), 'image/jpeg', 'license.jpg'));
+            dataToSend.append('licenseFile', licenseBase64);
         }
         if (carAbnormalBase64) {
-            dataToSend.append('carAbnormalFile', Utilities.newBlob(Utilities.base64Decode(carAbnormalBase64), 'image/jpeg', 'abnormal.jpg'));
+            dataToSend.append('carAbnormalFile', carAbnormalBase64);
         }
-        
+
         // GASへの送信
         try {
             const response = await fetch(GAS_URL, {
@@ -540,7 +539,16 @@
                 body: dataToSend,
             });
             
-            const result = await response.json();
+            // レスポンスがJSONでない場合の処理を追加
+            let result;
+            try {
+                result = await response.json();
+            } catch (e) {
+                 // GASからの応答がHTMLやテキストだった場合
+                showMessage('GASからの応答形式が不正です。GASコードとデプロイ設定を確認してください。', 'error');
+                console.error('GAS Response Error:', await response.text());
+                return;
+            }
 
             if (result.status === 'SUCCESS') {
                 showMessage(result.message + ' メールで控えをご確認ください。', 'success');
