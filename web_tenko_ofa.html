@@ -140,6 +140,7 @@
     input[type="time"],
     input[type="number"],
     input[type="email"],
+    input[type="tel"],
     textarea,
     select {
       width: 100%;
@@ -177,6 +178,12 @@
       margin-right: 14px;
       font-weight: 500;
       margin-top: 2px;
+    }
+
+    input[type="file"] {
+      background: #fff;
+      font-size: 12px;
+      padding: 6px 8px;
     }
 
     button.main-btn {
@@ -355,6 +362,13 @@
     .pdf-value {
       width: 66%;
     }
+    .pdf-img {
+      max-width: 160px;
+      max-height: 120px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      margin-top: 4px;
+    }
   </style>
 </head>
 <body>
@@ -398,8 +412,11 @@
         <label for="company" class="required-mark">所属会社</label>
         <input type="text" id="company" required>
 
-        <label for="email">連絡先（任意）</label>
-        <input type="email" id="email" placeholder="メールアドレスやLINE名などメモでもOK">
+        <label for="phone">電話番号</label>
+        <input type="tel" id="phone" placeholder="例: 090-1234-5678">
+
+        <label for="email">メールアドレス</label>
+        <input type="email" id="email" placeholder="例: info@example.com">
 
         <label for="client">案件（荷主）</label>
         <input type="text" id="client">
@@ -407,15 +424,15 @@
         <label for="area">エリア</label>
         <input type="text" id="area">
 
-        <label for="base">出庫ベース</label>
-        <input type="text" id="base">
-
-        <label for="startPlace">出庫場所</label>
-        <input type="text" id="startPlace">
+        <label for="licensePhoto">運転免許証 写真（任意）</label>
+        <input type="file" id="licensePhoto" accept="image/*">
 
         <!-- 出発点呼 -->
         <div id="section_departure">
           <div class="section-title">2. 出発前チェック</div>
+
+          <label for="startPlace">出庫場所</label>
+          <input type="text" id="startPlace" placeholder="例: 鹿児島営業所 前など">
 
           <label for="workTime">出勤時間</label>
           <input type="time" id="workTime">
@@ -537,6 +554,9 @@
 
           <label for="abnormalDetail">運行中の異常の詳細</label>
           <textarea id="abnormalDetail"></textarea>
+
+          <label for="vehiclePhoto">車両異常の写真（任意）</label>
+          <input type="file" id="vehiclePhoto" accept="image/*">
         </div>
 
         <button type="submit" class="main-btn">この記録をブラウザに保存</button>
@@ -571,7 +591,7 @@
 </div>
 
 <script>
-  const STORAGE_KEY = 'ofaGroupTenkoRecords_v2';
+  const STORAGE_KEY = 'ofaGroupTenkoRecords_v3';
 
   const form = document.getElementById('tenkoForm');
   const messageBox = document.getElementById('message');
@@ -584,6 +604,9 @@
   const startMeterInput = document.getElementById('startMeter');
   const returnMeterInput = document.getElementById('returnMeter');
   const distanceInput = document.getElementById('distance');
+
+  const licensePhotoInput = document.getElementById('licensePhoto');
+  const vehiclePhotoInput = document.getElementById('vehiclePhoto');
 
   const historyList = document.getElementById('historyList');
   const pdfOutput = document.getElementById('pdfOutput');
@@ -598,11 +621,24 @@
   // 初期日付
   document.getElementById('date').value = new Date().toISOString().slice(0,10);
 
+  // ローカルストレージ
+  function loadRecords() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      return raw ? JSON.parse(raw) : [];
+    } catch(e) {
+      console.error(e);
+      return [];
+    }
+  }
+  function saveRecords(records) {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(records));
+  }
+
   // モードによる表示切替
   function updateFormVisibility() {
     const modeEl = document.querySelector('input[name="mode"]:checked');
     if (!modeEl) {
-      // 未選択時は出発モード想定で出しておく
       sectionDeparture.style.display = 'block';
       sectionCheck.style.display = 'block';
       sectionReturn.style.display = 'none';
@@ -623,387 +659,14 @@
     modeRadios[i].addEventListener('change', updateFormVisibility);
   }
 
-  // 距離自動計算
-  function calcDistance() {
-    const s = parseFloat(startMeterInput.value);
-    const e = parseFloat(returnMeterInput.value);
-    if (!isNaN(s) && !isNaN(e) && e >= s) {
-      distanceInput.value = (e - s).toFixed(1);
-    } else {
-      distanceInput.value = '';
-    }
-  }
-  startMeterInput.addEventListener('input', calcDistance);
-  returnMeterInput.addEventListener('input', calcDistance);
-
-  // メッセージ表示
-  function showMessage(text, type) {
-    messageBox.textContent = text;
-    messageBox.className = 'message-box ' + type;
-    messageBox.style.display = 'block';
-    setTimeout(() => {
-      messageBox.style.display = 'none';
-    }, 3000);
-  }
-
-  // ローカルストレージヘルパー
-  function loadRecords() {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      return raw ? JSON.parse(raw) : [];
-    } catch(e) {
-      console.error(e);
-      return [];
-    }
-  }
-  function saveRecords(records) {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(records));
-  }
-
-  // レコード保存（出発と帰庫を結合）
-  function saveRecord(record) {
-    let records = loadRecords();
-
-    if (record.mode === '帰庫点呼（日報）') {
-      const idx = records.findIndex(r =>
-        (r.mode === '出発点呼' || r.mode === '運行完了') &&
-        r.date === record.date &&
-        r.driverName === record.driverName &&
-        r.company === record.company &&
-        !r.returnTime // まだ帰庫入ってないもの
-      );
-      if (idx !== -1) {
-        const base = records[idx];
-        const merged = {
-          ...base,
-          ...record,
-          mode: '運行完了'
-        };
-        // 距離自動計算
-        const s = parseFloat(merged.startMeter);
-        const e = parseFloat(merged.returnMeter);
-        if (!isNaN(s) && !isNaN(e) && e >= s) {
-          merged.distance = (e - s).toFixed(1);
-        }
-        records[idx] = merged;
-      } else {
-        // 出発がない単独帰庫
-        records.push(record);
-      }
-    } else {
-      // 出発点呼はそのまま追加
-      records.push(record);
-    }
-
-    // 日付＋時間順で新しい順に
-    records.sort((a, b) => (b.id || 0) - (a.id || 0));
-    saveRecords(records);
-  }
-
-  // フォーム送信
-  form.addEventListener('submit', function(e) {
-    e.preventDefault();
-
-    const modeEl = document.querySelector('input[name="mode"]:checked');
-    if (!modeEl) {
-      showMessage('出発点呼／帰庫点呼のモードを選択してください。', 'error');
-      return;
-    }
-    const mode = modeEl.value;
-
-    const date = document.getElementById('date').value;
-    const driverName = document.getElementById('driverName').value.trim();
-    const company = document.getElementById('company').value.trim();
-
-    if (!date || !driverName || !company) {
-      showMessage('日付・ドライバー名・所属会社は必須です。', 'error');
-      return;
-    }
-
-    const baseData = {
-      id: Date.now(),
-      date,
-      driverName,
-      company,
-      email: document.getElementById('email').value.trim(),
-      client: document.getElementById('client').value.trim(),
-      area: document.getElementById('area').value.trim(),
-      base: document.getElementById('base').value.trim(),
-      startPlace: document.getElementById('startPlace').value.trim(),
-      mode,
-      createdAt: new Date().toISOString()
-    };
-
-    let record = { ...baseData };
-
-    if (mode === '出発点呼') {
-      const startTime = document.getElementById('startTime').value;
-      const condition = document.getElementById('condition').value;
-      const temp = document.getElementById('temp').value;
-      const alcoholValue = document.getElementById('alcoholValue').value;
-      const startMeter = document.getElementById('startMeter').value;
-      const drinkEl = document.querySelector('input[name="drink"]:checked');
-      const check_brake = document.querySelector('input[name="check_brake"]:checked');
-      const check_tire = document.querySelector('input[name="check_tire"]:checked');
-      const check_light = document.querySelector('input[name="check_light"]:checked');
-      const check_camera = document.querySelector('input[name="check_camera"]:checked');
-      const check_body = document.querySelector('input[name="check_body"]:checked');
-      const check_other = document.querySelector('input[name="check_other"]:checked');
-
-      if (!startTime || !condition || !temp || !alcoholValue || !startMeter ||
-          !drinkEl || !check_brake || !check_tire || !check_light ||
-          !check_camera || !check_body || !check_other) {
-        showMessage('出発点呼の必須項目が未入力です。赤い印のある項目を確認してください。', 'error');
-        return;
-      }
-
-      record = {
-        ...record,
-        workTime: document.getElementById('workTime').value,
-        startTime,
-        condition,
-        sleep: document.getElementById('sleep').value,
-        drink: drinkEl.value,
-        medicine: (document.querySelector('input[name="medicine"]:checked') || {}).value || 'なし',
-        temp,
-        alcoholValue,
-        startMeter,
-        memo: document.getElementById('memo').value,
-        check_brake: check_brake.value,
-        check_tire: check_tire.value,
-        check_light: check_light.value,
-        check_camera: check_camera.value,
-        check_body: check_body.value,
-        check_other: check_other.value,
-        check_note: document.getElementById('check_note').value
-      };
-    } else { // 帰庫点呼
-      const returnPlace = document.getElementById('returnPlace').value.trim();
-      const returnTime = document.getElementById('returnTime').value;
-      const returnMeter = document.getElementById('returnMeter').value;
-      const codStatusEl = document.querySelector('input[name="codStatus"]:checked');
-
-      if (!returnPlace || !returnTime || !returnMeter || !codStatusEl) {
-        showMessage('帰庫点呼の必須項目が未入力です。赤い印のある項目を確認してください。', 'error');
-        return;
-      }
-
-      // ここでも距離計算試みる（出発メーターが残っていれば）
-      let distanceVal = document.getElementById('distance').value;
-      if (!distanceVal) {
-        const s = parseFloat(startMeterInput.value);
-        const e = parseFloat(returnMeter);
-        if (!isNaN(s) && !isNaN(e) && e >= s) {
-          distanceVal = (e - s).toFixed(1);
-        }
-      }
-
-      record = {
-        ...record,
-        returnPlace,
-        returnTime,
-        returnMeter,
-        distance: distanceVal || '',
-        rest: document.getElementById('rest').value,
-        codStatus: codStatusEl.value,
-        codAmount: document.getElementById('codAmount').value,
-        roadStatus: document.getElementById('roadStatus').value,
-        abnormalDetail: document.getElementById('abnormalDetail').value
-      };
-    }
-
-    saveRecord(record);
-    showMessage(mode + 'の記録をブラウザに保存しました。', 'success');
-
-    form.reset();
-    document.getElementById('date').value = new Date().toISOString().slice(0,10);
-    updateFormVisibility();
-    renderHistory();
-    showTab('history');
-  });
-
-  // 履歴表示（フィルタ付き）
-  function renderHistory() {
+  // 出発メーター取得（帰庫時用）
+  function findStartMeterFromRecords(date, driverName, company) {
     const records = loadRecords();
-    historyList.innerHTML = '';
-
-    pdfOutput.style.display = 'none';
-    btnPrintPdf.style.display = 'none';
-    btnBackList.style.display = 'none';
-
-    let filtered = records.slice();
-
-    const fromVal = filterDateFrom.value;
-    const toVal = filterDateTo.value;
-    const driverVal = filterDriver.value.trim();
-
-    if (fromVal) {
-      filtered = filtered.filter(r => r.date >= fromVal);
-    }
-    if (toVal) {
-      filtered = filtered.filter(r => r.date <= toVal);
-    }
-    if (driverVal) {
-      filtered = filtered.filter(r => (r.driverName || '').includes(driverVal));
-    }
-
-    if (!filtered.length) {
-      historyList.innerHTML = '<p style="text-align:center;color:#777;padding:14px;">該当する記録がありません。</p>';
-      return;
-    }
-
-    filtered.forEach(rec => {
-      const item = document.createElement('div');
-      const isCompleted = rec.mode === '運行完了';
-      const modeLabel =
-        rec.mode === '運行完了' ? '出発〜帰庫'
-        : rec.mode === '帰庫点呼（日報）' ? '帰庫のみ'
-        : '出発のみ';
-
-      item.className = 'record-item' + (isCompleted ? ' completed' : '');
-      item.innerHTML = `
-        <div class="record-item-title">${rec.date} / ${rec.driverName}</div>
-        <div class="record-item-sub">
-          [${modeLabel}] ${rec.company || ''} ${rec.client ? ' / ' + rec.client : ''}
-        </div>
-      `;
-      item.onclick = () => showRecordDetail(rec);
-      historyList.appendChild(item);
-    });
-  }
-
-  // 記録詳細 → PDF表示
-  function showRecordDetail(rec) {
-    historyList.innerHTML = '';
-    pdfOutput.style.display = 'block';
-    btnPrintPdf.style.display = 'inline-block';
-    btnBackList.style.display = 'inline-block';
-
-    pdfOutput.innerHTML = generateRecordHtml(rec);
-  }
-
-  function safe(val) {
-    return val || '-';
-  }
-
-  function generateRecordHtml(rec) {
-    const modeLabel =
-      rec.mode === '運行完了' ? '出発点呼〜帰庫点呼'
-      : rec.mode === '帰庫点呼（日報）' ? '帰庫点呼／日報'
-      : '出発点呼';
-
-    let html = `
-      <div class="pdf-doc">
-        <div class="pdf-header">
-          <div class="pdf-header-main">OFA GROUP Web点呼・日報 (${modeLabel})</div>
-          <div class="pdf-header-sub">このPDFはドライバー個人の記録用です</div>
-        </div>
-
-        <div class="pdf-section">
-          <div class="pdf-section-title">基本情報</div>
-          <div class="pdf-row"><div class="pdf-label">日付</div><div class="pdf-value">${safe(rec.date)}</div></div>
-          <div class="pdf-row"><div class="pdf-label">ドライバー名</div><div class="pdf-value">${safe(rec.driverName)}</div></div>
-          <div class="pdf-row"><div class="pdf-label">所属会社</div><div class="pdf-value">${safe(rec.company)}</div></div>
-          <div class="pdf-row"><div class="pdf-label">案件</div><div class="pdf-value">${safe(rec.client)}</div></div>
-          <div class="pdf-row"><div class="pdf-label">エリア</div><div class="pdf-value">${safe(rec.area)}</div></div>
-          <div class="pdf-row"><div class="pdf-label">出庫ベース</div><div class="pdf-value">${safe(rec.base)}</div></div>
-          <div class="pdf-row"><div class="pdf-label">出庫場所</div><div class="pdf-value">${safe(rec.startPlace)}</div></div>
-        </div>
-    `;
-
-    // 出発データがあれば
-    if (rec.startTime || rec.startMeter || rec.condition || rec.temp || rec.alcoholValue) {
-      html += `
-        <div class="pdf-section">
-          <div class="pdf-section-title">出発点呼</div>
-          <div class="pdf-row"><div class="pdf-label">出勤時間</div><div class="pdf-value">${safe(rec.workTime)}</div></div>
-          <div class="pdf-row"><div class="pdf-label">出発時間</div><div class="pdf-value">${safe(rec.startTime)}</div></div>
-          <div class="pdf-row"><div class="pdf-label">体調</div><div class="pdf-value">${safe(rec.condition)}</div></div>
-          <div class="pdf-row"><div class="pdf-label">睡眠時間</div><div class="pdf-value">${safe(rec.sleep)}</div></div>
-          <div class="pdf-row"><div class="pdf-label">飲酒(24h)</div><div class="pdf-value">${safe(rec.drink)}</div></div>
-          <div class="pdf-row"><div class="pdf-label">服薬</div><div class="pdf-value">${safe(rec.medicine)}</div></div>
-          <div class="pdf-row"><div class="pdf-label">体温</div><div class="pdf-value">${rec.temp ? rec.temp + ' ℃' : '-'}</div></div>
-          <div class="pdf-row"><div class="pdf-label">アルコール値</div><div class="pdf-value">${rec.alcoholValue ? rec.alcoholValue + ' mg/L' : '-'}</div></div>
-          <div class="pdf-row"><div class="pdf-label">出発前メーター</div><div class="pdf-value">${rec.startMeter ? rec.startMeter + ' km' : '-'}</div></div>
-          <div class="pdf-row"><div class="pdf-label">メモ</div><div class="pdf-value">${safe(rec.memo)}</div></div>
-        </div>
-
-        <div class="pdf-section">
-          <div class="pdf-section-title">日常点検</div>
-          <div class="pdf-row"><div class="pdf-label">ブレーキ</div><div class="pdf-value">${safe(rec.check_brake)}</div></div>
-          <div class="pdf-row"><div class="pdf-label">タイヤ</div><div class="pdf-value">${safe(rec.check_tire)}</div></div>
-          <div class="pdf-row"><div class="pdf-label">灯火類</div><div class="pdf-value">${safe(rec.check_light)}</div></div>
-          <div class="pdf-row"><div class="pdf-label">カメラ・ミラー</div><div class="pdf-value">${safe(rec.check_camera)}</div></div>
-          <div class="pdf-row"><div class="pdf-label">車体外観</div><div class="pdf-value">${safe(rec.check_body)}</div></div>
-          <div class="pdf-row"><div class="pdf-label">その他</div><div class="pdf-value">${safe(rec.check_other)}</div></div>
-          <div class="pdf-row"><div class="pdf-label">点検メモ</div><div class="pdf-value">${safe(rec.check_note)}</div></div>
-        </div>
-      `;
-    }
-
-    // 帰庫データがあれば
-    if (rec.returnTime || rec.returnMeter || rec.returnPlace || rec.codStatus || rec.roadStatus || rec.abnormalDetail) {
-      html += `
-        <div class="pdf-section">
-          <div class="pdf-section-title">帰庫点呼／日報</div>
-          <div class="pdf-row"><div class="pdf-label">帰庫場所</div><div class="pdf-value">${safe(rec.returnPlace)}</div></div>
-          <div class="pdf-row"><div class="pdf-label">帰庫時間</div><div class="pdf-value">${safe(rec.returnTime)}</div></div>
-          <div class="pdf-row"><div class="pdf-label">帰庫メーター</div><div class="pdf-value">${rec.returnMeter ? rec.returnMeter + ' km' : '-'}</div></div>
-          <div class="pdf-row"><div class="pdf-label">総走行距離</div><div class="pdf-value">${rec.distance ? rec.distance + ' km' : '-'}</div></div>
-          <div class="pdf-row"><div class="pdf-label">休憩時間・場所</div><div class="pdf-value">${safe(rec.rest)}</div></div>
-          <div class="pdf-row"><div class="pdf-label">代金入金状況</div><div class="pdf-value">${safe(rec.codStatus)}</div></div>
-          <div class="pdf-row"><div class="pdf-label">代金入金額</div><div class="pdf-value">${rec.codAmount ? rec.codAmount + ' 円' : '-'}</div></div>
-          <div class="pdf-row"><div class="pdf-label">道路・運行状況</div><div class="pdf-value">${safe(rec.roadStatus)}</div></div>
-          <div class="pdf-row"><div class="pdf-label">異常の詳細</div><div class="pdf-value">${safe(rec.abnormalDetail)}</div></div>
-        </div>
-      `;
-    }
-
-    html += '</div>';
-    return html;
-  }
-
-  // PDF印刷ボタン
-  btnPrintPdf.addEventListener('click', () => {
-    window.print(); // PDF保存・LINE共有などはユーザー側で自由に
-  });
-
-  // 一覧に戻る
-  btnBackList.addEventListener('click', () => {
-    renderHistory();
-  });
-
-  // 履歴全リセット
-  btnResetHistory.addEventListener('click', () => {
-    if (!confirm('本当にこのブラウザ内の履歴を全て削除しますか？')) return;
-    localStorage.removeItem(STORAGE_KEY);
-    renderHistory();
-    showMessage('履歴をリセットしました。', 'success');
-  });
-
-  // フィルタ変更で即時反映
-  filterDateFrom.addEventListener('change', renderHistory);
-  filterDateTo.addEventListener('change', renderHistory);
-  filterDriver.addEventListener('input', renderHistory);
-
-  // タブ切り替え
-  function showTab(tab) {
-    document.getElementById('tab_form').style.display = (tab === 'form') ? 'block' : 'none';
-    document.getElementById('tab_history').style.display = (tab === 'history') ? 'block' : 'none';
-
-    const buttons = document.querySelectorAll('.tab-button');
-    buttons.forEach(btn => btn.classList.remove('active'));
-    document.querySelector(`.tab-button[onclick="showTab('${tab}')"]`).classList.add('active');
-
-    if (tab === 'history') {
-      renderHistory();
-    }
-  }
-
-  // 初期表示
-  updateFormVisibility();
-  renderHistory();
-</script>
-
-</body>
-</html>
+    const found = records.find(r =>
+      (r.mode === '運行完了' || r.mode === '出発点呼') &&
+      r.date === date &&
+      r.driverName === driverName &&
+      r.company === company &&
+      r.startMeter
+    );
+    return found ?
