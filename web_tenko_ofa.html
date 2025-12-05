@@ -5,12 +5,21 @@
   <title>OFA GROUP 乗務記録・日常点検・運転日報</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
+    /* ------------------------------------------------------------------- */
+    /* CSS: スタイルは元のファイルを維持しつつ、一部の要素を調整しています */
+    /* ------------------------------------------------------------------- */
     * { box-sizing: border-box; }
+    :root {
+      --color-primary: #22c55e;
+      --color-primary-dark: #16a34a; 
+      --color-required: #ef4444;
+      --color-background: #e6f7ec;
+    }
     body {
       margin: 0;
       padding: 0;
       font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, "Noto Sans JP", sans-serif;
-      background: #e6f7ec;
+      background: var(--color-background);
       color: #222;
     }
     .wrapper {
@@ -24,9 +33,11 @@
       box-shadow: 0 10px 25px rgba(0,0,0,0.08);
       padding: 20px 18px 24px;
       margin-bottom: 16px;
+      transition: opacity 0.3s ease; /* セクション切り替え時のアニメーション */
     }
+    .card.hidden { display: none; } /* 非表示セクション用 */
     .header-card {
-      background: linear-gradient(135deg, #22c55e, #16a34a);
+      background: linear-gradient(135deg, var(--color-primary), var(--color-primary-dark));
       color: #fff;
       text-align: left;
       position: relative;
@@ -104,7 +115,7 @@
       margin-bottom: 12px;
     }
     .note-important {
-      color: #dc2626;
+      color: var(--color-required);
       font-weight: 700;
     }
 
@@ -115,7 +126,7 @@
       margin: 12px 2px 4px;
     }
     label span.req {
-      color: #ef4444;
+      color: var(--color-required);
       margin-left: 4px;
       font-weight: 700;
     }
@@ -137,7 +148,7 @@
     input:focus,
     textarea:focus,
     select:focus {
-      border-color: #22c55e;
+      border-color: var(--color-primary);
       box-shadow: 0 0 0 1px rgba(34,197,94,0.35);
       background: #fff;
     }
@@ -174,9 +185,9 @@
       display: none;
     }
     .pill.selected {
-      background: #22c55e;
+      background: var(--color-primary);
       color: #fff;
-      border-color: #16a34a;
+      border-color: var(--color-primary-dark);
       font-weight: 600;
     }
 
@@ -199,7 +210,7 @@
       padding: 16px 12px;
       font-size: 16px;
       font-weight: 800;
-      background: linear-gradient(135deg, #22c55e, #16a34a);
+      background: linear-gradient(135deg, var(--color-primary), var(--color-primary-dark));
       color: #fff;
       box-shadow: 0 10px 20px rgba(16,185,129,0.4);
       cursor: pointer;
@@ -208,6 +219,7 @@
       justify-content: center;
       gap: 8px;
       margin-top: 12px;
+      transition: background 0.3s, box-shadow 0.3s;
     }
     .submit-btn span.icon {
       font-size: 18px;
@@ -224,10 +236,10 @@
       line-height: 1.5;
     }
     .status-success {
-      color: #16a34a;
+      color: var(--color-primary-dark);
     }
     .status-error {
-      color: #dc2626;
+      color: var(--color-required);
     }
 
     @media (max-width: 480px) {
@@ -239,7 +251,6 @@
 </head>
 <body>
   <div class="wrapper">
-    <!-- ヘッダー -->
     <div class="card header-card">
       <div class="logo-box">
         <span>O</span><span>F</span><span>A</span>
@@ -253,147 +264,143 @@
       </div>
     </div>
 
-    <!-- 01 基本情報 -->
-    <div class="card">
+    <div class="card" id="section-01">
       <div class="section-title">
         <div class="section-chip">01 基本情報</div>
         <span>本日の情報を入力してください</span>
       </div>
       <div class="note">
         ※ 日付は自動で本日が入ります。<br />
-        <span class="note-important">※ 朝の「出発点呼」で1回送信し、夜の「帰庫点呼」で同じフォームをもう一度送信してください。</span><br />
-        ※ メンバーシップLINEなどからアクセスして、毎日「出発前」に入力してください。
+        <span class="note-important">※ **朝の出発前**と**夜の帰庫後**で、このフォームを<span id="submitCountText">2回送信</span>してください。</span><br />
       </div>
 
       <label>日付 <span class="req">必須</span></label>
       <input type="text" id="date" readonly />
 
       <label>ドライバー名 <span class="req">必須</span></label>
-      <input type="text" id="driverName" placeholder="山田 太郎 など" />
+      <input type="text" id="driverName" placeholder="山田 太郎 など" data-local-save="true" />
 
       <label>所属会社 <span class="req">必須</span></label>
-      <input type="text" id="company" placeholder="株式会社OFA など" />
+      <input type="text" id="company" placeholder="株式会社OFA など" data-local-save="true" />
 
       <label>本日の主な案件（荷主・現場名） <span class="req">必須</span></label>
-      <input type="text" id="client" placeholder="Amazon / ヤマト / 佐川 / 日本郵便 など" />
+      <input type="text" id="client" placeholder="Amazon / ヤマト / 佐川 / 日本郵便 など" data-local-save="true" />
 
       <label>エリア <span class="req">必須</span></label>
-      <input type="text" id="area" placeholder="鹿児島市〇〇 / 熊本市〇〇 など" />
+      <input type="text" id="area" placeholder="鹿児島市〇〇 / 熊本市〇〇 など" data-local-save="true" />
 
       <label>出庫ベース（担当拠点） <span class="req">必須</span></label>
-      <input type="text" id="base" placeholder="伊敷営業所 / 〇〇デポ など" />
+      <input type="text" id="base" placeholder="伊敷営業所 / 〇〇デポ など" data-local-save="true" />
 
       <label>出庫場所（駐車場・センターなど） <span class="req">必須</span></label>
-      <input type="text" id="startPlace" placeholder="鹿児島市〇〇駐車場 など" />
+      <input type="text" id="startPlace" placeholder="鹿児島市〇〇駐車場 など" data-local-save="true" />
 
       <label>メールアドレス（控え送信用）</label>
-      <input type="email" id="email" placeholder="example@ofa-group.jp" />
+      <input type="email" id="email" placeholder="example@ofa-group.jp" data-local-save="true" />
       <div class="help">※ 入力すると、点呼結果のコピーが届きます。</div>
     </div>
 
-    <!-- 02 出発前入力 -->
-    <div class="card">
+    <div class="card" id="section-02">
       <div class="section-title">
-        <div class="section-chip">02 出発前入力</div>
-        <span>出勤前〜出発時の状態を記録</span>
+        <div class="section-chip">02 出発前点呼</div>
+        <span>出勤前〜出発時の状態を記録 <span class="req">（朝必須）</span></span>
       </div>
 
       <div class="two-col">
         <div>
-          <label>出勤時間</label>
+          <label>出勤時間 <span class="req">必須</span></label>
           <input type="time" id="workTime" />
         </div>
         <div>
-          <label>出発時間</label>
+          <label>出発時間 <span class="req">必須</span></label>
           <input type="time" id="startTime" />
         </div>
       </div>
 
-      <label>体調</label>
+      <label>体調 <span class="req">必須</span></label>
       <div class="radio-group" data-name="condition">
         <label class="pill"><input type="radio" name="condition" value="良好">良好</label>
         <label class="pill"><input type="radio" name="condition" value="普通">普通</label>
         <label class="pill"><input type="radio" name="condition" value="不良">不良</label>
       </div>
 
-      <label>前日睡眠時間（h）</label>
+      <label>前日睡眠時間（h） <span class="req">必須</span></label>
       <input type="number" step="0.1" id="sleep" placeholder="例：6.5" />
 
-      <label>飲酒（過去24h）</label>
+      <label>飲酒（過去24h） <span class="req">必須</span></label>
       <div class="radio-group" data-name="drink">
         <label class="pill"><input type="radio" name="drink" value="なし">なし</label>
         <label class="pill"><input type="radio" name="drink" value="あり">あり</label>
       </div>
 
-      <label>服薬</label>
+      <label>服薬 <span class="req">必須</span></label>
       <div class="radio-group" data-name="medicine">
         <label class="pill"><input type="radio" name="medicine" value="なし">なし</label>
         <label class="pill"><input type="radio" name="medicine" value="あり">あり</label>
       </div>
 
-      <label>体温（℃）</label>
+      <label>体温（℃） <span class="req">必須</span></label>
       <input type="number" step="0.1" id="temp" placeholder="例：36.5" />
 
-      <label>アルコール検知器（mg/L）</label>
+      <label>アルコール検知器（mg/L） <span class="req">必須</span></label>
       <input type="number" step="0.01" id="alcoholValue" placeholder="0.00" />
 
-      <label>出発前メーター（km）</label>
+      <label>出発前メーター（km） <span class="req">必須</span></label>
       <input type="number" step="0.1" id="startMeter" placeholder="例：47772" />
 
       <label>運転免許証アップロード</label>
       <input type="file" id="licenseFile" accept="image/*" />
-      <div class="help">※ 免許証写真を1枚アップロードしてください。</div>
+      <div class="help">※ 初回のみアップロードしてください。</div>
 
       <label>メモ・注意事項</label>
       <textarea id="memo" placeholder="体調・車両の気になる点・当日の注意事項など"></textarea>
     </div>
 
-    <!-- 03 日常点検 -->
-    <div class="card">
+    <div class="card" id="section-03">
       <div class="section-title">
         <div class="section-chip">03 日常点検</div>
-        <span>出発前の日常点検を入力</span>
+        <span>出発前の日常点検を入力 <span class="req">（朝必須）</span></span>
       </div>
       <div class="note">
         ○：問題なし ／ △：要確認 ／ ×：要整備 の3段階で入力してください。
       </div>
 
-      <label>ブレーキ</label>
+      <label>ブレーキ <span class="req">必須</span></label>
       <div class="radio-group" data-name="check_brake">
         <label class="pill"><input type="radio" name="check_brake" value="○">○</label>
         <label class="pill"><input type="radio" name="check_brake" value="△">△</label>
         <label class="pill"><input type="radio" name="check_brake" value="×">×</label>
       </div>
 
-      <label>タイヤ（亀裂・摩耗・空気圧）</label>
+      <label>タイヤ（亀裂・摩耗・空気圧） <span class="req">必須</span></label>
       <div class="radio-group" data-name="check_tire">
         <label class="pill"><input type="radio" name="check_tire" value="○">○</label>
         <label class="pill"><input type="radio" name="check_tire" value="△">△</label>
         <label class="pill"><input type="radio" name="check_tire" value="×">×</label>
       </div>
 
-      <label>灯火類（ヘッドライト・ブレーキランプ等）</label>
+      <label>灯火類（ヘッドライト・ブレーキランプ等） <span class="req">必須</span></label>
       <div class="radio-group" data-name="check_light">
         <label class="pill"><input type="radio" name="check_light" value="○">○</label>
         <label class="pill"><input type="radio" name="check_light" value="△">△</label>
         <label class="pill"><input type="radio" name="check_light" value="×">×</label>
       </div>
 
-      <label>バックカメラ・ミラー類</label>
+      <label>バックカメラ・ミラー類 <span class="req">必須</span></label>
       <div class="radio-group" data-name="check_camera">
         <label class="pill"><input type="radio" name="check_camera" value="○">○</label>
         <label class="pill"><input type="radio" name="check_camera" value="△">△</label>
         <label class="pill"><input type="radio" name="check_camera" value="×">×</label>
       </div>
 
-      <label>車体外観（傷・凹み・汚れ等）</label>
+      <label>車体外観（傷・凹み・汚れ等） <span class="req">必須</span></label>
       <div class="radio-group" data-name="check_body">
         <label class="pill"><input type="radio" name="check_body" value="○">○</label>
         <label class="pill"><input type="radio" name="check_body" value="△">△</label>
         <label class="pill"><input type="radio" name="check_body" value="×">×</label>
       </div>
 
-      <label>その他（オイル・水回り・積載物固定など）</label>
+      <label>その他（オイル・水回り・積載物固定など） <span class="req">必須</span></label>
       <div class="radio-group" data-name="check_other">
         <label class="pill"><input type="radio" name="check_other" value="○">○</label>
         <label class="pill"><input type="radio" name="check_other" value="△">△</label>
@@ -408,38 +415,36 @@
       <div class="help">※ 異常がある場合のみ1枚アップロードしてください。（Driveに保存され、URLが日報に記録されます）</div>
     </div>
 
-    <!-- 04 帰庫後入力 -->
-    <div class="card">
+    <div class="card" id="section-04">
       <div class="section-title">
-        <div class="section-chip">04 帰庫後入力</div>
-        <span>業務終了時に入力してください</span>
+        <div class="section-chip">04 帰庫後点呼・日報</div>
+        <span>業務終了時に入力してください <span class="req">（夜必須）</span></span>
       </div>
       <div class="note">
-        一日の運行が終わったら、帰庫後の情報を入力してから送信してください。<br />
-        ※ 朝の「出発点呼」と夜の「帰庫点呼」で、同じフォームを2回送信します。
+        一日の運行が終わったら、帰庫後の情報を入力してから送信してください。
       </div>
 
-      <label>帰庫場所</label>
+      <label>帰庫場所 <span class="req">必須</span></label>
       <input type="text" id="returnPlace" placeholder="鹿児島市〇〇駐車場 など" />
 
       <div class="two-col">
         <div>
-          <label>帰庫時間</label>
+          <label>帰庫時間 <span class="req">必須</span></label>
           <input type="time" id="returnTime" />
         </div>
         <div>
-          <label>帰庫メーター（km）</label>
+          <label>帰庫メーター（km） <span class="req">必須</span></label>
           <input type="number" step="0.1" id="returnMeter" placeholder="例：48210" />
         </div>
       </div>
 
       <label>走行距離（km）</label>
-      <input type="number" step="0.1" id="distance" placeholder="※ 分かる場合は入力" />
+      <input type="number" step="0.1" id="distance" placeholder="※ 自動で計算されます" readonly />
 
-      <label>休憩時間・休憩場所</label>
+      <label>休憩時間・休憩場所 <span class="req">必須</span></label>
       <input type="text" id="rest" placeholder="例：合計1h / SA・コンビニなど" />
 
-      <label>代金入金状況</label>
+      <label>代金入金状況 <span class="req">必須</span></label>
       <div class="radio-group" data-name="codStatus">
         <label class="pill"><input type="radio" name="codStatus" value="対象なし">対象なし</label>
         <label class="pill"><input type="radio" name="codStatus" value="入金済">入金済</label>
@@ -449,7 +454,7 @@
       <label>代金入金金額（円）</label>
       <input type="number" step="1" id="codAmount" placeholder="例：12500" />
 
-      <label>道路・運行状況（遅延・事故・渋滞など）</label>
+      <label>道路・運行状況（遅延・事故・渋滞など） <span class="req">必須</span></label>
       <textarea id="roadStatus" placeholder="異常なしの場合は『異常なし』と入力"></textarea>
 
       <label>異常の詳細（あれば）</label>
@@ -460,8 +465,8 @@
       </div>
 
       <button id="submitBtn" class="submit-btn">
-        <span class="icon">✅</span>
-        <span>OFA GROUP Web点呼を送信する</span>
+        <span class="icon">☀️</span>
+        <span id="submitBtnText">出発点呼を送信する</span>
       </button>
       <div id="status" class="status-message"></div>
     </div>
@@ -470,17 +475,151 @@
   <script>
     // ★ Apps Script の WebアプリURL
     const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyzpyi0Mw4uDd_Wji1q0VcalWp5_mRMucEDdzaV_Vr6OPx2_ecqh7ZviPARq5MHPQvC/exec';
+    
+    // Local Storage Key
+    const LOCAL_STORAGE_KEY = 'ofaTenkoData';
+    const LOCAL_STORAGE_DATE_KEY = 'ofaTenkoDate';
 
-    // 日付を自動セット（YYYY/MM/DD）
-    (function setToday() {
-      const d = new Date();
-      const y = d.getFullYear();
-      const m = ('0' + (d.getMonth() + 1)).slice(-2);
-      const day = ('0' + d.getDate()).slice(-2);
-      document.getElementById('date').value = `${y}/${m}/${day}`;
-    })();
+    // フォームセクション
+    const sections = {
+        base: document.getElementById('section-01'),
+        morning: [document.getElementById('section-02'), document.getElementById('section-03')],
+        evening: [document.getElementById('section-04')]
+    };
 
-    // pill選択の見た目切替
+    // -------------------------------------------------------------------
+    // 初期処理
+    // -------------------------------------------------------------------
+
+    /**
+     * 日付を自動セット (YYYY/MM/DD)
+     */
+    function setToday() {
+        const d = new Date();
+        const y = d.getFullYear();
+        const m = ('0' + (d.getMonth() + 1)).slice(-2);
+        const day = ('0' + d.getDate()).slice(-2);
+        const todayStr = `${y}/${m}/${day}`;
+        document.getElementById('date').value = todayStr;
+        return todayStr;
+    }
+
+    /**
+     * LocalStorageから基本情報とラジオボタンの状態を読み込む
+     */
+    function loadLocalStorage() {
+        const todayStr = document.getElementById('date').value;
+        const storedDate = localStorage.getItem(LOCAL_STORAGE_DATE_KEY);
+
+        // 日付が変わっていたら古いデータをクリア
+        if (storedDate !== todayStr) {
+            localStorage.removeItem(LOCAL_STORAGE_KEY);
+            return;
+        }
+
+        const storedData = JSON.parse(localStorage.getItem(LOCAL_STORAGE_KEY) || '{}');
+
+        // テキスト・メールフィールドの復元
+        document.querySelectorAll('input[data-local-save="true"]').forEach(el => {
+            if (storedData[el.id]) {
+                el.value = storedData[el.id];
+            }
+        });
+        
+        // ラジオボタンの状態を復元
+        document.querySelectorAll('.radio-group').forEach(group => {
+            const name = group.getAttribute('data-name');
+            if (storedData[name]) {
+                const input = document.querySelector(`input[name="${name}"][value="${storedData[name]}"]`);
+                if (input) {
+                    // pill選択の見た目も復元
+                    input.checked = true;
+                    input.closest('.pill').classList.add('selected');
+                }
+            }
+        });
+    }
+
+    /**
+     * LocalStorageに基本情報とラジオボタンの状態を保存する
+     */
+    function saveLocalStorage() {
+        const dataToSave = {};
+        
+        // テキスト・メールフィールドの保存
+        document.querySelectorAll('input[data-local-save="true"]').forEach(el => {
+            dataToSave[el.id] = el.value.trim();
+        });
+
+        // ラジオボタンの状態を保存
+        document.querySelectorAll('.radio-group').forEach(group => {
+            const name = group.getAttribute('data-name');
+            const checked = document.querySelector(`input[name="${name}"]:checked`);
+            if (checked) {
+                dataToSave[name] = checked.value;
+            }
+        });
+
+        localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(dataToSave));
+        localStorage.setItem(LOCAL_STORAGE_DATE_KEY, document.getElementById('date').value);
+    }
+    
+    /**
+     * フォームの表示状態を制御する
+     * 必須項目(driverName, company, date)が埋まっていれば朝/夜の判定を行う
+     */
+    async function updateFormVisibility() {
+        const driverName = document.getElementById('driverName').value.trim();
+        const company = document.getElementById('company').value.trim();
+        const date = document.getElementById('date').value;
+        
+        // 基本情報が入力されていない場合は、全て表示（初回入力）
+        if (!driverName || !company || !date) {
+            sections.morning.forEach(s => s.classList.remove('hidden'));
+            sections.evening.forEach(s => s.classList.remove('hidden'));
+            document.getElementById('submitBtnText').textContent = '出発点呼を送信する';
+            document.getElementById('submitBtn').querySelector('.icon').textContent = '☀️';
+            document.getElementById('submitCountText').textContent = '2回送信';
+            return;
+        }
+        
+        // --- 過去の送信履歴を確認（App Script経由で） ---
+        const checkUrl = `${SCRIPT_URL}?action=check&driverName=${encodeURIComponent(driverName)}&date=${encodeURIComponent(date)}`;
+        
+        let sentBefore = false;
+        try {
+            const response = await fetch(checkUrl);
+            const result = await response.json();
+            sentBefore = result.sentBefore || false; 
+        } catch(e) {
+            console.error("送信履歴チェックエラー", e);
+            // エラー時も全てのフォームを表示して、ユーザーに判断させる
+            sentBefore = false;
+        }
+        
+        if (sentBefore) {
+            // ★夜（帰庫後）の入力モード
+            sections.morning.forEach(s => s.classList.add('hidden')); // 朝のセクションを非表示
+            sections.evening.forEach(s => s.classList.remove('hidden')); // 夜のセクションを表示
+            document.getElementById('submitBtnText').textContent = '帰庫点呼・日報を送信する';
+            document.getElementById('submitBtn').querySelector('.icon').textContent = '🌙';
+            document.getElementById('submitCountText').textContent = '朝の送信完了済';
+        } else {
+            // ★朝（出発前）の入力モード
+            sections.morning.forEach(s => s.classList.remove('hidden')); // 朝のセクションを表示
+            sections.evening.forEach(s => s.classList.add('hidden')); // 夜のセクションを非表示
+            document.getElementById('submitBtnText').textContent = '出発点呼を送信する';
+            document.getElementById('submitBtn').querySelector('.icon').textContent = '☀️';
+            document.getElementById('submitCountText').textContent = '2回送信';
+        }
+    }
+
+
+    // -------------------------------------------------------------------
+    // イベントリスナー
+    // -------------------------------------------------------------------
+
+    // pill選択の見た目切替とLocalStorage保存
     document.querySelectorAll('.radio-group').forEach(group => {
       group.addEventListener('click', e => {
         const label = e.target.closest('.pill');
@@ -495,8 +634,38 @@
         });
         input.checked = true;
         label.classList.add('selected');
+        saveLocalStorage(); // 選択時も保存
       });
     });
+
+    // LocalStorage保存のためのinput/changeリスナー
+    document.querySelectorAll('input[data-local-save="true"], textarea, input[type="time"], input[type="number"]').forEach(el => {
+        el.addEventListener('input', saveLocalStorage);
+    });
+    
+    // 基本情報の入力があったらフォーム表示を更新
+    document.getElementById('driverName').addEventListener('input', updateFormVisibility);
+    document.getElementById('company').addEventListener('input', updateFormVisibility);
+
+    // 走行距離の自動計算
+    document.getElementById('returnMeter').addEventListener('input', () => {
+        const start = parseFloat(document.getElementById('startMeter').value);
+        const end = parseFloat(document.getElementById('returnMeter').value);
+        const distanceEl = document.getElementById('distance');
+        
+        if (!isNaN(start) && !isNaN(end) && end >= start) {
+            distanceEl.value = (end - start).toFixed(1);
+        } else if (!isNaN(end) && start === 0) { // startMeterが未入力の場合の対応
+             distanceEl.value = '';
+        } else if (isNaN(end)) {
+            distanceEl.value = '';
+        }
+        saveLocalStorage();
+    });
+
+    // -------------------------------------------------------------------
+    // 送信処理
+    // -------------------------------------------------------------------
 
     function getRadioValue(name) {
       const r = document.querySelector('input[name="' + name + '"]:checked');
@@ -508,23 +677,50 @@
       const status = document.getElementById('status');
       status.textContent = '';
       status.className = 'status-message';
+      
+      const isMorningMode = !sections.evening[0].classList.contains('hidden'); // 夜のセクションが表示されていなければ朝モード
 
-      // 必須チェック
+      // 必須チェック項目を定義
       const requiredIds = ['driverName', 'company', 'client', 'area', 'base', 'startPlace'];
+      let requiredRadios = [];
+      
+      if (isMorningMode) {
+          // 朝モードの必須項目
+          requiredIds.push('workTime', 'startTime', 'sleep', 'alcoholValue', 'startMeter');
+          requiredRadios = ['condition', 'drink', 'medicine', 'check_brake', 'check_tire', 'check_light', 'check_camera', 'check_body', 'check_other'];
+      } else {
+          // 夜モードの必須項目
+          requiredIds.push('returnPlace', 'returnTime', 'returnMeter', 'rest', 'roadStatus');
+          requiredRadios = ['codStatus'];
+      }
+
+
+      // 1. テキスト/時間/数値の必須チェック
       for (const id of requiredIds) {
         const el = document.getElementById(id);
-        if (!el.value.trim()) {
-          status.textContent = '未入力の必須項目があります：' + id;
+        if (el && !el.value.trim()) {
+          status.textContent = '未入力の必須項目があります：' + (el.previousElementSibling.textContent.split(' ')[0] || id);
           status.classList.add('status-error');
           el.focus();
           return;
         }
       }
 
+      // 2. ラジオボタンの必須チェック
+      for (const name of requiredRadios) {
+          if (!getRadioValue(name)) {
+              const labelText = document.querySelector(`div[data-name="${name}"]`).previousElementSibling.textContent.split(' ')[0];
+              status.textContent = '未選択の必須項目があります：' + labelText;
+              status.classList.add('status-error');
+              return;
+          }
+      }
+
       btn.disabled = true;
       btn.innerHTML = '<span class="icon">⏳</span><span>送信中です…</span>';
 
       const payload = {
+        // 基本情報 (両モードで送信)
         date: document.getElementById('date').value,
         driverName: document.getElementById('driverName').value.trim(),
         company: document.getElementById('company').value.trim(),
@@ -533,7 +729,11 @@
         base: document.getElementById('base').value.trim(),
         startPlace: document.getElementById('startPlace').value.trim(),
         email: document.getElementById('email').value.trim(),
-
+        
+        // モード識別用
+        mode: isMorningMode ? '出発点呼' : '帰庫点呼', 
+        
+        // 02 出発前入力 (朝モードで送信)
         workTime: document.getElementById('workTime').value,
         startTime: document.getElementById('startTime').value,
         condition: getRadioValue('condition'),
@@ -544,7 +744,8 @@
         alcoholValue: document.getElementById('alcoholValue').value,
         startMeter: document.getElementById('startMeter').value,
         memo: document.getElementById('memo').value,
-
+        
+        // 03 日常点検 (朝モードで送信)
         check_brake: getRadioValue('check_brake'),
         check_tire: getRadioValue('check_tire'),
         check_light: getRadioValue('check_light'),
@@ -553,6 +754,7 @@
         check_other: getRadioValue('check_other'),
         check_note: document.getElementById('check_note').value,
 
+        // 04 帰庫後入力 (夜モードで送信)
         returnPlace: document.getElementById('returnPlace').value.trim(),
         returnTime: document.getElementById('returnTime').value,
         returnMeter: document.getElementById('returnMeter').value,
@@ -566,9 +768,10 @@
 
       const formData = new FormData();
       formData.append('json', JSON.stringify(payload));
-
+      
+      // ファイルは朝・夜それぞれでチェック
       const licenseFile = document.getElementById('licenseFile').files[0];
-      if (licenseFile) {
+      if (licenseFile && isMorningMode) {
         formData.append('licenseFile', licenseFile);
       }
 
@@ -578,22 +781,52 @@
       }
 
       try {
-        await fetch(SCRIPT_URL, {
+        const response = await fetch(SCRIPT_URL, {
           method: 'POST',
           body: formData
         });
+        
+        if (!response.ok) {
+            throw new Error('サーバーからの応答がエラーです');
+        }
 
-        status.textContent = '送信しました。お疲れ様でした！';
+        status.textContent = (isMorningMode ? '出発点呼' : '帰庫点呼・日報') + 'を送信しました。お疲れ様でした！';
         status.classList.add('status-success');
+        
+        // 成功した場合、フォームをリセットし、表示を更新
+        if (isMorningMode) {
+             // 朝点呼成功後は、フォームをクリアせずに夜モードに移行するためにupdateFormVisibilityを再実行
+             await updateFormVisibility();
+        } else {
+             // 夜点呼成功後は、LocalStorageとフォームをクリア
+             localStorage.removeItem(LOCAL_STORAGE_KEY);
+             localStorage.removeItem(LOCAL_STORAGE_DATE_KEY);
+             document.querySelector('form') ? document.querySelector('form').reset() : location.reload();
+        }
+
+
       } catch (err) {
         console.error(err);
         status.textContent = '送信エラーが発生しました。電波状況を確認して、再度お試しください。';
         status.classList.add('status-error');
       } finally {
         btn.disabled = false;
-        btn.innerHTML = '<span class="icon">✅</span><span>OFA GROUP Web点呼を送信する</span>';
+        btn.innerHTML = `<span class="icon">${isMorningMode ? '☀️' : '🌙'}</span><span id="submitBtnText">${isMorningMode ? '出発点呼を送信する' : '帰庫点呼・日報を送信する'}</span>`;
+        // エラー後、ボタンテキストが元のモードに戻るように再設定
+        updateFormVisibility(); 
       }
     });
+
+    // -------------------------------------------------------------------
+    // ページロード時の実行
+    // -------------------------------------------------------------------
+    (async function initialize() {
+        setToday();
+        loadLocalStorage();
+        // 初期化完了後、非同期でフォームの表示状態を決定
+        await updateFormVisibility();
+    })();
+
   </script>
 </body>
 </html>
