@@ -30,28 +30,29 @@
     }
 
     .container {
-      max-width: 640px;
-      margin: 30px auto;
+      max-width: 680px;
+      margin: 24px auto;
       background: #fff;
       border-radius: 14px;
-      box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+      box-shadow: 0 4px 18px rgba(0,0,0,0.14);
       overflow: hidden;
     }
 
     /* ヘッダー */
     .header-area {
-      background: linear-gradient(135deg, #38C172, #27AE60);
+      background: linear-gradient(135deg, #38C172, #2ECC71);
       color: #fff;
-      padding: 22px 18px 18px;
+      padding: 20px 18px 16px;
       text-align: center;
     }
     .ofa-logo-block {
-      display: flex;
+      display: inline-flex;
       align-items: center;
       justify-content: center;
       font-weight: 900;
-      letter-spacing: .08em;
-      margin-bottom: 8px;
+      letter-spacing: .1em;
+      margin-bottom: 6px;
+      font-size: 15px;
     }
     .ofa-logo-circle {
       background: #fff;
@@ -62,32 +63,32 @@
       margin-right: 8px;
     }
     .header-main {
-      font-size: 20px;
+      font-size: 19px;
       font-weight: 800;
     }
     .header-sub {
       font-size: 11px;
-      margin-top: 4px;
+      margin-top: 3px;
       opacity: 0.9;
     }
     .header-badge {
       margin-top: 6px;
       display: inline-block;
-      background: rgba(255,255,255,0.18);
+      background: rgba(0,0,0,0.18);
       border-radius: 999px;
       padding: 2px 10px;
       font-size: 10px;
     }
 
     .content-wrapper {
-      padding: 16px 16px 20px;
+      padding: 14px 14px 18px;
     }
 
     /* タブ */
     .tab-buttons {
       display: flex;
       gap: 4px;
-      margin-bottom: 14px;
+      margin-bottom: 12px;
       border-bottom: 2px solid #eee;
     }
     .tab-button {
@@ -111,10 +112,10 @@
     }
 
     .section-title {
-      margin-top: 18px;
+      margin-top: 16px;
       margin-bottom: 8px;
-      padding: 8px 10px;
-      font-size: 14px;
+      padding: 7px 10px;
+      font-size: 13px;
       font-weight: 700;
       background: #F8F9F9;
       border-left: 4px solid var(--color-ofa-yellow);
@@ -123,7 +124,7 @@
 
     label {
       display: block;
-      margin-top: 10px;
+      margin-top: 9px;
       font-size: 13px;
       font-weight: 600;
     }
@@ -142,11 +143,11 @@
     textarea,
     select {
       width: 100%;
-      padding: 9px 10px;
-      margin-top: 4px;
+      padding: 8px 10px;
+      margin-top: 3px;
       border-radius: 8px;
       border: 1px solid var(--color-border);
-      font-size: 14px;
+      font-size: 13px;
       background: #FAFFFA;
     }
 
@@ -164,8 +165,8 @@
     }
 
     .radio-group {
-      margin-top: 6px;
-      padding: 8px 8px;
+      margin-top: 5px;
+      padding: 7px 8px;
       background: #F8F9F9;
       border-radius: 8px;
       border: 1px solid var(--color-border);
@@ -181,13 +182,13 @@
     button.main-btn {
       display: block;
       width: 100%;
-      margin-top: 20px;
-      padding: 12px;
+      margin-top: 18px;
+      padding: 11px;
       border-radius: 10px;
       border: none;
       background: var(--color-ofa-red);
       color: #fff;
-      font-size: 16px;
+      font-size: 15px;
       font-weight: 700;
       cursor: pointer;
       box-shadow: 0 3px 0 #A93226;
@@ -202,8 +203,8 @@
     }
 
     .message-box {
-      margin-top: 12px;
-      padding: 8px 10px;
+      margin-top: 10px;
+      padding: 7px 9px;
       border-radius: 8px;
       font-size: 12px;
       display: none;
@@ -219,16 +220,37 @@
       color: #C0392B;
     }
 
-    /* 履歴一覧 */
+    /* 履歴エリア */
+    .history-top {
+      font-size: 11px;
+      color: #777;
+      margin-bottom: 6px;
+    }
+    .history-filters {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-bottom: 8px;
+    }
+    .history-filters input {
+      font-size: 11px;
+      padding: 5px 6px;
+      border-radius: 999px;
+      border: 1px solid #ddd;
+      background:#FBFFFB;
+      flex: 1;
+      min-width: 120px;
+    }
+
     .history-actions {
       display: flex;
       gap: 6px;
-      margin-bottom: 10px;
+      margin-bottom: 8px;
       flex-wrap: wrap;
     }
     .sub-btn {
       flex: 1;
-      min-width: 140px;
+      min-width: 120px;
       padding: 7px 8px;
       border-radius: 999px;
       border: none;
@@ -254,22 +276,22 @@
       border-radius: 8px;
       border: 1px solid #ddd;
       background: #fff;
-      margin-bottom: 8px;
+      margin-bottom: 7px;
       cursor: pointer;
-      font-size: 13px;
+      font-size: 12px;
       border-left: 4px solid var(--color-ofa-blue);
       transition: background .15s, transform .05s;
+    }
+    .record-item.completed {
+      border-left-color: var(--color-ofa-green);
     }
     .record-item:hover {
       background: #f5f5f5;
       transform: translateY(-1px);
     }
-    .record-item.completed {
-      border-left-color: var(--color-ofa-green);
-    }
     .record-item-title {
       font-weight: 700;
-      font-size: 13px;
+      font-size: 12px;
     }
     .record-item-sub {
       font-size: 11px;
@@ -292,38 +314,38 @@
 
     .pdf-doc {
       font-family: 'Noto Sans JP', sans-serif;
-      padding: 18px 18px 24px;
+      padding: 16px 16px 22px;
       border: 1px solid #ddd;
     }
     .pdf-header {
       text-align: center;
       border-bottom: 2px solid var(--color-ofa-green);
-      padding-bottom: 8px;
-      margin-bottom: 10px;
+      padding-bottom: 6px;
+      margin-bottom: 8px;
     }
-    .pdf-header-title {
-      font-size: 16px;
+    .pdf-header-main {
+      font-size: 15px;
       font-weight: 700;
       color: var(--color-ofa-blue);
     }
     .pdf-header-sub {
-      font-size: 11px;
+      font-size: 10px;
       color: #555;
     }
     .pdf-section {
-      margin-top: 10px;
+      margin-top: 8px;
       border-top: 1px solid #eee;
-      padding-top: 6px;
+      padding-top: 4px;
     }
     .pdf-section-title {
-      font-size: 13px;
+      font-size: 12px;
       font-weight: 700;
-      margin-bottom: 4px;
+      margin-bottom: 3px;
       color: var(--color-ofa-blue);
     }
     .pdf-row {
       display: flex;
-      font-size: 12px;
+      font-size: 11px;
       padding: 2px 0;
     }
     .pdf-label {
@@ -344,14 +366,14 @@
       OFA GROUP
     </div>
     <div class="header-main">Web点呼・日報フォーム</div>
-    <div class="header-sub">ブラウザ内だけに一時保存／PDFは各自で保存・LINE共有OK</div>
-    <div class="header-badge">※ 請求書ではなく、ドライバー個人の記録用ツールです</div>
+    <div class="header-sub">このブラウザにだけ一時保存／PDFは各自で保存・LINE共有OK</div>
+    <div class="header-badge">※ 請求ではなく「ドライバー本人の記録用ツール」です</div>
   </div>
 
   <div class="content-wrapper">
     <div class="tab-buttons">
       <button class="tab-button active" onclick="showTab('form')">📝 点呼・日報入力</button>
-      <button class="tab-button" onclick="showTab('history')">📋 履歴・PDF</button>
+      <button class="tab-button" onclick="showTab('history')">📋 履歴・検索・PDF</button>
     </div>
 
     <!-- タブ：入力 -->
@@ -361,8 +383,8 @@
         <div class="radio-group">
           <label><input type="radio" name="mode" value="出発点呼"> 出発点呼</label>
           <label><input type="radio" name="mode" value="帰庫点呼（日報）"> 帰庫点呼（日報）</label>
-          <div style="font-size:11px;color:#777;margin-top:4px;">
-            出発時／帰庫時、それぞれ別に記録されます。
+          <div style="font-size:10px;color:#777;margin-top:4px;">
+            出発時と帰庫時でそれぞれ入力します。同じ日・同じドライバー・同じ会社なら自動で1件にまとめます。
           </div>
         </div>
 
@@ -526,8 +548,14 @@
     <!-- タブ：履歴 -->
     <div id="tab_history" class="tab-content" style="display:none;">
       <div class="section-title" style="margin-top:0;">保存された点呼記録</div>
-      <div style="font-size:11px;color:#777;margin-bottom:8px;">
-        このブラウザの中だけに保存されます。PDFにして保存・LINE共有・印刷は自由です。
+      <div class="history-top">
+        このブラウザの中だけに保存されます。PDF保存・LINE共有・印刷は自由です。
+      </div>
+
+      <div class="history-filters">
+        <input type="date" id="filterDateFrom" placeholder="開始日">
+        <input type="date" id="filterDateTo" placeholder="終了日">
+        <input type="text" id="filterDriver" placeholder="ドライバー名で検索">
       </div>
 
       <div class="history-actions">
@@ -543,23 +571,29 @@
 </div>
 
 <script>
-  const STORAGE_KEY = 'ofaGroupRecords_v1';
+  const STORAGE_KEY = 'ofaGroupTenkoRecords_v2';
 
   const form = document.getElementById('tenkoForm');
   const messageBox = document.getElementById('message');
-  const historyList = document.getElementById('historyList');
-  const pdfOutput = document.getElementById('pdfOutput');
-  const btnPrintPdf = document.getElementById('btnPrintPdf');
-  const btnBackList = document.getElementById('btnBackList');
 
+  const modeRadios = document.getElementsByName('mode');
   const sectionDeparture = document.getElementById('section_departure');
   const sectionCheck = document.getElementById('section_check');
   const sectionReturn = document.getElementById('section_return');
-  const modeRadios = document.getElementsByName('mode');
 
   const startMeterInput = document.getElementById('startMeter');
   const returnMeterInput = document.getElementById('returnMeter');
   const distanceInput = document.getElementById('distance');
+
+  const historyList = document.getElementById('historyList');
+  const pdfOutput = document.getElementById('pdfOutput');
+  const btnPrintPdf = document.getElementById('btnPrintPdf');
+  const btnBackList = document.getElementById('btnBackList');
+  const btnResetHistory = document.getElementById('btnResetHistory');
+
+  const filterDateFrom = document.getElementById('filterDateFrom');
+  const filterDateTo = document.getElementById('filterDateTo');
+  const filterDriver = document.getElementById('filterDriver');
 
   // 初期日付
   document.getElementById('date').value = new Date().toISOString().slice(0,10);
@@ -568,7 +602,7 @@
   function updateFormVisibility() {
     const modeEl = document.querySelector('input[name="mode"]:checked');
     if (!modeEl) {
-      // 未選択時は出発モードっぽく見せておく
+      // 未選択時は出発モード想定で出しておく
       sectionDeparture.style.display = 'block';
       sectionCheck.style.display = 'block';
       sectionReturn.style.display = 'none';
@@ -617,13 +651,53 @@
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
       return raw ? JSON.parse(raw) : [];
-    } catch (e) {
+    } catch(e) {
       console.error(e);
       return [];
     }
   }
   function saveRecords(records) {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(records));
+  }
+
+  // レコード保存（出発と帰庫を結合）
+  function saveRecord(record) {
+    let records = loadRecords();
+
+    if (record.mode === '帰庫点呼（日報）') {
+      const idx = records.findIndex(r =>
+        (r.mode === '出発点呼' || r.mode === '運行完了') &&
+        r.date === record.date &&
+        r.driverName === record.driverName &&
+        r.company === record.company &&
+        !r.returnTime // まだ帰庫入ってないもの
+      );
+      if (idx !== -1) {
+        const base = records[idx];
+        const merged = {
+          ...base,
+          ...record,
+          mode: '運行完了'
+        };
+        // 距離自動計算
+        const s = parseFloat(merged.startMeter);
+        const e = parseFloat(merged.returnMeter);
+        if (!isNaN(s) && !isNaN(e) && e >= s) {
+          merged.distance = (e - s).toFixed(1);
+        }
+        records[idx] = merged;
+      } else {
+        // 出発がない単独帰庫
+        records.push(record);
+      }
+    } else {
+      // 出発点呼はそのまま追加
+      records.push(record);
+    }
+
+    // 日付＋時間順で新しい順に
+    records.sort((a, b) => (b.id || 0) - (a.id || 0));
+    saveRecords(records);
   }
 
   // フォーム送信
@@ -648,7 +722,6 @@
 
     const baseData = {
       id: Date.now(),
-      mode,
       date,
       driverName,
       company,
@@ -657,6 +730,7 @@
       area: document.getElementById('area').value.trim(),
       base: document.getElementById('base').value.trim(),
       startPlace: document.getElementById('startPlace').value.trim(),
+      mode,
       createdAt: new Date().toISOString()
     };
 
@@ -703,7 +777,7 @@
         check_other: check_other.value,
         check_note: document.getElementById('check_note').value
       };
-    } else {
+    } else { // 帰庫点呼
       const returnPlace = document.getElementById('returnPlace').value.trim();
       const returnTime = document.getElementById('returnTime').value;
       const returnMeter = document.getElementById('returnMeter').value;
@@ -714,12 +788,22 @@
         return;
       }
 
+      // ここでも距離計算試みる（出発メーターが残っていれば）
+      let distanceVal = document.getElementById('distance').value;
+      if (!distanceVal) {
+        const s = parseFloat(startMeterInput.value);
+        const e = parseFloat(returnMeter);
+        if (!isNaN(s) && !isNaN(e) && e >= s) {
+          distanceVal = (e - s).toFixed(1);
+        }
+      }
+
       record = {
         ...record,
         returnPlace,
         returnTime,
         returnMeter,
-        distance: document.getElementById('distance').value,
+        distance: distanceVal || '',
         rest: document.getElementById('rest').value,
         codStatus: codStatusEl.value,
         codAmount: document.getElementById('codAmount').value,
@@ -728,12 +812,9 @@
       };
     }
 
-    const records = loadRecords();
-    records.push(record);
-    records.sort((a, b) => b.id - a.id); // 新しい順
-    saveRecords(records);
-
+    saveRecord(record);
     showMessage(mode + 'の記録をブラウザに保存しました。', 'success');
+
     form.reset();
     document.getElementById('date').value = new Date().toISOString().slice(0,10);
     updateFormVisibility();
@@ -741,31 +822,49 @@
     showTab('history');
   });
 
-  // 履歴表示
+  // 履歴表示（フィルタ付き）
   function renderHistory() {
     const records = loadRecords();
     historyList.innerHTML = '';
 
-    // PDF関連非表示
     pdfOutput.style.display = 'none';
     btnPrintPdf.style.display = 'none';
     btnBackList.style.display = 'none';
 
-    if (!records.length) {
-      historyList.innerHTML = '<p style="text-align:center;color:#777;padding:16px;">まだ記録がありません。</p>';
+    let filtered = records.slice();
+
+    const fromVal = filterDateFrom.value;
+    const toVal = filterDateTo.value;
+    const driverVal = filterDriver.value.trim();
+
+    if (fromVal) {
+      filtered = filtered.filter(r => r.date >= fromVal);
+    }
+    if (toVal) {
+      filtered = filtered.filter(r => r.date <= toVal);
+    }
+    if (driverVal) {
+      filtered = filtered.filter(r => (r.driverName || '').includes(driverVal));
+    }
+
+    if (!filtered.length) {
+      historyList.innerHTML = '<p style="text-align:center;color:#777;padding:14px;">該当する記録がありません。</p>';
       return;
     }
 
-    records.forEach(rec => {
+    filtered.forEach(rec => {
       const item = document.createElement('div');
-      const completed = rec.mode === '帰庫点呼（日報）';
-      item.className = 'record-item' + (completed ? ' completed' : '');
-      const status = completed ? '帰庫' : '出発';
+      const isCompleted = rec.mode === '運行完了';
+      const modeLabel =
+        rec.mode === '運行完了' ? '出発〜帰庫'
+        : rec.mode === '帰庫点呼（日報）' ? '帰庫のみ'
+        : '出発のみ';
 
+      item.className = 'record-item' + (isCompleted ? ' completed' : '');
       item.innerHTML = `
         <div class="record-item-title">${rec.date} / ${rec.driverName}</div>
         <div class="record-item-sub">
-          [${status}] ${rec.company || ''} ${rec.client ? ' / ' + rec.client : ''}
+          [${modeLabel}] ${rec.company || ''} ${rec.client ? ' / ' + rec.client : ''}
         </div>
       `;
       item.onclick = () => showRecordDetail(rec);
@@ -783,80 +882,90 @@
     pdfOutput.innerHTML = generateRecordHtml(rec);
   }
 
+  function safe(val) {
+    return val || '-';
+  }
+
   function generateRecordHtml(rec) {
-    const modeLabel = rec.mode === '帰庫点呼（日報）' ? '帰庫点呼／日報' : '出発点呼';
-    const basic =
-      `<div class="pdf-section">
-        <div class="pdf-section-title">基本情報</div>
-        <div class="pdf-row"><div class="pdf-label">日付</div><div class="pdf-value">${rec.date || '-'}</div></div>
-        <div class="pdf-row"><div class="pdf-label">ドライバー名</div><div class="pdf-value">${rec.driverName || '-'}</div></div>
-        <div class="pdf-row"><div class="pdf-label">所属会社</div><div class="pdf-value">${rec.company || '-'}</div></div>
-        <div class="pdf-row"><div class="pdf-label">案件</div><div class="pdf-value">${rec.client || '-'}</div></div>
-        <div class="pdf-row"><div class="pdf-label">エリア</div><div class="pdf-value">${rec.area || '-'}</div></div>
-        <div class="pdf-row"><div class="pdf-label">出庫ベース</div><div class="pdf-value">${rec.base || '-'}</div></div>
-        <div class="pdf-row"><div class="pdf-label">出庫場所</div><div class="pdf-value">${rec.startPlace || '-'}</div></div>
-      </div>`;
+    const modeLabel =
+      rec.mode === '運行完了' ? '出発点呼〜帰庫点呼'
+      : rec.mode === '帰庫点呼（日報）' ? '帰庫点呼／日報'
+      : '出発点呼';
 
-    let bodyHtml = '';
+    let html = `
+      <div class="pdf-doc">
+        <div class="pdf-header">
+          <div class="pdf-header-main">OFA GROUP Web点呼・日報 (${modeLabel})</div>
+          <div class="pdf-header-sub">このPDFはドライバー個人の記録用です</div>
+        </div>
 
-    if (rec.mode === '出発点呼') {
-      bodyHtml += `
+        <div class="pdf-section">
+          <div class="pdf-section-title">基本情報</div>
+          <div class="pdf-row"><div class="pdf-label">日付</div><div class="pdf-value">${safe(rec.date)}</div></div>
+          <div class="pdf-row"><div class="pdf-label">ドライバー名</div><div class="pdf-value">${safe(rec.driverName)}</div></div>
+          <div class="pdf-row"><div class="pdf-label">所属会社</div><div class="pdf-value">${safe(rec.company)}</div></div>
+          <div class="pdf-row"><div class="pdf-label">案件</div><div class="pdf-value">${safe(rec.client)}</div></div>
+          <div class="pdf-row"><div class="pdf-label">エリア</div><div class="pdf-value">${safe(rec.area)}</div></div>
+          <div class="pdf-row"><div class="pdf-label">出庫ベース</div><div class="pdf-value">${safe(rec.base)}</div></div>
+          <div class="pdf-row"><div class="pdf-label">出庫場所</div><div class="pdf-value">${safe(rec.startPlace)}</div></div>
+        </div>
+    `;
+
+    // 出発データがあれば
+    if (rec.startTime || rec.startMeter || rec.condition || rec.temp || rec.alcoholValue) {
+      html += `
         <div class="pdf-section">
           <div class="pdf-section-title">出発点呼</div>
-          <div class="pdf-row"><div class="pdf-label">出勤時間</div><div class="pdf-value">${rec.workTime || '-'}</div></div>
-          <div class="pdf-row"><div class="pdf-label">出発時間</div><div class="pdf-value">${rec.startTime || '-'}</div></div>
-          <div class="pdf-row"><div class="pdf-label">体調</div><div class="pdf-value">${rec.condition || '-'}</div></div>
-          <div class="pdf-row"><div class="pdf-label">睡眠時間</div><div class="pdf-value">${rec.sleep || '-'}</div></div>
-          <div class="pdf-row"><div class="pdf-label">飲酒(24h)</div><div class="pdf-value">${rec.drink || '-'}</div></div>
-          <div class="pdf-row"><div class="pdf-label">服薬</div><div class="pdf-value">${rec.medicine || '-'}</div></div>
-          <div class="pdf-row"><div class="pdf-label">体温</div><div class="pdf-value">${rec.temp || '-'} ℃</div></div>
-          <div class="pdf-row"><div class="pdf-label">アルコール値</div><div class="pdf-value">${rec.alcoholValue || '-'} mg/L</div></div>
-          <div class="pdf-row"><div class="pdf-label">出発前メーター</div><div class="pdf-value">${rec.startMeter || '-'} km</div></div>
-          <div class="pdf-row"><div class="pdf-label">メモ</div><div class="pdf-value">${rec.memo || '-'}</div></div>
+          <div class="pdf-row"><div class="pdf-label">出勤時間</div><div class="pdf-value">${safe(rec.workTime)}</div></div>
+          <div class="pdf-row"><div class="pdf-label">出発時間</div><div class="pdf-value">${safe(rec.startTime)}</div></div>
+          <div class="pdf-row"><div class="pdf-label">体調</div><div class="pdf-value">${safe(rec.condition)}</div></div>
+          <div class="pdf-row"><div class="pdf-label">睡眠時間</div><div class="pdf-value">${safe(rec.sleep)}</div></div>
+          <div class="pdf-row"><div class="pdf-label">飲酒(24h)</div><div class="pdf-value">${safe(rec.drink)}</div></div>
+          <div class="pdf-row"><div class="pdf-label">服薬</div><div class="pdf-value">${safe(rec.medicine)}</div></div>
+          <div class="pdf-row"><div class="pdf-label">体温</div><div class="pdf-value">${rec.temp ? rec.temp + ' ℃' : '-'}</div></div>
+          <div class="pdf-row"><div class="pdf-label">アルコール値</div><div class="pdf-value">${rec.alcoholValue ? rec.alcoholValue + ' mg/L' : '-'}</div></div>
+          <div class="pdf-row"><div class="pdf-label">出発前メーター</div><div class="pdf-value">${rec.startMeter ? rec.startMeter + ' km' : '-'}</div></div>
+          <div class="pdf-row"><div class="pdf-label">メモ</div><div class="pdf-value">${safe(rec.memo)}</div></div>
         </div>
+
         <div class="pdf-section">
           <div class="pdf-section-title">日常点検</div>
-          <div class="pdf-row"><div class="pdf-label">ブレーキ</div><div class="pdf-value">${rec.check_brake || '-'}</div></div>
-          <div class="pdf-row"><div class="pdf-label">タイヤ</div><div class="pdf-value">${rec.check_tire || '-'}</div></div>
-          <div class="pdf-row"><div class="pdf-label">灯火類</div><div class="pdf-value">${rec.check_light || '-'}</div></div>
-          <div class="pdf-row"><div class="pdf-label">カメラ・ミラー</div><div class="pdf-value">${rec.check_camera || '-'}</div></div>
-          <div class="pdf-row"><div class="pdf-label">車体外観</div><div class="pdf-value">${rec.check_body || '-'}</div></div>
-          <div class="pdf-row"><div class="pdf-label">その他</div><div class="pdf-value">${rec.check_other || '-'}</div></div>
-          <div class="pdf-row"><div class="pdf-label">点検メモ</div><div class="pdf-value">${rec.check_note || '-'}</div></div>
-        </div>
-      `;
-    } else {
-      bodyHtml += `
-        <div class="pdf-section">
-          <div class="pdf-section-title">帰庫点呼 / 日報</div>
-          <div class="pdf-row"><div class="pdf-label">帰庫場所</div><div class="pdf-value">${rec.returnPlace || '-'}</div></div>
-          <div class="pdf-row"><div class="pdf-label">帰庫時間</div><div class="pdf-value">${rec.returnTime || '-'}</div></div>
-          <div class="pdf-row"><div class="pdf-label">帰庫メーター</div><div class="pdf-value">${rec.returnMeter || '-'} km</div></div>
-          <div class="pdf-row"><div class="pdf-label">総走行距離</div><div class="pdf-value">${rec.distance || '-'} km</div></div>
-          <div class="pdf-row"><div class="pdf-label">休憩時間・場所</div><div class="pdf-value">${rec.rest || '-'}</div></div>
-          <div class="pdf-row"><div class="pdf-label">代金入金状況</div><div class="pdf-value">${rec.codStatus || '-'}</div></div>
-          <div class="pdf-row"><div class="pdf-label">代金入金額</div><div class="pdf-value">${rec.codAmount || '-'} 円</div></div>
-          <div class="pdf-row"><div class="pdf-label">道路・運行状況</div><div class="pdf-value">${rec.roadStatus || '-'}</div></div>
-          <div class="pdf-row"><div class="pdf-label">異常の詳細</div><div class="pdf-value">${rec.abnormalDetail || '-'}</div></div>
+          <div class="pdf-row"><div class="pdf-label">ブレーキ</div><div class="pdf-value">${safe(rec.check_brake)}</div></div>
+          <div class="pdf-row"><div class="pdf-label">タイヤ</div><div class="pdf-value">${safe(rec.check_tire)}</div></div>
+          <div class="pdf-row"><div class="pdf-label">灯火類</div><div class="pdf-value">${safe(rec.check_light)}</div></div>
+          <div class="pdf-row"><div class="pdf-label">カメラ・ミラー</div><div class="pdf-value">${safe(rec.check_camera)}</div></div>
+          <div class="pdf-row"><div class="pdf-label">車体外観</div><div class="pdf-value">${safe(rec.check_body)}</div></div>
+          <div class="pdf-row"><div class="pdf-label">その他</div><div class="pdf-value">${safe(rec.check_other)}</div></div>
+          <div class="pdf-row"><div class="pdf-label">点検メモ</div><div class="pdf-value">${safe(rec.check_note)}</div></div>
         </div>
       `;
     }
 
-    return `
-      <div class="pdf-doc">
-        <div class="pdf-header">
-          <div class="pdf-header-title">OFA GROUP Web点呼・日報 (${modeLabel})</div>
-          <div class="pdf-header-sub">このPDFはドライバー個人の記録用です</div>
+    // 帰庫データがあれば
+    if (rec.returnTime || rec.returnMeter || rec.returnPlace || rec.codStatus || rec.roadStatus || rec.abnormalDetail) {
+      html += `
+        <div class="pdf-section">
+          <div class="pdf-section-title">帰庫点呼／日報</div>
+          <div class="pdf-row"><div class="pdf-label">帰庫場所</div><div class="pdf-value">${safe(rec.returnPlace)}</div></div>
+          <div class="pdf-row"><div class="pdf-label">帰庫時間</div><div class="pdf-value">${safe(rec.returnTime)}</div></div>
+          <div class="pdf-row"><div class="pdf-label">帰庫メーター</div><div class="pdf-value">${rec.returnMeter ? rec.returnMeter + ' km' : '-'}</div></div>
+          <div class="pdf-row"><div class="pdf-label">総走行距離</div><div class="pdf-value">${rec.distance ? rec.distance + ' km' : '-'}</div></div>
+          <div class="pdf-row"><div class="pdf-label">休憩時間・場所</div><div class="pdf-value">${safe(rec.rest)}</div></div>
+          <div class="pdf-row"><div class="pdf-label">代金入金状況</div><div class="pdf-value">${safe(rec.codStatus)}</div></div>
+          <div class="pdf-row"><div class="pdf-label">代金入金額</div><div class="pdf-value">${rec.codAmount ? rec.codAmount + ' 円' : '-'}</div></div>
+          <div class="pdf-row"><div class="pdf-label">道路・運行状況</div><div class="pdf-value">${safe(rec.roadStatus)}</div></div>
+          <div class="pdf-row"><div class="pdf-label">異常の詳細</div><div class="pdf-value">${safe(rec.abnormalDetail)}</div></div>
         </div>
-        ${basic}
-        ${bodyHtml}
-      </div>
-    `;
+      `;
+    }
+
+    html += '</div>';
+    return html;
   }
 
   // PDF印刷ボタン
   btnPrintPdf.addEventListener('click', () => {
-    window.print(); // ブラウザの機能に任せる（保存・LINE共有などは自由）
+    window.print(); // PDF保存・LINE共有などはユーザー側で自由に
   });
 
   // 一覧に戻る
@@ -865,12 +974,17 @@
   });
 
   // 履歴全リセット
-  document.getElementById('btnResetHistory').addEventListener('click', () => {
+  btnResetHistory.addEventListener('click', () => {
     if (!confirm('本当にこのブラウザ内の履歴を全て削除しますか？')) return;
     localStorage.removeItem(STORAGE_KEY);
     renderHistory();
     showMessage('履歴をリセットしました。', 'success');
   });
+
+  // フィルタ変更で即時反映
+  filterDateFrom.addEventListener('change', renderHistory);
+  filterDateTo.addEventListener('change', renderHistory);
+  filterDriver.addEventListener('input', renderHistory);
 
   // タブ切り替え
   function showTab(tab) {
