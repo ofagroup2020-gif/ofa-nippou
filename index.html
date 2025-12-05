@@ -1,860 +1,442 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8">
-  <title>OFA 日報＆月次実績ツール（OFAデザイン版）</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <title>OFA GROUP 報酬計算ツール</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
   <style>
-    * { box-sizing: border-box; }
+    * {
+      box-sizing: border-box;
+    }
     body {
       margin: 0;
       padding: 0;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
-      background: #111;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #f5f5f5;
       color: #222;
-      font-size: 16px; /* ベース文字大きめ */
     }
-    header {
-      background: linear-gradient(135deg, #000000, #222222);
-      color: #ffd700;
-      padding: 14px 18px;
-      font-size: 18px;
-      font-weight: 700;
-      letter-spacing: 0.05em;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-    }
-    header span.logo {
-      background: #ffd700;
-      color: #000;
-      padding: 4px 8px;
-      border-radius: 999px;
-      font-size: 12px;
-      font-weight: 700;
-      margin-right: 8px;
-    }
-    .container {
-      max-width: 1024px;
-      margin: 0 auto;
-      padding: 14px 10px 28px;
-    }
-
-    /* カード風 */
-    .card {
-      background: #ffffff;
-      border-radius: 14px;
-      padding: 14px;
-      margin-bottom: 14px;
-      box-shadow: 0 4px 10px rgba(0,0,0,.18);
-      border: 1px solid #f0f0f0;
-    }
-
-    .tabs {
-      display: flex;
-      flex-wrap: nowrap;
-      overflow-x: auto;
-      gap: 6px;
-      margin-bottom: 10px;
-    }
-    .tab-btn {
-      flex: 1;
-      min-width: 110px;
-      padding: 10px 8px;
-      font-size: 14px;
-      border: none;
-      border-radius: 999px;
-      background: #333;
+    .ofa-header {
+      background: linear-gradient(90deg, #ff3b30, #ffcc00, #007aff);
+      padding: 14px 16px;
       color: #fff;
-      cursor: pointer;
-      white-space: nowrap;
+      font-weight: 900;
+      font-size: 20px;
+      letter-spacing: .06em;
+      text-shadow: 0 1px 2px rgba(0,0,0,0.35);
     }
-    .tab-btn.active {
-      background: #ffd700;
-      color: #000;
+    .ofa-header small {
+      display: block;
+      font-size: 11px;
+      font-weight: 500;
+      margin-top: 4px;
+    }
+
+    .wrapper {
+      max-width: 980px;
+      margin: 0 auto;
+      padding: 16px;
+    }
+    .card {
+      background: #fff;
+      border-radius: 14px;
+      padding: 14px 14px 18px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+      margin-bottom: 14px;
+    }
+    .card-title {
       font-weight: 700;
-      box-shadow: 0 3px 8px rgba(0,0,0,.3);
-    }
-
-    .panel { display: none; }
-    .panel.active { display: block; }
-
-    h2 {
-      font-size: 16px;
-      margin: 0 0 8px;
+      margin-bottom: 10px;
       display: flex;
       align-items: center;
       gap: 6px;
     }
-    h2 .emoji {
-      font-size: 18px;
+    .card-title span.tag {
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-size: 10px;
+      background: #ffe565;
+      color: #222;
+      font-weight: 700;
     }
 
-    .row {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px 16px;
-      margin-bottom: 10px;
-    }
-    .field {
-      min-width: 140px;
-      flex: 1;
-    }
     label {
       font-size: 12px;
+      font-weight: 600;
       display: block;
       margin-bottom: 4px;
-      color: #555;
+    }
+    .row-inline {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .row-inline .field {
+      flex: 1 1 0;
+      min-width: 130px;
     }
     input[type="text"],
     input[type="number"],
-    input[type="date"],
-    input[type="month"],
     select {
       width: 100%;
-      padding: 8px 10px;
-      font-size: 15px;
+      padding: 10px 11px;
       border-radius: 999px;
-      border: 1px solid #ccc;
-      background: #fafafa;
-    }
-    input[type="number"] { text-align: right; }
-
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 13px;
-      margin-bottom: 8px;
-    }
-    th, td {
-      border: 1px solid #eee;
-      padding: 6px 4px;
-      text-align: right;
-    }
-    th:first-child, td:first-child { text-align: left; }
-    th {
-      background: #fff8cf;
-      font-weight: 600;
-    }
-    tr:nth-child(even) td {
-      background: #fdfdfd;
-    }
-    tfoot td {
-      font-weight: bold;
-      background: #ffe680;
-    }
-
-    textarea {
-      width: 100%;
-      min-height: 80px;
-      padding: 8px 10px;
+      border: 1px solid #ddd;
       font-size: 14px;
-      border-radius: 10px;
-      border: 1px solid #ccc;
+      outline: none;
       background: #fafafa;
+    }
+    input[type="number"]::-webkit-outer-spin-button,
+    input[type="number"]::-webkit-inner-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
     }
 
     .btn-row {
       display: flex;
       flex-wrap: wrap;
       gap: 8px;
-      margin: 10px 0 4px;
+      margin-top: 8px;
     }
-    button {
-      border: none;
+    .btn {
       border-radius: 999px;
-      padding: 8px 12px;
-      font-size: 14px;
+      padding: 7px 14px;
+      border: none;
+      font-size: 13px;
+      font-weight: 600;
       cursor: pointer;
+      white-space: nowrap;
     }
-    .btn-main {
-      background: #ffd700;
-      color: #000;
-      font-weight: 700;
-      box-shadow: 0 3px 6px rgba(0,0,0,.3);
+    .btn-gray {
+      background: #f1f1f1;
+      color: #333;
     }
-    .btn-sub {
-      background: #f2f2f2;
-      color: #222;
-    }
-    .btn-danger {
-      background: #ff4d4f;
+    .btn-black {
+      background: #111;
       color: #fff;
     }
+    .btn-yellow {
+      background: #ffd400;
+      color: #222;
+    }
 
-    .note {
-      font-size: 11px;
-      color: #777;
-      margin-top: 4px;
-    }
-    .badge {
-      display: inline-block;
-      background: #000;
-      color: #ffd700;
-      padding: 2px 6px;
-      font-size: 10px;
-      border-radius: 6px;
-      margin-left: 4px;
-    }
-    .sum-box {
-      font-size: 15px;
+    table {
+      width: 100%;
+      border-collapse: collapse;
       margin-top: 6px;
-      font-weight: 600;
+      font-size: 13px;
     }
-    .sum-box span {
-      font-size: 18px;
-      color: #e53935;
-    }
-
-    .pill-tag {
-      display: inline-block;
-      background: #000;
-      color: #ffd700;
+    thead th {
       font-size: 11px;
-      padding: 2px 8px;
+      padding: 6px 4px;
+      background: #ffee88;
+      border-bottom: 1px solid #ffd400;
+      position: sticky;
+      top: 0;
+      z-index: 1;
+    }
+    tbody td {
+      padding: 6px 4px;
+      border-bottom: 1px solid #f1f1f1;
+    }
+    tbody tr:nth-child(even) {
+      background: #fcfcfc;
+    }
+    .col-kind { width: 40%; }
+    .col-unit { width: 20%; }
+    .col-qty  { width: 20%; }
+    .col-sub  { width: 20%; text-align: right; }
+
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 3px 9px;
       border-radius: 999px;
+      font-size: 11px;
+      font-weight: 600;
+      background: #000;
+      color: #fff;
       margin-right: 4px;
     }
+    .total-box {
+      margin-top: 10px;
+      padding: 10px 12px;
+      border-radius: 12px;
+      background: #222;
+      color: #fff;
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 6px;
+    }
+    .total-box span.label {
+      font-size: 12px;
+      opacity: .85;
+    }
+    .total-box span.value {
+      font-size: 20px;
+      font-weight: 800;
+    }
 
-    @media (max-width:600px) {
-      header {
-        font-size: 16px;
-        padding: 10px 12px;
+    .memo-input {
+      width: 100%;
+      min-height: 80px;
+      border-radius: 12px;
+      border: 1px solid #ddd;
+      padding: 8px 10px;
+      font-size: 13px;
+      resize: vertical;
+    }
+
+    @media (max-width: 600px) {
+      .ofa-header {
+        font-size: 18px;
+        padding: 12px 14px;
       }
-      .container {
-        padding: 10px 8px 22px;
+      .card {
+        padding: 12px 11px 14px;
       }
-      table {
+      thead th,
+      tbody td {
         font-size: 12px;
-      }
-      .tab-btn {
-        font-size: 13px;
-        padding: 8px 6px;
       }
     }
   </style>
 </head>
 <body>
-<header>
-  <div>
-    <span class="logo">OFA</span>
-    OFA 日報 &amp; 月次実績ツール
-  </div>
-</header>
+  <header class="ofa-header">
+    OFA GROUP
+    <small>報酬計算・日別売上チェック</small>
+  </header>
 
-<div class="container">
-  <div class="card" style="margin-bottom:12px;">
-    <p style="margin:4px 0 2px;font-size:14px;font-weight:600;">
-      OFAグループ専用｜案件別 日報入力 &amp; 月次実績管理ツール
-    </p>
-    <p style="margin:2px 0 0;font-size:12px;color:#666;">
-      個建・車建・チャーターなどの<strong>日報をスマホで入力</strong>すると、ブラウザ内に自動保存され、
-      月末に<strong>案件別の実績表とCSV</strong>をワンタップで出力できます。（データは端末ごとに保存されます）
-    </p>
-  </div>
-  <div class="tabs card" style="margin-bottom:12px;">
-    <button class="tab-btn active" data-target="tab-daily">📅 日報入力</button>
-    <button class="tab-btn" data-target="tab-unit">💰 単価設定</button>
-    <button class="tab-btn" data-target="tab-monthly">📊 月次実績</button>
-    <button class="tab-btn" data-target="tab-data">🗄 バックアップ</button>
-  </div>
+  <main class="wrapper">
 
-  <!-- 日報入力 -->
-  <div id="tab-daily" class="panel active">
-    <div class="card">
-      <h2><span class="emoji">📅</span>日報入力 <span class="badge">単価は「単価設定」から自動反映</span></h2>
-
-      <div class="row">
-        <div class="field">
-          <label for="dDate">日付</label>
-          <input type="date" id="dDate">
-        </div>
-        <div class="field">
-          <label for="dName">氏名</label>
-          <input type="text" id="dName" placeholder="例：田村 紳助">
-        </div>
+    <!-- ① 基本情報 -->
+    <section class="card">
+      <div class="card-title">
+        <span class="tag">STEP 01</span>
+        基本情報
       </div>
-
-      <div class="row">
+      <div class="row-inline">
         <div class="field">
-          <label for="dArea">エリア</label>
-          <input type="text" id="dArea" placeholder="例：鹿児島市伊敷">
+          <label>エリア</label>
+          <input type="text" id="areaInput" placeholder="例）鹿児島市伊敷" />
         </div>
         <div class="field">
-          <label for="dClient">取引先</label>
-          <select id="dClient">
-            <option value="">--選択してください--</option>
-            <option>ヤマト運輸</option>
-            <option>佐川急便</option>
-            <option>日本郵便</option>
-            <option>西濃運輸</option>
-            <option>福山通運</option>
-            <option>Amazon（SBS）</option>
-            <option>Amazon（丸和）</option>
-            <option>Amazon（祇園）</option>
-            <option>その他</option>
+          <label>取引先</label>
+          <select id="clientSelect">
+            <option value="">選択してください</option>
+            <option value="ヤマト運輸">ヤマト運輸</option>
+            <option value="佐川急便">佐川急便</option>
+            <option value="日本郵便">日本郵便</option>
+            <option value="Amazon">Amazon</option>
+            <option value="その他">その他（単価は手入力）</option>
           </select>
         </div>
       </div>
 
-      <div class="btn-row" style="margin-top:2px;">
-        <button class="btn-sub" id="btnLoadUnitsFromSetting">この取引先の単価を読み込む</button>
-        <button class="btn-sub" id="btnToday">今日の日付にする</button>
+      <div class="btn-row">
+        <button class="btn btn-gray" id="btnLoadUnit">この取引先の単価を読み込む</button>
+        <button class="btn btn-black" id="btnLoadAndCalc">単価読み込み計算する</button>
+        <button class="btn btn-gray" id="btnToday">今日の日付にする</button>
       </div>
+    </section>
 
-      <h3 style="font-size:14px;margin:10px 0 6px;">
+    <!-- ② 荷物別 売上計算 -->
+    <section class="card">
+      <div class="card-title">
+        <span class="tag">STEP 02</span>
         荷物種別ごとの内訳
-        <span class="pill-tag">宅配</span>
-        <span class="pill-tag">ポス</span>
-        <span class="pill-tag">メール</span>
-        <span class="pill-tag">チャーター</span>
-      </h3>
-
-      <table>
-        <thead>
-          <tr>
-            <th style="width:150px;">荷物種別</th>
-            <th style="width:90px;">単価（円）</th>
-            <th style="width:80px;">数量</th>
-            <th style="width:100px;">小計（円）</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr data-key="一般荷物（宅配）">
-            <td>一般荷物（宅配）</td>
-            <td><input type="number" min="0" step="1" class="unit" data-key="一般荷物（宅配）"></td>
-            <td><input type="number" min="0" step="1" class="qty" data-key="一般荷物（宅配）"></td>
-            <td class="sub" data-key="一般荷物（宅配）">0</td>
-          </tr>
-          <tr data-key="ポスティング">
-            <td>ポスティング</td>
-            <td><input type="number" min="0" step="1" class="unit" data-key="ポスティング"></td>
-            <td><input type="number" min="0" step="1" class="qty" data-key="ポスティング"></td>
-            <td class="sub" data-key="ポスティング">0</td>
-          </tr>
-          <tr data-key="メール">
-            <td>メール</td>
-            <td><input type="number" min="0" step="1" class="unit" data-key="メール"></td>
-            <td><input type="number" min="0" step="1" class="qty" data-key="メール"></td>
-            <td class="sub" data-key="メール">0</td>
-          </tr>
-          <tr data-key="一般集荷">
-            <td>一般集荷</td>
-            <td><input type="number" min="0" step="1" class="unit" data-key="一般集荷"></td>
-            <td><input type="number" min="0" step="1" class="qty" data-key="一般集荷"></td>
-            <td class="sub" data-key="一般集荷">0</td>
-          </tr>
-          <tr data-key="代引き">
-            <td>代引き</td>
-            <td><input type="number" min="0" step="1" class="unit" data-key="代引き"></td>
-            <td><input type="number" min="0" step="1" class="qty" data-key="代引き"></td>
-            <td class="sub" data-key="代引き">0</td>
-          </tr>
-          <tr data-key="チャーター便">
-            <td>チャーター便</td>
-            <td><input type="number" min="0" step="1" class="unit" data-key="チャーター便"></td>
-            <td><input type="number" min="0" step="1" class="qty" data-key="チャーター便" placeholder="例：1"></td>
-            <td class="sub" data-key="チャーター便">0</td>
-          </tr>
-          <tr data-key="スポット便">
-            <td>スポット便</td>
-            <td><input type="number" min="0" step="1" class="unit" data-key="スポット便"></td>
-            <td><input type="number" min="0" step="1" class="qty" data-key="スポット便"></td>
-            <td class="sub" data-key="スポット便">0</td>
-          </tr>
-        </tbody>
-        <tfoot>
-          <tr>
-            <td>合計</td>
-            <td id="sum-unit" style="text-align:right;">-</td>
-            <td id="sum-qty" style="text-align:right;">0</td>
-            <td id="sum-amount" style="text-align:right;">0</td>
-          </tr>
-        </tfoot>
-      </table>
-
-      <div class="sum-box">この日の売上合計：<span id="dDayTotalBig">0</span> 円</div>
-
-      <div style="margin-top:10px;">
-        <label for="dMemo">メモ（クレーム・遅延・事故・備考など）</label>
-        <textarea id="dMemo" placeholder="例）○○様 再配達、××番地チャーターなど"></textarea>
       </div>
 
-      <div class="btn-row">
-        <button class="btn-main" id="btnSave">この日を保存 / 上書き</button>
-        <button class="btn-sub" id="btnLoad">この日を読み込み</button>
-        <button class="btn-danger" id="btnClearDay">この日のデータ削除</button>
-      </div>
-      <div class="note">
-        データはこの端末のブラウザ内（LocalStorage）に保存されます。端末・ブラウザを変えると共有されません。
-      </div>
-    </div>
-  </div>
-
-  <!-- 単価設定 -->
-  <div id="tab-unit" class="panel">
-    <div class="card">
-      <h2><span class="emoji">💰</span>単価設定 <span class="badge">取引先 × 荷物種別ごとに登録</span></h2>
-      <div class="row">
-        <div class="field">
-          <label for="uClient">取引先</label>
-          <select id="uClient">
-            <option value="">--選択してください--</option>
-            <option>ヤマト運輸</option>
-            <option>佐川急便</option>
-            <option>日本郵便</option>
-            <option>西濃運輸</option>
-            <option>福山通運</option>
-            <option>Amazon（SBS）</option>
-            <option>Amazon（丸和）</option>
-            <option>Amazon（祇園）</option>
-            <option>その他</option>
-          </select>
-        </div>
-        <div class="field" style="align-self:flex-end;flex:0 0 auto;">
-          <div class="btn-row">
-            <button class="btn-sub" id="btnUnitLoad">読み込み</button>
-            <button class="btn-main" id="btnUnitSave">保存</button>
-          </div>
-        </div>
+      <div style="overflow-x:auto;">
+        <table>
+          <thead>
+            <tr>
+              <th class="col-kind">荷物種別</th>
+              <th class="col-unit">単価（円）</th>
+              <th class="col-qty">数量</th>
+              <th class="col-sub">小計（円）</th>
+            </tr>
+          </thead>
+          <tbody id="itemsBody">
+            <!-- JSで行定義しているのでIDで紐付け -->
+          </tbody>
+        </table>
       </div>
 
-      <table>
-        <thead>
-          <tr>
-            <th style="width:160px;">荷物種別</th>
-            <th style="width:110px;">単価（円）</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td>一般荷物（宅配）</td>
-            <td><input type="number" min="0" step="1" class="u-unit" data-key="一般荷物（宅配）" placeholder="例：165"></td>
-          </tr>
-          <tr>
-            <td>ポスティング</td>
-            <td><input type="number" min="0" step="1" class="u-unit" data-key="ポスティング" placeholder="例：64"></td>
-          </tr>
-          <tr>
-            <td>メール</td>
-            <td><input type="number" min="0" step="1" class="u-unit" data-key="メール"></td>
-          </tr>
-          <tr>
-            <td>一般集荷</td>
-            <td><input type="number" min="0" step="1" class="u-unit" data-key="一般集荷"></td>
-          </tr>
-          <tr>
-            <td>代引き</td>
-            <td><input type="number" min="0" step="1" class="u-unit" data-key="代引き" placeholder="例：190"></td>
-          </tr>
-          <tr>
-            <td>チャーター便</td>
-            <td><input type="number" min="0" step="1" class="u-unit" data-key="チャーター便" placeholder="日額"></td>
-          </tr>
-          <tr>
-            <td>スポット便</td>
-            <td><input type="number" min="0" step="1" class="u-unit" data-key="スポット便"></td>
-          </tr>
-        </tbody>
-      </table>
-      <div class="note">
-        例）ヤマト運輸：宅配165円／代引き190円／ポス64円 などを登録しておくと、<br>
-        日報入力で「この取引先の単価を読み込む」ボタンで自動反映されます。
+      <div class="total-box">
+        <span class="label">この日の売上合計</span>
+        <span class="value"><span id="totalSales">0</span> 円</span>
       </div>
-    </div>
-  </div>
+    </section>
 
-  <!-- 月次実績 -->
-  <div id="tab-monthly" class="panel">
-    <div class="card">
-      <h2><span class="emoji">📊</span>月次実績</h2>
-      <div class="row">
-        <div class="field">
-          <label for="mMonth">表示月</label>
-          <input type="month" id="mMonth">
-        </div>
-        <div class="field" style="align-self:flex-end;flex:0 0 auto;">
-          <div class="btn-row">
-            <button class="btn-main" id="btnShowMonth">この月の実績を表示</button>
-            <button class="btn-sub" id="btnExportCsv">CSVダウンロード</button>
-          </div>
-        </div>
+    <!-- ③ メモ -->
+    <section class="card">
+      <div class="card-title">
+        <span class="tag">STEP 03</span>
+        メモ（クレーム・遅延・事故・備考 など）
       </div>
-      <div id="monthlyResult" style="margin-top:8px;"></div>
-      <div class="note">
-        日別に「取引先 × 荷物種別」の数量と売上、月合計を表示します。
-      </div>
-    </div>
-  </div>
+      <textarea id="memo" class="memo-input"
+        placeholder="例）◯◯様 再配達、××番地チャーター便 など"></textarea>
+    </section>
 
-  <!-- データ管理 -->
-  <div id="tab-data" class="panel">
-    <div class="card">
-      <h2><span class="emoji">🗄</span>データ管理（バックアップ・復元）</h2>
-      <p class="note">
-        保存済み日報データ（LocalStorage）のバックアップと復元ができます。
-      </p>
-      <div class="btn-row">
-        <button class="btn-sub" id="btnBackup">バックアップ（JSON表示）</button>
-        <button class="btn-sub" id="btnImport">JSONから復元</button>
-        <button class="btn-danger" id="btnAllClear">全データ削除</button>
-      </div>
-      <textarea id="dataArea" placeholder="バックアップJSONの表示・貼り付け欄"></textarea>
-      <div class="note">
-        JSONをコピーしてメモアプリなどに保存しておくと、端末変更時などに貼り付けて復元できます。
-      </div>
-    </div>
-  </div>
+  </main>
 
-</div>
+  <script>
+    // ===============================
+    //  取引先ごとの単価プリセット
+    // ===============================
+    const unitPricePresets = {
+      "ヤマト運輸": {
+        "一般荷物(宅配)": 165,
+        "ポスティング": 45,
+        "メール": 15,
+        "一般集荷": 120,
+        "代引き": 220,
+        "チャーター便": 4400,
+        "スポット便": 3300
+      },
+      "佐川急便": {
+        "一般荷物(宅配)": 160,
+        "ポスティング": 40,
+        "メール": 15,
+        "一般集荷": 110,
+        "代引き": 200,
+        "チャーター便": 4000,
+        "スポット便": 3000
+      },
+      "日本郵便": {
+        "一般荷物(宅配)": 155,
+        "ポスティング": 42,
+        "メール": 14,
+        "一般集荷": 100,
+        "代引き": 210,
+        "チャーター便": 3800,
+        "スポット便": 2800
+      },
+      "Amazon": {
+        "一般荷物(宅配)": 170,
+        "ポスティング": 50,
+        "メール": 18,
+        "一般集荷": 130,
+        "代引き": 0,
+        "チャーター便": 5000,
+        "スポット便": 3500
+      }
+      // 必要に応じて、他の取引先もここに追加
+    };
 
-<script>
-  const STORAGE_KEY = "ofa_nippou_client_item_v2";
-  const UNIT_KEY = "ofa_unit_settings_client_item_v1";
-  const itemKeys = ["一般荷物（宅配）","ポスティング","メール","一般集荷","代引き","チャーター便","スポット便"];
+    // ===============================
+    //  行の定義（並び順もここで決まる）
+    // ===============================
+    const itemDefinitions = [
+      "一般荷物(宅配)",
+      "ポスティング",
+      "メール",
+      "一般集荷",
+      "代引き",
+      "チャーター便",
+      "スポット便"
+    ];
 
-  function formatNumber(n) { return n.toLocaleString("ja-JP"); }
-  function loadAllRecords() {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (!raw) return {};
-      return JSON.parse(raw);
-    } catch (e) { console.error(e); return {}; }
-  }
-  function saveAllRecords(data) {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-  }
-  function loadUnitSettings() {
-    try {
-      const raw = localStorage.getItem(UNIT_KEY);
-      if (!raw) return {};
-      return JSON.parse(raw);
-    } catch (e) { console.error(e); return {}; }
-  }
-  function saveUnitSettings(settings) {
-    localStorage.setItem(UNIT_KEY, JSON.stringify(settings));
-  }
-  function ymdFromDateStr(str) {
-    if (!str) return null;
-    const [y,m,d] = str.split("-").map(s => parseInt(s,10));
-    if (!y || !m || !d) return null;
-    return {y,m,d};
-  }
-  function getYoubi(str) {
-    const info = ymdFromDateStr(str);
-    if (!info) return "";
-    const dt = new Date(info.y, info.m-1, info.d);
-    const arr = ["日","月","火","水","木","金","土"];
-    return arr[dt.getDay()];
-  }
+    const itemsBody = document.getElementById("itemsBody");
 
-  // タブ切り替え
-  document.querySelectorAll(".tab-btn").forEach(btn => {
-    btn.addEventListener("click", () => {
-      document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
-      document.querySelectorAll(".panel").forEach(p => p.classList.remove("active"));
-      btn.classList.add("active");
-      document.getElementById(btn.dataset.target).classList.add("active");
-    });
-  });
-
-  // 日報計算
-  function recalcDaily() {
-    let sumQty = 0;
-    let sumAmount = 0;
-    itemKeys.forEach(key => {
-      const unitEl = document.querySelector('.unit[data-key="'+key+'"]');
-      const qtyEl = document.querySelector('.qty[data-key="'+key+'"]');
-      const subEl = document.querySelector('.sub[data-key="'+key+'"]');
-      const unit = parseFloat(unitEl.value) || 0;
-      const qty = parseFloat(qtyEl.value) || 0;
-      const sub = unit * qty;
-      subEl.textContent = formatNumber(sub);
-      sumQty += qty;
-      sumAmount += sub;
-    });
-    document.getElementById("sum-qty").textContent = formatNumber(sumQty);
-    document.getElementById("sum-amount").textContent = formatNumber(sumAmount);
-    document.getElementById("sum-unit").textContent = "-";
-    document.getElementById("dDayTotalBig").textContent = formatNumber(sumAmount);
-  }
-
-  document.addEventListener("input", function(e) {
-    if (e.target.classList.contains("unit") || e.target.classList.contains("qty")) {
-      recalcDaily();
-    }
-  });
-
-  // 今日ボタン
-  document.getElementById("btnToday").addEventListener("click", () => {
-    const today = new Date();
-    const y = today.getFullYear();
-    const m = String(today.getMonth()+1).padStart(2,"0");
-    const d = String(today.getDate()).padStart(2,"0");
-    document.getElementById("dDate").value = `${y}-${m}-${d}`;
-  });
-
-  // 日報保存
-  document.getElementById("btnSave").addEventListener("click", () => {
-    const date = document.getElementById("dDate").value;
-    if (!date) { alert("日付を入力してください。"); return; }
-    const records = loadAllRecords();
-    const item = {};
-    itemKeys.forEach(key => {
-      const unit = parseFloat(document.querySelector('.unit[data-key="'+key+'"]').value) || 0;
-      const qty  = parseFloat(document.querySelector('.qty[data-key="'+key+'"]').value) || 0;
-      item[key] = { unit, qty };
-    });
-    const memo = document.getElementById("dMemo").value || "";
-    const area = document.getElementById("dArea").value || "";
-    const name = document.getElementById("dName").value || "";
-    const client = document.getElementById("dClient").value || "";
-
-    let dayTotal = 0;
-    let totalQty = 0;
-    itemKeys.forEach(k => {
-      const u = item[k].unit || 0;
-      const q = item[k].qty || 0;
-      dayTotal += u*q;
-      totalQty += q;
+    // テーブル行を生成
+    itemDefinitions.forEach((name, index) => {
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td class="col-kind">
+          <span class="chip">${index + 1}</span>${name}
+        </td>
+        <td class="col-unit">
+          <input type="number" inputmode="decimal" min="0"
+            id="unit_${index}" placeholder="単価" />
+        </td>
+        <td class="col-qty">
+          <input type="number" inputmode="decimal" min="0"
+            id="qty_${index}" placeholder="数量" />
+        </td>
+        <td class="col-sub">
+          <span id="sub_${index}">0</span>
+        </td>
+      `;
+      itemsBody.appendChild(tr);
     });
 
-    records[date] = { date, area, name, client, item, memo, totals: { totalQty, dayTotal } };
-    saveAllRecords(records);
-    recalcDaily();
-    alert("保存しました（" + date + "）。");
-  });
-
-  // 日報読み込み
-  document.getElementById("btnLoad").addEventListener("click", () => {
-    const date = document.getElementById("dDate").value;
-    if (!date) { alert("日付を入力してください。"); return; }
-    const records = loadAllRecords();
-    if (!records[date]) { alert("この日のデータはありません。"); return; }
-    const r = records[date];
-    document.getElementById("dArea").value = r.area || "";
-    document.getElementById("dName").value = r.name || "";
-    document.getElementById("dClient").value = r.client || "";
-    itemKeys.forEach(key => {
-      const obj = (r.item && r.item[key]) ? r.item[key] : {unit:"",qty:""};
-      document.querySelector('.unit[data-key="'+key+'"]').value = (obj.unit ?? "");
-      document.querySelector('.qty[data-key="'+key+'"]').value = (obj.qty ?? "");
+    // 単価・数量が変わったら自動で計算
+    itemDefinitions.forEach((_, index) => {
+      document.getElementById(`unit_${index}`).addEventListener("input", updateTotals);
+      document.getElementById(`qty_${index}`).addEventListener("input", updateTotals);
     });
-    document.getElementById("dMemo").value = r.memo || "";
-    recalcDaily();
-    alert("読み込みました（" + date + "）。");
-  });
 
-  // 日報削除
-  document.getElementById("btnClearDay").addEventListener("click", () => {
-    const date = document.getElementById("dDate").value;
-    if (!date) { alert("日付を入力してください。"); return; }
-    const records = loadAllRecords();
-    if (!records[date]) { alert("この日のデータはありません。"); return; }
-    if (!confirm(date + " のデータを削除しますか？")) return;
-    delete records[date];
-    saveAllRecords(records);
-    alert("削除しました。");
-  });
-
-  // 単価設定 読み込み
-  document.getElementById("btnUnitLoad").addEventListener("click", () => {
-    const client = document.getElementById("uClient").value;
-    if (!client) { alert("取引先を選択してください。"); return; }
-    const settings = loadUnitSettings();
-    const unitSet = settings[client] || {};
-    document.querySelectorAll(".u-unit").forEach(input => {
-      const key = input.dataset.key;
-      input.value = unitSet[key] != null ? unitSet[key] : "";
+    // 今日ボタン（使いたければ、別で日付フィールドを追加してもOK）
+    document.getElementById("btnToday").addEventListener("click", () => {
+      alert("※日付フィールドはこのページにはまだ無いので、\n必要なら日付入力欄を追加して使ってください。");
     });
-    alert("単価設定を読み込みました。");
-  });
 
-  // 単価設定 保存
-  document.getElementById("btnUnitSave").addEventListener("click", () => {
-    const client = document.getElementById("uClient").value;
-    if (!client) { alert("取引先を選択してください。"); return; }
-    const settings = loadUnitSettings();
-    const unitSet = {};
-    document.querySelectorAll(".u-unit").forEach(input => {
-      const key = input.dataset.key;
-      const v = parseFloat(input.value);
-      if (!isNaN(v)) unitSet[key] = v;
+    // 「この取引先の単価を読み込む」
+    document.getElementById("btnLoadUnit").addEventListener("click", () => {
+      loadUnitPrices(false); // 計算はしない
     });
-    settings[client] = unitSet;
-    saveUnitSettings(settings);
-    alert("単価を保存しました（" + client + "）。");
-  });
 
-  // 日報側で単価読込
-  document.getElementById("btnLoadUnitsFromSetting").addEventListener("click", () => {
-    const client = document.getElementById("dClient").value;
-    if (!client) { alert("取引先を選択してください。"); return; }
-    const settings = loadUnitSettings();
-    const unitSet = settings[client];
-    if (!unitSet) { alert("この取引先の単価設定がありません。単価設定タブで登録してください。"); return; }
-    itemKeys.forEach(key => {
-      const unitEl = document.querySelector('.unit[data-key="'+key+'"]');
-      if (unitEl) unitEl.value = unitSet[key] != null ? unitSet[key] : "";
+    // 「単価読み込み計算する」
+    document.getElementById("btnLoadAndCalc").addEventListener("click", () => {
+      const loaded = loadUnitPrices(true); // 読み込み＋計算
+      if (!loaded) {
+        // プリセットが無くても、手入力した単価で計算だけ行う
+        updateTotals();
+      }
     });
-    recalcDaily();
-    alert("単価を読み込みました（" + client + "）。");
-  });
 
-  // 月次実績テーブル
-  function buildMonthlyTable(monthStr) {
-    const container = document.getElementById("monthlyResult");
-    container.innerHTML = "";
-    if (!monthStr) {
-      container.textContent = "表示月を選択してください。";
-      return;
-    }
-    const [y,m] = monthStr.split("-").map(s => parseInt(s,10));
-    if (!y || !m) {
-      container.textContent = "表示月を正しく選択してください。";
-      return;
-    }
-    const records = loadAllRecords();
-    const rows = Object.values(records)
-      .filter(r => {
-        const info = ymdFromDateStr(r.date);
-        return info && info.y === y && info.m === m;
-      })
-      .sort((a,b) => a.date.localeCompare(b.date));
-    if (rows.length === 0) {
-      container.textContent = "この月のデータはありません。";
-      return;
-    }
+    /**
+     * 取引先の単価を読み込む
+     * @param {boolean} shouldCalc - 読み込んだあと計算まで行うか
+     * @returns {boolean} 読み込めたら true / プリセット無しなら false
+     */
+    function loadUnitPrices(shouldCalc) {
+      const clientSelect = document.getElementById("clientSelect");
+      const client = clientSelect.value;
 
-    const total = { dayTotal: 0 };
-    const qtyByKey = {};
-    itemKeys.forEach(k => qtyByKey[k] = 0);
+      if (!client) {
+        alert("取引先を選択してください。");
+        return false;
+      }
 
-    let html = '<table><thead><tr>' +
-      '<th>日</th><th>曜</th><th>取引先</th>';
-    itemKeys.forEach(k => {
-      html += '<th>'+k+' 数量</th>';
-    });
-    html += '<th>日合計（円）</th></tr></thead><tbody>';
+      const preset = unitPricePresets[client];
+      if (!preset) {
+        alert("この取引先の単価プリセットはまだ登録されていません。\n単価は手入力してください。");
+        return false;
+      }
 
-    rows.forEach(r => {
-      const info = ymdFromDateStr(r.date);
-      const d = info.d;
-      const youbi = getYoubi(r.date);
-      const item = r.item || {};
-      let dayAmount = 0;
-      html += '<tr>';
-      html += '<td style="text-align:left;">'+d+'</td>';
-      html += '<td>'+youbi+'</td>';
-      html += '<td style="text-align:left;">'+(r.client || '')+'</td>';
-      itemKeys.forEach(k => {
-        const u = (item[k] && item[k].unit) ? item[k].unit : 0;
-        const q = (item[k] && item[k].qty) ? item[k].qty : 0;
-        const sub = u*q;
-        html += '<td>'+formatNumber(q)+'</td>';
-        dayAmount += sub;
-        qtyByKey[k] += q;
+      itemDefinitions.forEach((name, index) => {
+        const unitInput = document.getElementById(`unit_${index}`);
+        unitInput.value = preset[name] != null ? preset[name] : "";
       });
-      total.dayTotal += dayAmount;
-      html += '<td>'+formatNumber(dayAmount)+'</td>';
-      html += '</tr>';
-    });
 
-    html += '</tbody><tfoot><tr>';
-    html += '<td colspan="3" style="text-align:left;">合計</td>';
-    itemKeys.forEach(k => {
-      html += '<td>'+formatNumber(qtyByKey[k])+'</td>';
-    });
-    html += '<td>'+formatNumber(total.dayTotal)+'</td>';
-    html += '</tr></tfoot></table>';
-
-    container.innerHTML = html;
-  }
-
-  document.getElementById("btnShowMonth").addEventListener("click", () => {
-    const month = document.getElementById("mMonth").value;
-    buildMonthlyTable(month);
-  });
-
-  // CSV出力
-  document.getElementById("btnExportCsv").addEventListener("click", () => {
-    const month = document.getElementById("mMonth").value;
-    if (!month) { alert("表示月を選んでください。"); return; }
-    const [y,m] = month.split("-").map(s => parseInt(s,10));
-    const records = loadAllRecords();
-    const rows = Object.values(records)
-      .filter(r => {
-        const info = ymdFromDateStr(r.date);
-        return info && info.y === y && info.m === m;
-      })
-      .sort((a,b) => a.date.localeCompare(b.date));
-    if (rows.length === 0) {
-      alert("この月のデータがありません。");
-      return;
+      if (shouldCalc) {
+        updateTotals();
+      }
+      return true;
     }
-    let csv = "日,曜日,取引先," + itemKeys.map(k => k+'数量').join(",") + ",日合計(円)\n";
-    rows.forEach(r => {
-      const info = ymdFromDateStr(r.date);
-      const d = info.d;
-      const youbi = getYoubi(r.date);
-      const item = r.item || {};
-      const arr = [d, youbi, (r.client || "")];
-      let dayAmount = 0;
-      itemKeys.forEach(k => {
-        const u = (item[k] && item[k].unit) ? item[k].unit : 0;
-        const q = (item[k] && item[k].qty) ? item[k].qty : 0;
-        const sub = u*q;
-        arr.push(q);
-        dayAmount += sub;
+
+    /**
+     * 合計計算
+     */
+    function updateTotals() {
+      let total = 0;
+
+      itemDefinitions.forEach((_, index) => {
+        const unit = parseFloat(document.getElementById(`unit_${index}`).value) || 0;
+        const qty  = parseFloat(document.getElementById(`qty_${index}`).value) || 0;
+        const sub  = Math.round(unit * qty);
+
+        document.getElementById(`sub_${index}`).textContent = sub.toLocaleString();
+        total += sub;
       });
-      arr.push(dayAmount);
-      csv += arr.join(",") + "\n";
-    });
-    const blob = new Blob([csv], {type:"text/csv"});
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "ofa_client_item_"+month.replace("-","")+".csv";
-    a.click();
-    URL.revokeObjectURL(url);
-  });
 
-  // データ管理
-  document.getElementById("btnBackup").addEventListener("click", () => {
-    const records = loadAllRecords();
-    document.getElementById("dataArea").value = JSON.stringify(records, null, 2);
-    alert("現在のデータをJSONとして表示しました。コピーして保存してください。");
-  });
-
-  document.getElementById("btnImport").addEventListener("click", () => {
-    const txt = document.getElementById("dataArea").value.trim();
-    if (!txt) { alert("JSONを貼り付けてください。"); return; }
-    try {
-      const obj = JSON.parse(txt);
-      if (!confirm("貼り付けたJSONでデータを上書きします。よろしいですか？")) return;
-      saveAllRecords(obj);
-      alert("復元しました。");
-    } catch (e) {
-      alert("JSONの形式が正しくありません。");
+      document.getElementById("totalSales").textContent = total.toLocaleString();
     }
-  });
-
-  document.getElementById("btnAllClear").addEventListener("click", () => {
-    if (!confirm("全ての日報データを削除します。よろしいですか？")) return;
-    localStorage.removeItem(STORAGE_KEY);
-    alert("全データを削除しました。");
-  });
-
-  // 初期処理
-  (function init() {
-    const today = new Date();
-    const y = today.getFullYear();
-    const m = String(today.getMonth()+1).padStart(2,"0");
-    const d = String(today.getDate()).padStart(2,"0");
-    document.getElementById("dDate").value = `${y}-${m}-${d}`;
-    document.getElementById("mMonth").value = `${y}-${m}`;
-    recalcDaily();
-  })();
-</script>
+  </script>
 </body>
 </html>
