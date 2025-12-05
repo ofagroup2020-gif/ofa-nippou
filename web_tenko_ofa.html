@@ -616,6 +616,19 @@
           <label for="abnormalDetail">運行中の異常の詳細</label>
           <textarea id="abnormalDetail" rows="3"></textarea>
 
+          <label>アルコールチェック（帰着時） <span class="required-mark">*</span></label>
+          <div class="radio-card-group">
+            <label class="radio-card">
+              <input type="radio" name="returnAlcoholCheck" value="実施（問題なし）" checked>実施（問題なし）
+            </label>
+            <label class="radio-card">
+              <input type="radio" name="returnAlcoholCheck" value="実施（要確認）">実施（要確認）
+            </label>
+            <label class="radio-card">
+              <input type="radio" name="returnAlcoholCheck" value="未実施">未実施
+            </label>
+          </div>
+
           <label for="vehiclePhoto">車両異常の写真（任意・この画面のみ）</label>
           <input id="vehiclePhoto" type="file" accept="image/*">
           <div class="field-hint">※画像ファイルは履歴には保存されません。</div>
@@ -704,7 +717,7 @@
     });
   });
 
-  // モード別 required 切替
+  // モード別 required 切替 & 出発メーター自動読み込み
   const departureRequiredIds = ['startTime','condition','temp','alcoholValue','startMeter'];
   const returnRequiredIds = ['returnPlace','returnTime','returnMeter'];
 
@@ -715,20 +728,14 @@
     });
   }
 
-  function updateModeView(){
-    const modeEl = document.querySelector('input[name="mode"]:checked');
-    const mode = modeEl ? modeEl.value : '出発点呼';
-    const isDeparture = mode === '出発点呼';
-    sectionDeparture.style.display = isDeparture ? 'block':'none';
-    sectionReturn.style.display    = isDeparture ? 'none':'block';
-
-    setRequired(departureRequiredIds, isDeparture);
-    setRequired(returnRequiredIds, !isDeparture);
+  function getRecords(){
+    const raw = localStorage.getItem(LOCAL_KEY);
+    return raw ? JSON.parse(raw) : [];
   }
-  modeRadios.forEach(r=>r.addEventListener('change',updateModeView));
-  updateModeView();
+  function setRecords(list){
+    localStorage.setItem(LOCAL_KEY,JSON.stringify(list));
+  }
 
-  // 距離自動計算
   function calcDistance(){
     const s = parseFloat(startMeterInput.value);
     const e = parseFloat(returnMeterInput.value);
@@ -738,17 +745,48 @@
       distanceInput.value = '';
     }
   }
+
+  function updateModeView(){
+    const modeEl = document.querySelector('input[name="mode"]:checked');
+    const mode = modeEl ? modeEl.value : '出発点呼';
+    const isDeparture = mode === '出発点呼';
+
+    // 表示切替
+    sectionDeparture.style.display = isDeparture ? 'block' : 'none';
+    sectionReturn.style.display    = isDeparture ? 'none'  : 'block';
+
+    // 必須切替
+    setRequired(departureRequiredIds, isDeparture);
+    setRequired(returnRequiredIds, !isDeparture);
+
+    // ★ 帰着点呼に切り替えた時：朝の出発メーターを自動で読み込む
+    if(!isDeparture){
+      const date    = document.getElementById('date').value;
+      const driver  = document.getElementById('driverName').value;
+      const company = document.getElementById('company').value;
+
+      if(date && driver && company){
+        const records = getRecords();
+        // 新しい順に保存してあるので、最初に見つかったものが直近
+        const dep = records.find(r =>
+          r.date === date &&
+          r.driverName === driver &&
+          r.company === company &&
+          r.startMeter
+        );
+        if(dep){
+          startMeterInput.value = dep.startMeter;
+          calcDistance();
+        }
+      }
+    }
+  }
+  modeRadios.forEach(r=>r.addEventListener('change',updateModeView));
+  updateModeView();
+
+  // 距離自動計算
   startMeterInput.addEventListener('input',calcDistance);
   returnMeterInput.addEventListener('input',calcDistance);
-
-  // ローカルストレージ
-  function getRecords(){
-    const raw = localStorage.getItem(LOCAL_KEY);
-    return raw ? JSON.parse(raw) : [];
-  }
-  function setRecords(list){
-    localStorage.setItem(LOCAL_KEY,JSON.stringify(list));
-  }
 
   // フォーム送信
   form.addEventListener('submit',e=>{
@@ -801,7 +839,8 @@
         codStatus: document.querySelector('input[name="codStatus"]:checked').value,
         codAmount: document.getElementById('codAmount').value,
         roadStatus: document.getElementById('roadStatus').value,
-        abnormalDetail: document.getElementById('abnormalDetail').value
+        abnormalDetail: document.getElementById('abnormalDetail').value,
+        returnAlcoholCheck: document.querySelector('input[name="returnAlcoholCheck"]:checked').value
       };
     }
 
@@ -981,6 +1020,7 @@
             <div class="pdf-row"><div class="pdf-row-label">代金入金額</div><div class="pdf-row-value">${d.codAmount || '-'} 円</div></div>
             <div class="pdf-row"><div class="pdf-row-label">道路・運行状況</div><div class="pdf-row-value">${d.roadStatus || '-'}</div></div>
             <div class="pdf-row"><div class="pdf-row-label">異常の詳細</div><div class="pdf-row-value">${d.abnormalDetail || '-'}</div></div>
+            <div class="pdf-row"><div class="pdf-row-label">アルコールチェック（帰着時）</div><div class="pdf-row-value">${d.returnAlcoholCheck || '-'}</div></div>
           </div>
           ` : '' }
 
