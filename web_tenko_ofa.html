@@ -3,133 +3,214 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>OFA GROUP Web点呼・日報受付</title>
+    <title>OFA GROUP Web点呼・日報フォーム</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700&family=Poppins:wght@700&display=swap" rel="stylesheet">
+    
     <style>
         /* -------------------------------------------------- */
-        /* CSS: スタイルは元のファイルを維持しつつ調整 */
+        /* CSS: ポップなデザインとOFAカラー (赤、青、黄、ペールグリーン) */
         /* -------------------------------------------------- */
+        :root {
+            --color-ofa-red: #E74C3C;      /* 赤 */
+            --color-ofa-blue: #3498DB;     /* 青 */
+            --color-ofa-yellow: #F1C40F;   /* 黄 */
+            --color-background: #E8F8F5;   /* ベース背景色 (薄い緑/ペールグリーン) */
+            --color-base-orange: #FDEBD0;  /* ページベース背景 (薄いオレンジ) */
+            --color-text-dark: #2C3E50;
+            --color-accent-light: #A3E4D7;
+        }
+
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: 'Noto Sans JP', sans-serif;
             margin: 0;
             padding: 0;
-            background-color: #f4f7f6;
-            color: #333;
+            background-color: var(--color-background);
+            color: var(--color-text-dark);
+            line-height: 1.6;
         }
+        
+        /* ページベースの背景色を薄いオレンジに */
         .container {
             max-width: 600px;
-            margin: 20px auto;
-            padding: 20px;
-            background-color: #fff;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-            border-radius: 8px;
+            margin: 30px auto;
+            padding: 25px;
+            background-color: var(--color-base-orange); /* 薄いオレンジ */
+            box-shadow: 0 8px 15px rgba(0, 0, 0, 0.15);
+            border-radius: 12px;
+            border: 3px solid var(--color-accent-light);
         }
-        h1 {
+        
+        /* ヘッダーエリア */
+        .header-area {
             text-align: center;
-            color: #1a5276;
-            border-bottom: 2px solid #1a5276;
-            padding-bottom: 10px;
-            margin-bottom: 20px;
+            margin-bottom: 25px;
+            padding-bottom: 15px;
+            border-bottom: 4px solid var(--color-ofa-yellow);
         }
+
+        /* ロゴ風デザイン */
+        .ofa-logo {
+            display: inline-block;
+            background-color: var(--color-ofa-red);
+            color: white;
+            font-family: 'Poppins', sans-serif;
+            font-weight: 700;
+            padding: 5px 15px;
+            border-radius: 6px;
+            letter-spacing: 1px;
+            font-size: 16px;
+            margin-bottom: 8px;
+        }
+        
+        h1 {
+            color: var(--color-ofa-blue);
+            font-size: 32px;
+            margin: 0;
+            letter-spacing: 1px;
+        }
+        
+        .sub-title {
+            color: var(--color-text-dark);
+            font-weight: 700;
+            font-size: 18px;
+            margin-top: 5px;
+        }
+        
+        /* セクションタイトル */
         .section-title {
-            background-color: #d6eaf8;
-            color: #1a5276;
-            padding: 10px;
-            margin-top: 20px;
-            margin-bottom: 10px;
-            border-radius: 4px;
+            background-color: var(--color-ofa-blue); /* 青 */
+            color: white;
+            padding: 12px 15px;
+            margin-top: 30px;
+            margin-bottom: 15px;
+            border-radius: 8px;
             font-weight: bold;
+            border-left: 5px solid var(--color-ofa-yellow);
+            box-shadow: 0 3px 6px rgba(0, 0, 0, 0.1);
         }
+        
         label {
             display: block;
-            margin-top: 10px;
+            margin-top: 15px;
             font-weight: bold;
+            font-size: 14px;
         }
+        
+        /* 入力欄 */
         input[type="text"], input[type="date"], input[type="time"], input[type="number"], select, textarea {
-            width: calc(100% - 20px);
+            width: calc(100% - 22px);
             padding: 10px;
             margin-top: 5px;
-            border: 1px solid #ccc;
-            border-radius: 4px;
+            border: 2px solid var(--color-accent-light);
+            border-radius: 6px;
             box-sizing: border-box;
+            transition: border-color 0.3s;
         }
-        input[type="file"] {
-            margin-top: 5px;
+        
+        input[type="text"]:focus, input[type="date"]:focus, input[type="time"]:focus, input[type="number"]:focus, select:focus, textarea:focus {
+            border-color: var(--color-ofa-blue);
+            outline: none;
         }
+        
+        /* ラジオボタン・チェックボックスグループ */
         .radio-group, .checkbox-group {
             margin-top: 10px;
-            padding: 5px 0;
-            border: 1px solid #eee;
-            border-radius: 4px;
-            padding-left: 10px;
+            padding: 8px 10px;
+            background-color: rgba(255, 255, 255, 0.7);
+            border-radius: 6px;
         }
+        
         .radio-group label, .checkbox-group label {
             display: inline-block;
-            margin-right: 20px;
+            margin-right: 25px;
             font-weight: normal;
+            margin-top: 5px;
         }
+        
+        /* 必須マーク */
         .required::after {
             content: " *";
-            color: #ef4444;
+            color: var(--color-ofa-red);
+            font-weight: bold;
         }
+        
+        /* ボタン */
         button {
             display: block;
             width: 100%;
-            padding: 15px;
-            margin-top: 30px;
-            background-color: #2e86c1;
+            padding: 18px;
+            margin-top: 40px;
+            background-color: var(--color-ofa-red); /* 赤 */
             color: white;
             border: none;
-            border-radius: 4px;
-            font-size: 18px;
+            border-radius: 8px;
+            font-size: 20px;
+            font-weight: bold;
             cursor: pointer;
+            transition: background-color 0.3s, transform 0.1s;
+            box-shadow: 0 4px 0 var(--color-text-dark);
         }
+        
         button:hover {
-            background-color: #1a5276;
+            background-color: #C0392B; /* 少し暗い赤 */
+            box-shadow: 0 2px 0 var(--color-text-dark);
+            transform: translateY(2px);
         }
+        
+        /* メッセージボックス */
         .message-box {
             padding: 15px;
-            margin-top: 20px;
-            border-radius: 4px;
+            margin-top: 25px;
+            border-radius: 8px;
             font-weight: bold;
             text-align: center;
             display: none;
+            border: 2px solid;
         }
+        
         .success {
-            background-color: #d4edda;
+            background-color: #D4EDDA;
             color: #155724;
-            border: 1px solid #c3e6cb;
+            border-color: #C3E6CB;
         }
+        
         .error {
-            background-color: #f8d7da;
-            color: #721c24;
-            border: 1px solid #f5c6cb;
+            background-color: #F8D7DA;
+            color: #721C24;
+            border-color: #F5C6CB;
         }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h1>Web点呼・日報受付</h1>
+    <div class="header-area">
+        <div class="ofa-logo">OFA GROUP</div>
+        <h1>Web点呼・日報フォーム</h1>
+        <div class="sub-title">乗務記録 &bull; 日常点検 &bull; 運転日報</div>
+    </div>
+    
     <form id="tenkoForm">
 
-        <div class="section-title">モード選択 (必須)</div>
+        <div class="section-title">0. モード選択 (必須)</div>
         <div class="radio-group required">
             <label><input type="radio" name="mode" value="出発点呼" required> 出発点呼</label>
             <label><input type="radio" name="mode" value="帰庫点呼（日報）"> 帰庫点呼（日報）</label>
         </div>
 
-        <div class="section-title">基本情報</div>
+        <div class="section-title">1. 基本情報</div>
         <label for="date" class="required">日付</label>
         <input type="date" id="date" required>
         
         <label for="driverName" class="required">ドライバー名</label>
         <input type="text" id="driverName" required>
 
-        <label for="company">所属会社</label>
-        <input type="text" id="company">
+        <label for="company" class="required">所属会社</label>
+        <input type="text" id="company" required>
         
         <label for="email" class="required">メールアドレス（控え送付先）</label>
-        <input type="email" id="email" required>
+        <input type="email" id="email" required placeholder="例: driver@example.com">
         
         <label for="client">案件（荷主）</label>
         <input type="text" id="client">
@@ -145,7 +226,7 @@
 
 
         <div id="section_departure">
-            <div class="section-title">出発前チェック</div>
+            <div class="section-title">2. 出発前チェック</div>
             
             <label for="workTime">出勤時間</label>
             <input type="time" id="workTime">
@@ -180,7 +261,7 @@
             <input type="number" id="temp" step="0.1" required placeholder="例: 36.5">
 
             <label for="alcoholValue" class="required">アルコール検査値 (mg/L)</label>
-            <input type="text" id="alcoholValue" required placeholder="例: 0.00 または 未実施">
+            <input type="text" id="alcoholValue" required placeholder="例: 0.00">
             
             <label for="startMeter" class="required">出発前メーター (km)</label>
             <input type="number" id="startMeter" required>
@@ -194,7 +275,7 @@
 
 
         <div id="section_check">
-            <div class="section-title">日常点検チェック</div>
+            <div class="section-title">3. 日常点検チェック</div>
             
             <label>ブレーキ</label>
             <div class="radio-group required">
@@ -240,7 +321,7 @@
         </div>
 
         <div id="section_return" style="display:none;">
-            <div class="section-title">運行・帰庫記録</div>
+            <div class="section-title">4. 運行・帰庫記録</div>
             
             <label for="returnPlace" class="required">帰庫場所</label>
             <input type="text" id="returnPlace" required>
@@ -283,12 +364,12 @@
 
 <script>
     /* -------------------------------------------------- */
-    /* JavaScript: データの取得とGASへの送信処理 */
+    /* JavaScript: データの取得とGASへの送信処理 (変更なし) */
     /* -------------------------------------------------- */
 
     // ★★★ 1. 設定情報: ここを修正してください ★★★
-    // GASのWebアプリとしてデプロイした後に取得できるURLに置き換えてください
-    const GAS_URL = 'YOUR_DEPLOYED_GAS_URL'; 
+    // 直前に発行された新しいGASのWebアプリURLに置き換えてください
+    const GAS_URL = 'https://script.google.com/macros/s/AKfycbzNysioqG-A027lCsW5mc3hJpwJ15iVERw38hwKmScnm4eqCUROsRCWWvIHfyP5t0K8/exec'; 
     
     // 運行管理者グループのLINE Notifyトークンをここに固定で設定します
     const ADMIN_LINE_TOKEN = 'YOUR_ADMIN_GROUP_LINE_TOKEN'; 
@@ -434,7 +515,7 @@
                 roadStatus: document.getElementById('roadStatus').value,
                 abnormalDetail: document.getElementById('abnormalDetail').value,
                 // 帰庫時も出発時の情報を空で送る (スプレッドシートの列をずらさないため)
-                startMeter: '', // 帰庫時は不要な項目は空にする
+                startMeter: '', 
                 startTime: '',
                 workTime: ''
             });
@@ -445,18 +526,18 @@
         dataToSend.append('json', JSON.stringify(formData));
         
         if (licenseBase64) {
-            dataToSend.append('licenseFile', licenseBase64);
+            // ファイルの拡張子とMIMEタイプを指定してBlobを作成 (GAS側で処理できるように)
+            dataToSend.append('licenseFile', Utilities.newBlob(Utilities.base64Decode(licenseBase64), 'image/jpeg', 'license.jpg'));
         }
         if (carAbnormalBase64) {
-            dataToSend.append('carAbnormalFile', carAbnormalBase64);
+            dataToSend.append('carAbnormalFile', Utilities.newBlob(Utilities.base64Decode(carAbnormalBase64), 'image/jpeg', 'abnormal.jpg'));
         }
-
+        
         // GASへの送信
         try {
             const response = await fetch(GAS_URL, {
                 method: 'POST',
                 body: dataToSend,
-                // GASはMIMEタイプを自動で処理するため、Content-Typeは設定しないことが多い
             });
             
             const result = await response.json();
@@ -466,11 +547,11 @@
                 // 成功後、モード選択と基本情報以外をクリア
                 document.getElementById('tenkoForm').reset();
             } else {
-                showMessage('送信エラー: ' + result.message, 'error');
+                showMessage('送信エラー: ' + result.message + ' 設定を確認してください。', 'error');
             }
 
         } catch (error) {
-            showMessage('通信エラーが発生しました。インターネット接続を確認してください。', 'error');
+            showMessage('通信エラーが発生しました。インターネット接続を確認してください。GAS_URLが正しいか確認してください。', 'error');
             console.error('Fetch Error:', error);
         }
     });
