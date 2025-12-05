@@ -5,27 +5,28 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>OFA GROUP Web点呼・日報フォーム</title>
     
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700&family=Poppins:wght@700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700&display=swap" rel="stylesheet">
     
     <style>
         /* -------------------------------------------------- */
-        /* CSS: ポップなデザインとOFAカラー (赤、青、黄、薄い緑/オレンジ) */
+        /* CSS: 新デザイン (OFAグリーン、ブロックデザイン) */
         /* -------------------------------------------------- */
         :root {
-            --color-ofa-red: #E74C3C;      /* 赤 (ボタン、必須マーク) */
-            --color-ofa-blue: #3498DB;     /* 青 (タイトル) */
-            --color-ofa-yellow: #F1C40F;   /* 黄 (アクセント) */
-            --color-background: #E8F8F5;   /* ベース背景色 (薄い緑/ペールグリーン) */
-            --color-base-orange: #FDEBD0;  /* ページベース背景 (薄いオレンジ) */
+            --color-ofa-green: #38C172;     /* OFAロゴのメイングリーン */
+            --color-ofa-red: #E74C3C;       /* アクションボタン/必須マークの赤 */
+            --color-ofa-blue: #3498DB;      /* アクセントの青 */
+            --color-ofa-yellow: #F1C40F;    /* アクセントの黄 */
+            --color-background-light: #F0FFF0; /* ページ背景 (薄いペールグリーン) */
+            --color-container-bg: #FFFFFF;  /* コンテナ背景 */
             --color-text-dark: #2C3E50;
-            --color-accent-light: #A3E4D7;
+            --color-border-light: #E0E0E0;
         }
 
         body {
             font-family: 'Noto Sans JP', sans-serif;
             margin: 0;
             padding: 0;
-            background-color: var(--color-background); /* 薄い緑 */
+            background-color: var(--color-background-light);
             color: var(--color-text-dark);
             line-height: 1.6;
         }
@@ -33,60 +34,63 @@
         .container {
             max-width: 600px;
             margin: 30px auto;
-            padding: 25px;
-            background-color: var(--color-base-orange); /* 薄いオレンジ */
-            box-shadow: 0 8px 15px rgba(0, 0, 0, 0.15);
+            padding: 0;
+            background-color: var(--color-container-bg);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
             border-radius: 12px;
-            border: 3px solid var(--color-accent-light);
+            overflow: hidden; /* ヘッダーの角を丸めるため */
         }
         
-        /* ヘッダーエリア */
+        /* ヘッダーエリア (画像デザインを再現) */
         .header-area {
+            background-color: var(--color-ofa-green);
+            color: white;
+            padding: 25px 20px;
             text-align: center;
-            margin-bottom: 25px;
-            padding-bottom: 15px;
-            border-bottom: 4px solid var(--color-ofa-yellow);
         }
 
-        /* ロゴ風デザイン */
-        .ofa-logo {
-            display: inline-block;
-            background-color: var(--color-ofa-red);
-            color: white;
-            font-family: 'Poppins', sans-serif;
-            font-weight: 700;
-            padding: 5px 15px;
-            border-radius: 6px;
-            letter-spacing: 1px;
-            font-size: 16px;
-            margin-bottom: 8px;
+        .ofa-logo-block {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 10px;
+        }
+        .ofa-logo-circle {
+            background-color: white;
+            color: var(--color-ofa-green);
+            font-weight: 900;
+            font-size: 24px;
+            padding: 5px 12px;
+            border-radius: 50%;
+            margin-right: 10px;
         }
         
         h1 {
-            color: var(--color-ofa-blue);
-            font-size: 32px;
+            font-size: 24px;
             margin: 0;
-            letter-spacing: 1px;
         }
         
         .sub-title {
-            color: var(--color-text-dark);
-            font-weight: 700;
-            font-size: 18px;
+            font-size: 14px;
             margin-top: 5px;
+            font-weight: 400;
+        }
+
+        /* フォームと履歴のコンテンツエリア */
+        .content-wrapper {
+            padding: 20px;
         }
         
         /* セクションタイトル */
         .section-title {
-            background-color: var(--color-ofa-blue); /* 青 */
-            color: white;
-            padding: 12px 15px;
-            margin-top: 30px;
-            margin-bottom: 15px;
-            border-radius: 8px;
+            padding: 10px 15px;
+            margin-top: 25px;
+            margin-bottom: 10px;
             font-weight: bold;
-            border-left: 5px solid var(--color-ofa-yellow);
-            box-shadow: 0 3px 6px rgba(0, 0, 0, 0.1);
+            font-size: 16px;
+            background-color: #F8F9F9; /* 薄いグレーの背景 */
+            border-left: 5px solid var(--color-ofa-yellow); /* 黄色のアクセント */
+            color: var(--color-ofa-blue); /* 青色の文字 */
         }
         
         label {
@@ -98,31 +102,26 @@
         
         /* 入力欄 */
         input[type="text"], input[type="date"], input[type="time"], input[type="number"], select, textarea {
-            width: calc(100% - 22px);
+            width: calc(100% - 20px);
             padding: 10px;
             margin-top: 5px;
-            border: 2px solid var(--color-accent-light);
-            border-radius: 6px;
+            border: 1px solid var(--color-border-light);
+            border-radius: 4px;
             box-sizing: border-box;
-            transition: border-color 0.3s;
         }
         
-        input[type="text"]:focus, input[type="date"]:focus, input[type="time"]:focus, input[type="number"]:focus, select:focus, textarea:focus {
-            border-color: var(--color-ofa-blue);
-            outline: none;
-        }
-        
-        /* ラジオボタン・チェックボックスグループ */
-        .radio-group, .checkbox-group {
+        /* ラジオボタン・チェックボックスグループをカード風に */
+        .radio-group {
             margin-top: 10px;
-            padding: 8px 10px;
-            background-color: rgba(255, 255, 255, 0.7);
-            border-radius: 6px;
+            padding: 10px;
+            background-color: #F8F9F9;
+            border: 1px solid var(--color-border-light);
+            border-radius: 4px;
         }
         
-        .radio-group label, .checkbox-group label {
+        .radio-group label {
             display: inline-block;
-            margin-right: 25px;
+            margin-right: 20px;
             font-weight: normal;
             margin-top: 5px;
         }
@@ -132,52 +131,48 @@
             content: " *";
             color: var(--color-ofa-red);
             font-weight: bold;
+            margin-left: 4px;
         }
         
         /* ボタン */
         button {
             display: block;
             width: 100%;
-            padding: 18px;
-            margin-top: 40px;
-            background-color: var(--color-ofa-red); /* 赤 */
+            padding: 15px;
+            margin-top: 30px;
+            background-color: var(--color-ofa-red);
             color: white;
             border: none;
-            border-radius: 8px;
-            font-size: 20px;
+            border-radius: 6px;
+            font-size: 18px;
             font-weight: bold;
             cursor: pointer;
-            transition: background-color 0.3s, transform 0.1s;
-            box-shadow: 0 4px 0 #A93226; /* ボタンの影の色を修正 */
+            transition: background-color 0.3s;
+            box-shadow: 0 3px 0 #A93226;
         }
         
         button:hover {
-            background-color: #C0392B; /* 少し暗い赤 */
-            box-shadow: 0 2px 0 #A93226;
-            transform: translateY(2px);
+            background-color: #C0392B;
         }
         
-        /* メッセージボックス */
-        .message-box {
-            padding: 15px;
-            margin-top: 25px;
-            border-radius: 8px;
-            font-weight: bold;
-            text-align: center;
-            display: none;
-            border: 2px solid;
-        }
+        /* タブ切り替え */
+        .tab-buttons { display: flex; justify-content: space-around; margin-bottom: 20px; border-bottom: 2px solid #ddd; }
+        .tab-button { flex-grow: 1; padding: 10px 5px; background-color: #eee; border: none; cursor: pointer; font-size: 14px; font-weight: bold; transition: background-color 0.3s; }
+        .tab-button.active { background-color: var(--color-ofa-green); color: white; }
+        .tab-content { padding: 10px 0; }
         
-        .success {
-            background-color: #D4EDDA;
-            color: #155724;
-            border-color: #C3E6CB;
-        }
-        
-        .error {
-            background-color: #F8D7DA;
-            color: #721C24;
-            border-color: #F5C6CB;
+        /* 履歴一覧 */
+        .record-item { padding: 12px; border: 1px solid #ddd; border-radius: 4px; cursor: pointer; background-color: white; transition: background-color 0.2s; margin-bottom: 8px; border-left: 5px solid var(--color-ofa-blue); }
+        .record-item:hover { background-color: #f0f0f0; }
+        .record-item.completed { border-left-color: var(--color-ofa-red); }
+        .record-item-title { font-weight: bold; font-size: 16px; }
+        .record-item-mode { font-size: 12px; color: #666; margin-top: 2px; }
+
+        /* PDF/印刷用スタイル */
+        @media print {
+            body > *:not(#pdfOutput) { display: none !important; }
+            #pdfOutput { display: block !important; margin: 0; box-shadow: none; border: none; }
+            .print-button, .back-button { display: none !important; }
         }
     </style>
 </head>
@@ -185,194 +180,123 @@
 
 <div class="container">
     <div class="header-area">
-        <div class="ofa-logo">OFA GROUP</div>
+        <div class="ofa-logo-block">
+            <div class="ofa-logo-circle">OFA</div>
+            OFA GROUP
+        </div>
         <h1>Web点呼・日報フォーム</h1>
-        <div class="sub-title">乗務記録 &bull; 日常点検 &bull; 運転日報</div>
+        <div class="sub-title">ローカル保存 &bull; PDF生成 (この端末内のみ)</div>
     </div>
-    
-    <form id="tenkoForm">
 
-        <div class="section-title">0. モード選択 (必須)</div>
-        <div class="radio-group required">
-            <label><input type="radio" name="mode" value="出発点呼" required> 出発点呼</label>
-            <label><input type="radio" name="mode" value="帰庫点呼（日報）"> 帰庫点呼（日報）</label>
+    <div class="content-wrapper">
+        <div class="tab-buttons">
+            <button class="tab-button active" onclick="showTab('form')">📝 点呼・日報入力</button>
+            <button class="tab-button" onclick="showTab('history')">📋 履歴・PDF</button>
         </div>
 
-        <div class="section-title">1. 基本情報</div>
-        <label for="date" class="required">日付</label>
-        <input type="date" id="date" required>
+        <div id="tab_form" class="tab-content">
+            <form id="tenkoForm">
+
+                <div class="section-title">0. モード選択</div>
+                <div class="radio-group">
+                    <label><input type="radio" name="mode" value="出発点呼" required> 出発点呼<span class="required"></span></label>
+                    <label><input type="radio" name="mode" value="帰庫点呼（日報）"> 帰庫点呼（日報）<span class="required"></span></label>
+                </div>
+                
+                <div class="section-title">1. 基本情報</div>
+                <label for="date">日付<span class="required"></span></label>
+                <input type="date" id="date" required>
+                
+                <label for="driverName">ドライバー名<span class="required"></span></label>
+                <input type="text" id="driverName" required>
+
+                <label for="company">所属会社<span class="required"></span></label>
+                <input type="text" id="company" required>
+                
+                <label for="email">連絡先（任意）</label>
+                <input type="email" id="email" placeholder="メールアドレスまたはメモ">
+                
+                <label for="client">案件（荷主）</label>
+                <input type="text" id="client">
+
+                <label for="area">エリア</label>
+                <input type="text" id="area">
+
+                <label for="base">出庫ベース</label>
+                <input type="text" id="base">
+
+                <label for="startPlace">出庫場所</label>
+                <input type="text" id="startPlace">
+
+                <div id="section_departure">
+                    <div class="section-title">2. 出発前チェック</div>
+                    <label for="workTime">出勤時間</label><input type="time" id="workTime">
+                    <label for="startTime">出発時間<span class="required"></span></label><input type="time" id="startTime" required>
+                    <label for="condition">体調<span class="required"></span></label>
+                    <select id="condition" required><option value="">選択してください</option><option value="良好">良好</option><option value="普通">普通</option><option value="不調">不調</option></select>
+                    <label for="sleep">睡眠時間 (時間)</label><input type="number" id="sleep" step="0.5" placeholder="例: 6.5">
+                    <label for="drink">飲酒 (24h以内)<span class="required"></span></label>
+                    <div class="radio-group"><label><input type="radio" name="drink" value="なし" required> なし</label><label><input type="radio" name="drink" value="あり"> あり</label></div>
+                    <label for="medicine">服薬 (運転に影響する薬)</label>
+                    <div class="radio-group"><label><input type="radio" name="medicine" value="なし"> なし</label><label><input type="radio" name="medicine" value="あり"> あり</label></div>
+                    <label for="temp">体温 (°C)<span class="required"></span></label><input type="number" id="temp" step="0.1" required placeholder="例: 36.5">
+                    <label for="alcoholValue">アルコール検査値 (mg/L)<span class="required"></span></label><input type="text" id="alcoholValue" required placeholder="例: 0.00">
+                    <label for="startMeter">出発前メーター (km)<span class="required"></span></label><input type="number" id="startMeter" required>
+                    <label for="memo">メモ</label><textarea id="memo" rows="3"></textarea>
+                </div>
+
+
+                <div id="section_check">
+                    <div class="section-title">3. 日常点検チェック</div>
+                    <label>ブレーキ</label><div class="radio-group"><label><input type="radio" name="check_brake" value="OK" required> OK</label><label><input type="radio" name="check_brake" value="異常あり"> 異常あり</label></div>
+                    <label>タイヤ</label><div class="radio-group"><label><input type="radio" name="check_tire" value="OK" required> OK</label><label><input type="radio" name="check_tire" value="異常あり"> 異常あり</label></div>
+                    <label>灯火類</label><div class="radio-group"><label><input type="radio" name="check_light" value="OK" required> OK</label><label><input type="radio" name="check_light" value="異常あり"> 異常あり</label></div>
+                    <label>カメラ・ミラー</label><div class="radio-group"><label><input type="radio" name="check_camera" value="OK" required> OK</label><label><input type="radio" name="check_camera" value="異常あり"> 異常あり</label></div>
+                    <label>車体外観</label><div class="radio-group"><label><input type="radio" name="check_body" value="OK" required> OK</label><label><input type="radio" name="check_body" value="異常あり"> 異常あり</label></div>
+                    <label>その他点検</label><div class="radio-group"><label><input type="radio" name="check_other" value="OK" required> OK</label><label><input type="radio" name="check_other" value="異常あり"> 異常あり</label></div>
+                    <label for="check_note">点検メモ</label><textarea id="check_note" rows="3"></textarea>
+                </div>
+
+                <div id="section_return" style="display:none;">
+                    <div class="section-title">4. 運行・帰庫記録</div>
+                    <label for="returnPlace">帰庫場所<span class="required"></span></label><input type="text" id="returnPlace" required>
+                    <label for="returnTime">帰庫時間<span class="required"></span></label><input type="time" id="returnTime" required>
+                    <label for="returnMeter">帰庫メーター (km)<span class="required"></span></label><input type="number" id="returnMeter" required>
+                    <label for="distance">総走行距離 (自動計算)</label><input type="number" id="distance" readonly>
+                    <label for="rest">休憩時間・場所 (例: 1時間30分, 道の駅)</label><input type="text" id="rest">
+                    <label for="codStatus">代金入金状況 (着払い/立替)<span class="required"></span></label>
+                    <div class="radio-group"><label><input type="radio" name="codStatus" value="なし" required> なし</label><label><input type="radio" name="codStatus" value="入金済"> 入金済</label><label><input type="radio" name="codStatus" value="後日対応"> 後日対応</label></div>
+                    <label for="codAmount">代金入金額 (円)</label><input type="number" id="codAmount">
+                    <label for="roadStatus">道路・運行状況</label><textarea id="roadStatus" rows="3"></textarea>
+                    <label for="abnormalDetail">運行中の異常の詳細 (あれば)</label><textarea id="abnormalDetail" rows="3"></textarea>
+                </div>
+
+                <button type="submit">この記録を保存する</button>
+
+            </form>
+            <div id="message" class="message-box"></div>
+        </div>
         
-        <label for="driverName" class="required">ドライバー名</label>
-        <input type="text" id="driverName" required>
-
-        <label for="company" class="required">所属会社</label>
-        <input type="text" id="company" required>
-        
-        <label for="email" class="required">メールアドレス（控え送付先）</label>
-        <input type="email" id="email" required placeholder="例: driver@example.com">
-        
-        <label for="client">案件（荷主）</label>
-        <input type="text" id="client">
-
-        <label for="area">エリア</label>
-        <input type="text" id="area">
-
-        <label for="base">出庫ベース</label>
-        <input type="text" id="base">
-
-        <label for="startPlace">出庫場所</label>
-        <input type="text" id="startPlace">
-
-
-        <div id="section_departure">
-            <div class="section-title">2. 出発前チェック</div>
-            
-            <label for="workTime">出勤時間</label>
-            <input type="time" id="workTime">
-
-            <label for="startTime" class="required">出発時間</label>
-            <input type="time" id="startTime" required>
-
-            <label for="condition" class="required">体調</label>
-            <select id="condition" required>
-                <option value="">選択してください</option>
-                <option value="良好">良好</option>
-                <option value="普通">普通</option>
-                <option value="不調">不調</option>
-            </select>
-            
-            <label for="sleep">睡眠時間 (時間)</label>
-            <input type="number" id="sleep" step="0.5" placeholder="例: 6.5">
-
-            <label for="drink" class="required">飲酒 (24h以内)</label>
-            <div class="radio-group required">
-                <label><input type="radio" name="drink" value="なし" required> なし</label>
-                <label><input type="radio" name="drink" value="あり"> あり</label>
-            </div>
-
-            <label for="medicine">服薬 (運転に影響する薬)</label>
-            <div class="radio-group">
-                <label><input type="radio" name="medicine" value="なし"> なし</label>
-                <label><input type="radio" name="medicine" value="あり"> あり</label>
+        <div id="tab_history" class="tab-content" style="display:none;">
+            <div class="section-title" style="margin-top: 0;">保存された点呼記録 (このブラウザ内のみ)</div>
+            <div id="historyList">
+                <p style="text-align:center; color:#777; padding: 20px;">まだ記録がありません。</p>
             </div>
             
-            <label for="temp" class="required">体温 (°C)</label>
-            <input type="number" id="temp" step="0.1" required placeholder="例: 36.5">
-
-            <label for="alcoholValue" class="required">アルコール検査値 (mg/L)</label>
-            <input type="text" id="alcoholValue" required placeholder="例: 0.00">
+            <button id="pdfPrintButton" class="print-button" style="display:none; background-color: var(--color-ofa-blue);">PDFを作成して印刷</button>
+            <button id="pdfBackButton" class="back-button" style="display:none; margin-top:10px; background-color:#7F8C8D;" onclick="showTab('history')">履歴一覧に戻る</button>
             
-            <label for="startMeter" class="required">出発前メーター (km)</label>
-            <input type="number" id="startMeter" required>
-            
-            <label for="licenseFile">免許証画像 (出発点呼時のみ)</label>
-            <input type="file" id="licenseFile" accept="image/*">
-            
-            <label for="memo">メモ</label>
-            <textarea id="memo" rows="3"></textarea>
+            <div id="pdfOutput" style="display:none;"></div>
         </div>
-
-
-        <div id="section_check">
-            <div class="section-title">3. 日常点検チェック</div>
-            
-            <label>ブレーキ</label>
-            <div class="radio-group required">
-                <label><input type="radio" name="check_brake" value="OK" required> OK</label>
-                <label><input type="radio" name="check_brake" value="異常あり"> 異常あり</label>
-            </div>
-            
-            <label>タイヤ</label>
-            <div class="radio-group required">
-                <label><input type="radio" name="check_tire" value="OK" required> OK</label>
-                <label><input type="radio" name="check_tire" value="異常あり"> 異常あり</label>
-            </div>
-            
-            <label>灯火類</label>
-            <div class="radio-group required">
-                <label><input type="radio" name="check_light" value="OK" required> OK</label>
-                <label><input type="radio" name="check_light" value="異常あり"> 異常あり</label>
-            </div>
-            
-            <label>カメラ・ミラー</label>
-            <div class="radio-group required">
-                <label><input type="radio" name="check_camera" value="OK" required> OK</label>
-                <label><input type="radio" name="check_camera" value="異常あり"> 異常あり</label>
-            </div>
-            
-            <label>車体外観</label>
-            <div class="radio-group required">
-                <label><input type="radio" name="check_body" value="OK" required> OK</label>
-                <label><input type="radio" name="check_body" value="異常あり"> 異常あり</label>
-            </div>
-            
-            <label>その他点検</label>
-            <div class="radio-group required">
-                <label><input type="radio" name="check_other" value="OK" required> OK</label>
-                <label><input type="radio" name="check_other" value="異常あり"> 異常あり</label>
-            </div>
-
-            <label for="check_note">点検メモ</label>
-            <textarea id="check_note" rows="3"></textarea>
-
-            <label for="carAbnormalFile">車両異常箇所写真 (任意)</label>
-            <input type="file" id="carAbnormalFile" accept="image/*">
-        </div>
-
-        <div id="section_return" style="display:none;">
-            <div class="section-title">4. 運行・帰庫記録</div>
-            
-            <label for="returnPlace" class="required">帰庫場所</label>
-            <input type="text" id="returnPlace" required>
-            
-            <label for="returnTime" class="required">帰庫時間</label>
-            <input type="time" id="returnTime" required>
-            
-            <label for="returnMeter" class="required">帰庫メーター (km)</label>
-            <input type="number" id="returnMeter" required>
-            
-            <label for="distance">総走行距離 (自動計算)</label>
-            <input type="number" id="distance" readonly>
-            
-            <label for="rest">休憩時間・場所 (例: 1時間30分, 道の駅)</label>
-            <input type="text" id="rest">
-            
-            <label for="codStatus" class="required">代金入金状況 (着払い/立替)</label>
-            <div class="radio-group required">
-                <label><input type="radio" name="codStatus" value="なし" required> なし</label>
-                <label><input type="radio" name="codStatus" value="入金済"> 入金済</label>
-                <label><input type="radio" name="codStatus" value="後日対応"> 後日対応</label>
-            </div>
-            
-            <label for="codAmount">代金入金額 (円)</label>
-            <input type="number" id="codAmount">
-
-            <label for="roadStatus">道路・運行状況</label>
-            <textarea id="roadStatus" rows="3"></textarea>
-
-            <label for="abnormalDetail">運行中の異常の詳細 (あれば)</label>
-            <textarea id="abnormalDetail" rows="3"></textarea>
-        </div>
-
-        <button type="submit">送信して記録する</button>
-
-    </form>
-    
-    <div id="message" class="message-box"></div>
+    </div>
 </div>
 
 <script>
     /* -------------------------------------------------- */
-    /* JavaScript: データの取得とGASへの送信処理 */
+    /* JavaScript: ローカルストレージ処理とPDF生成機能 (機能は前バージョンと同一) */
     /* -------------------------------------------------- */
 
-    // ★★★ 1. 設定情報: ここを修正してください ★★★
-    // 最新のGASのWebアプリURLに置き換えています
-    const GAS_URL = 'https://script.google.com/macros/s/AKfycbxOPZMwBHtDkvTeGpLpX0fMK0c9ufVCvqHc0qfIx0DvcPrmDNpTvgDwrzuIvUgLB5ok/exec'; 
-    
-    // 運行管理者グループのLINE Notifyトークンをここに固定で設定してください
-    const ADMIN_LINE_TOKEN = 'YOUR_ADMIN_GROUP_LINE_TOKEN'; 
-    // ★★★ ---------------------------------- ★★★
+    const LOCAL_STORAGE_KEY = 'ofaGroupRecords';
 
     const form = document.getElementById('tenkoForm');
     const modeRadios = document.getElementsByName('mode');
@@ -383,11 +307,19 @@
     const startMeterInput = document.getElementById('startMeter');
     const returnMeterInput = document.getElementById('returnMeter');
     const distanceInput = document.getElementById('distance');
-    
-    // 現在時刻と日付を設定
+    const historyList = document.getElementById('historyList');
+    const pdfOutput = document.getElementById('pdfOutput');
+    const pdfPrintButton = document.getElementById('pdfPrintButton');
+    const pdfBackButton = document.getElementById('pdfBackButton');
+
+    // 初期化
     document.getElementById('date').value = new Date().toISOString().slice(0, 10);
-    
-    // フォームの表示切り替えロジック
+    updateFormVisibility();
+    loadRecordsAndRenderHistory();
+
+    // --------------------------------------------------
+    // 1. フォームの表示切り替え
+    // --------------------------------------------------
     function updateFormVisibility() {
         const mode = document.querySelector('input[name="mode"]:checked');
         if (!mode) return;
@@ -399,15 +331,17 @@
         checkSection.style.display = isDeparture ? 'block' : 'none';
         returnSection.style.display = isReturn ? 'block' : 'none';
 
-        // 必須属性の動的な管理 (簡易版)
         const requiredDeparture = departureSection.querySelectorAll('[required]');
         const requiredReturn = returnSection.querySelectorAll('[required]');
 
         requiredDeparture.forEach(el => el.required = isDeparture);
         requiredReturn.forEach(el => el.required = isReturn);
     }
+    modeRadios.forEach(radio => radio.addEventListener('change', updateFormVisibility));
 
-    // 総走行距離の自動計算
+    // --------------------------------------------------
+    // 2. 距離計算
+    // --------------------------------------------------
     function calculateDistance() {
         const start = parseFloat(startMeterInput.value);
         const end = parseFloat(returnMeterInput.value);
@@ -417,82 +351,45 @@
             distanceInput.value = '';
         }
     }
-    
-    modeRadios.forEach(radio => radio.addEventListener('change', updateFormVisibility));
     returnMeterInput.addEventListener('input', calculateDistance);
 
-
-    // Base64エンコード処理
-    function getBase64(file) {
-        return new Promise((resolve, reject) => {
-            const reader = new FileReader();
-            reader.readAsDataURL(file);
-            reader.onload = () => resolve(reader.result.split(',')[1]); // Base64部分のみ
-            reader.onerror = error => reject(error);
-        });
-    }
-
-    // フォーム送信時のメイン処理
-    form.addEventListener('submit', async function(e) {
+    // --------------------------------------------------
+    // 3. フォーム送信 (ローカル保存)
+    // --------------------------------------------------
+    form.addEventListener('submit', function(e) {
         e.preventDefault();
         
-        // ローディング表示
-        messageBox.className = 'message-box';
-        messageBox.classList.add('success');
-        messageBox.textContent = '送信中です... しばらくお待ちください。';
-        messageBox.style.display = 'block';
-
         const mode = document.querySelector('input[name="mode"]:checked').value;
-        const licenseFileEl = document.getElementById('licenseFile');
-        const carAbnormalFileEl = document.getElementById('carAbnormalFile');
-        
-        let licenseBase64 = null;
-        let carAbnormalBase64 = null;
 
-        try {
-            // ファイルのBase64エンコード
-            if (licenseFileEl.files.length > 0) {
-                licenseBase64 = await getBase64(licenseFileEl.files[0]);
-            }
-            if (carAbnormalFileEl.files.length > 0) {
-                carAbnormalBase64 = await getBase64(carAbnormalFileEl.files[0]);
-            }
-        } catch(err) {
-            showMessage('ファイルの読み込みに失敗しました。ファイルサイズが大きすぎる可能性があります。', 'error');
-            return;
-        }
-
-        // フォームデータをJSONオブジェクトにまとめる
+        // 全てのフォームデータを取得
         const formData = {
-            // 基本情報
+            id: Date.now(), // ユニークID
             date: document.getElementById('date').value,
             mode: mode,
             driverName: document.getElementById('driverName').value,
             company: document.getElementById('company').value,
             email: document.getElementById('email').value,
-            // ★ GASコードを修正しないため、固定トークンをここで挿入 ★
-            lineToken: ADMIN_LINE_TOKEN, 
-            // その他の基本情報
             client: document.getElementById('client').value,
             area: document.getElementById('area').value,
             base: document.getElementById('base').value,
             startPlace: document.getElementById('startPlace').value,
+            submitTime: new Date().toLocaleTimeString('ja-JP'),
         };
 
+        // モード別のデータを追加
         if (mode === '出発点呼') {
             Object.assign(formData, {
-                // 出発前チェック
                 workTime: document.getElementById('workTime').value,
                 startTime: document.getElementById('startTime').value,
                 condition: document.getElementById('condition').value,
                 sleep: document.getElementById('sleep').value,
                 drink: document.querySelector('input[name="drink"]:checked').value,
-                medicine: document.querySelector('input[name="medicine"]:checked')?.value || '',
+                medicine: document.querySelector('input[name="medicine"]:checked')?.value || 'なし',
                 temp: document.getElementById('temp').value,
                 alcoholValue: document.getElementById('alcoholValue').value,
                 startMeter: document.getElementById('startMeter').value,
                 memo: document.getElementById('memo').value,
-                // 日常点検
+                // 点検
                 check_brake: document.querySelector('input[name="check_brake"]:checked').value,
                 check_tire: document.querySelector('input[name="check_tire"]:checked').value,
                 check_light: document.querySelector('input[name="check_light"]:checked').value,
@@ -503,7 +400,6 @@
             });
         } else if (mode === '帰庫点呼（日報）') {
             Object.assign(formData, {
-                // 帰庫後記録
                 returnPlace: document.getElementById('returnPlace').value,
                 returnTime: document.getElementById('returnTime').value,
                 returnMeter: document.getElementById('returnMeter').value,
@@ -513,67 +409,226 @@
                 codAmount: document.getElementById('codAmount').value,
                 roadStatus: document.getElementById('roadStatus').value,
                 abnormalDetail: document.getElementById('abnormalDetail').value,
-                // 帰庫時も出発時の情報を空で送る (スプレッドシートの列をずらさないため)
-                startMeter: '', 
-                startTime: '',
-                workTime: ''
             });
         }
-
-        // データをFormDataに格納して送信準備
-        const dataToSend = new FormData();
-        dataToSend.append('json', JSON.stringify(formData));
         
-        // ファイルデータ (Base64) を文字列としてそのまま送信
-        if (licenseBase64) {
-            dataToSend.append('licenseFile', licenseBase64);
-        }
-        if (carAbnormalBase64) {
-            dataToSend.append('carAbnormalFile', carAbnormalBase64);
-        }
+        saveRecord(formData);
+        showMessage(mode + 'の記録をこのブラウザ内に保存しました！', 'success');
+        form.reset();
+        document.getElementById('date').value = new Date().toISOString().slice(0, 10);
+        updateFormVisibility();
+        loadRecordsAndRenderHistory(); // 履歴を更新
+        showTab('history'); // 履歴タブに移動
+    });
+    
+    // --------------------------------------------------
+    // 4. ローカルストレージ操作
+    // --------------------------------------------------
+    function getRecords() {
+        const records = localStorage.getItem(LOCAL_STORAGE_KEY);
+        return records ? JSON.parse(records) : [];
+    }
 
-        // GASへの送信
-        try {
-            const response = await fetch(GAS_URL, {
-                method: 'POST',
-                body: dataToSend,
-            });
-            
-            // レスポンスがJSONでない場合の処理を追加
-            let result;
-            try {
-                result = await response.json();
-            } catch (e) {
-                 // GASからの応答がHTMLやテキストだった場合
-                showMessage('GASからの応答形式が不正です。GASコードとデプロイ設定を確認してください。', 'error');
-                console.error('GAS Response Error:', await response.text());
+    function saveRecord(newRecord) {
+        let records = getRecords();
+        
+        // 帰庫点呼の場合、直前の出発点呼記録を探して結合する（同じ日、同じドライバー）
+        if (newRecord.mode === '帰庫点呼（日報）') {
+            const departureRecordIndex = records.findIndex(r => 
+                r.mode === '出発点呼' && 
+                r.date === newRecord.date && 
+                r.driverName === newRecord.driverName &&
+                !r.returnTime // 帰庫情報がまだないもの
+            );
+
+            if (departureRecordIndex !== -1) {
+                // 既存の出発記録に帰庫データをマージ
+                records[departureRecordIndex] = { ...records[departureRecordIndex], ...newRecord };
+                localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(records));
                 return;
             }
-
-            if (result.status === 'SUCCESS') {
-                showMessage(result.message + ' メールで控えをご確認ください。', 'success');
-                // 成功後、モード選択と基本情報以外をクリア
-                document.getElementById('tenkoForm').reset();
-            } else {
-                showMessage('送信エラー: ' + result.message + ' 設定を確認してください。', 'error');
-            }
-
-        } catch (error) {
-            showMessage('通信エラーが発生しました。インターネット接続を確認してください。GAS_URLが正しいか確認してください。', 'error');
-            console.error('Fetch Error:', error);
         }
+        
+        // 新しい記録として保存
+        records.push(newRecord);
+        records.sort((a, b) => b.id - a.id); // 新しいものを先頭に
+        localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(records));
+    }
+
+    // --------------------------------------------------
+    // 5. 履歴リストのレンダリング
+    // --------------------------------------------------
+    function loadRecordsAndRenderHistory() {
+        const records = getRecords();
+        historyList.innerHTML = '';
+
+        if (records.length === 0) {
+            historyList.innerHTML = '<p style="text-align:center; color:#777; padding: 20px;">まだ記録がありません。</p>';
+            return;
+        }
+
+        records.forEach(record => {
+            const isCompleted = record.mode === '帰庫点呼（日報）' || (record.mode === '出発点呼' && record.returnTime);
+            const status = isCompleted ? ' (帰庫完了)' : (record.mode === '出発点呼' ? ' (帰庫待ち)' : ' (単独帰庫)');
+            
+            const item = document.createElement('div');
+            item.className = 'record-item' + (isCompleted ? ' completed' : '');
+            item.innerHTML = `
+                <div class="record-item-title">${record.date} ${status}</div>
+                <div class="record-item-mode">${record.driverName} / ${record.company} / ${record.mode}</div>
+            `;
+            item.onclick = () => showRecordDetails(record);
+            historyList.appendChild(item);
+        });
+    }
+
+    // --------------------------------------------------
+    // 6. 記録詳細表示とPDF生成
+    // --------------------------------------------------
+    function showRecordDetails(record) {
+        // PDF出力エリアにHTMLを整形して挿入
+        pdfOutput.innerHTML = generateRecordHtml(record);
+        
+        // タブをPDF表示モードに切り替え
+        const tabContent = document.getElementById('tab_history');
+        const listContainer = document.getElementById('historyList');
+
+        tabContent.style.display = 'block';
+        listContainer.style.display = 'none';
+        pdfOutput.style.display = 'block';
+        
+        pdfPrintButton.style.display = 'block';
+        pdfBackButton.style.display = 'block';
+    }
+    
+    // PDF/印刷ボタンのイベントリスナー
+    pdfPrintButton.addEventListener('click', function() {
+        window.print(); // ブラウザの印刷ダイアログを起動
     });
 
-    // メッセージ表示ヘルパー
+    // 記録のHTML整形 (PDF出力用)
+    function generateRecordHtml(data) {
+        // 出発と帰庫のデータを区別するために、一時的な変数を作成
+        const departureData = data.mode === '出発点呼' ? data : getDepartureHalf(data);
+        const returnData = data.mode === '帰庫点呼（日報）' ? data : getReturnHalf(data);
+        
+        const isCompleted = departureData && returnData && (departureData.startMeter && returnData.returnMeter); // メーター情報があることを確認
+
+        let html = `
+            <style>
+                /* PDF用インラインスタイル */
+                .pdf-doc { font-family: 'Noto Sans JP', sans-serif; padding: 20px; border: 1px solid #ddd; }
+                .pdf-header { text-align: center; margin-bottom: 20px; border-bottom: 3px solid #38C172; }
+                .pdf-header h2 { color: #3498DB; margin: 0; }
+                .pdf-section { margin-top: 15px; border-bottom: 1px solid #eee; padding-bottom: 5px; }
+                .pdf-section-title { background-color: #F8F9F9; padding: 8px 10px; font-weight: bold; border-left: 5px solid #F1C40F; color: #3498DB; }
+                .pdf-item { display: flex; border-bottom: 1px dotted #ccc; padding: 5px 0; font-size: 14px; }
+                .pdf-item-label { width: 35%; font-weight: bold; }
+                .pdf-item-value { width: 65%; }
+                .pdf-status { background-color: ${isCompleted ? '#d4edda' : '#f8d7da'}; padding: 10px; text-align: center; font-weight: bold; margin-bottom: 15px; border-radius: 4px; }
+            </style>
+            <div class="pdf-doc">
+                <div class="pdf-header">
+                    <div style="color:#E74C3C; font-weight:bold;">OFA GROUP</div>
+                    <h2>Web点呼・日報 記録 (${data.date})</h2>
+                </div>
+                <div class="pdf-status">${isCompleted ? '運行完了 (出発・帰庫 記録済み)' : (data.mode === '出発点呼' ? '出発点呼のみ記録' : '帰庫点呼のみ記録')}</div>
+                
+                <div class="pdf-section">
+                    <div class="pdf-section-title">基本情報</div>
+                    <div class="pdf-item"><div class="pdf-item-label">ドライバー名:</div><div class="pdf-item-value">${data.driverName || '-'}</div></div>
+                    <div class="pdf-item"><div class="pdf-item-label">所属会社:</div><div class="pdf-item-value">${data.company || '-'}</div></div>
+                    <div class="pdf-item"><div class="pdf-item-label">案件/エリア:</div><div class="pdf-item-value">${data.client || '-'} / ${data.area || '-'}</div></div>
+                    <div class="pdf-item"><div class="pdf-item-label">出庫ベース/場所:</div><div class="pdf-item-value">${data.base || '-'} / ${data.startPlace || '-'}</div></div>
+                </div>
+        `;
+        
+        // 出発点呼セクション
+        if (departureData && departureData.startTime) {
+            html += `
+                <div class="pdf-section">
+                    <div class="pdf-section-title">出発点呼 (時刻: ${departureData.startTime} 記録時刻: ${departureData.submitTime})</div>
+                    <div class="pdf-item"><div class="pdf-item-label">体調/体温:</div><div class="pdf-item-value">${departureData.condition || '-'} / ${departureData.temp || '-'}℃</div></div>
+                    <div class="pdf-item"><div class="pdf-item-label">アルコール値:</div><div class="pdf-item-value">${departureData.alcoholValue || '-'} mg/L</div></div>
+                    <div class="pdf-item"><div class="pdf-item-label">飲酒(24h)/服薬:</div><div class="pdf-item-value">${departureData.drink || '-'} / ${departureData.medicine || '-'}</div></div>
+                    <div class="pdf-item"><div class="pdf-item-label">出発前メーター:</div><div class="pdf-item-value">${departureData.startMeter || '-'} km</div></div>
+                    <div class="pdf-item"><div class="pdf-item-label">メモ:</div><div class="pdf-item-value">${departureData.memo || '-'}</div></div>
+                </div>
+                <div class="pdf-section">
+                    <div class="pdf-section-title">日常点検</div>
+                    <div class="pdf-item"><div class="pdf-item-label">ブレーキ/タイヤ:</div><div class="pdf-item-value">${departureData.check_brake || '-'} / ${departureData.check_tire || '-'}</div></div>
+                    <div class="pdf-item"><div class="pdf-item-label">灯火類/カメラ:</div><div class="pdf-item-value">${departureData.check_light || '-'} / ${departureData.check_camera || '-'}</div></div>
+                    <div class="pdf-item"><div class="pdf-item-label">車体外観/その他:</div><div class="pdf-item-value">${departureData.check_body || '-'} / ${departureData.check_other || '-'}</div></div>
+                    <div class="pdf-item"><div class="pdf-item-label">点検メモ:</div><div class="pdf-item-value">${departureData.check_note || '-'}</div></div>
+                </div>
+            `;
+        }
+        
+        // 帰庫点呼セクション
+        if (returnData && returnData.returnTime) {
+            html += `
+                <div class="pdf-section">
+                    <div class="pdf-section-title">帰庫点呼/日報 (時刻: ${returnData.returnTime} 記録時刻: ${returnData.submitTime})</div>
+                    <div class="pdf-item"><div class="pdf-item-label">帰庫場所:</div><div class="pdf-item-value">${returnData.returnPlace || '-'}</div></div>
+                    <div class="pdf-item"><div class="pdf-item-label">総走行距離:</div><div class="pdf-item-value">${returnData.distance || '-'} km (出発メーター: ${departureData ? departureData.startMeter : '-'})</div></div>
+                    <div class="pdf-item"><div class="pdf-item-label">休憩時間/場所:</div><div class="pdf-item-value">${returnData.rest || '-'}</div></div>
+                    <div class="pdf-item"><div class="pdf-item-label">代金入金状況/額:</div><div class="pdf-item-value">${returnData.codStatus || '-'} / ${returnData.codAmount ? returnData.codAmount + '円' : '-'}</div></div>
+                    <div class="pdf-item"><div class="pdf-item-label">道路・運行状況:</div><div class="pdf-item-value">${returnData.roadStatus || '-'}</div></div>
+                    <div class="pdf-item"><div class="pdf-item-label">異常の詳細:</div><div class="pdf-item-value">${returnData.abnormalDetail || '-'}</div></div>
+                </div>
+            `;
+        }
+
+        html += '</div>';
+        return html;
+    }
+    
+    // --------------------------------------------------
+    // 7. タブ切り替えとヘルパー
+    // --------------------------------------------------
+    function showTab(tabId) {
+        document.querySelectorAll('.tab-content').forEach(el => el.style.display = 'none');
+        document.querySelectorAll('.tab-button').forEach(el => el.classList.remove('active'));
+        
+        document.getElementById(`tab_${tabId}`).style.display = 'block';
+        document.querySelector(`.tab-button[onclick="showTab('${tabId}')"]`).classList.add('active');
+
+        if (tabId === 'history') {
+            loadRecordsAndRenderHistory();
+            // 履歴一覧を表示し、PDF詳細表示をリセット
+            historyList.style.display = 'block';
+            pdfOutput.style.display = 'none';
+            pdfPrintButton.style.display = 'none';
+            pdfBackButton.style.display = 'none';
+        }
+    }
+
     function showMessage(msg, type) {
         messageBox.className = 'message-box';
         messageBox.classList.add(type);
         messageBox.textContent = msg;
         messageBox.style.display = 'block';
     }
+    
+    // 結合された記録から、出発部分のみを返すヘルパー
+    function getDepartureHalf(data) {
+        if (data.mode === '出発点呼') return data;
+        const departureKeys = ['workTime', 'startTime', 'condition', 'sleep', 'drink', 'medicine', 'temp', 'alcoholValue', 'startMeter', 'memo', 'check_brake', 'check_tire', 'check_light', 'check_camera', 'check_body', 'check_other', 'check_note'];
+        const departureData = {};
+        departureKeys.forEach(key => departureData[key] = data[key]);
+        departureData.submitTime = data.submitTime;
+        return departureData;
+    }
 
-    // 初期表示の更新
-    updateFormVisibility();
+    // 結合された記録から、帰庫部分のみを返すヘルパー
+    function getReturnHalf(data) {
+        if (data.mode === '帰庫点呼（日報）') return data;
+        const returnKeys = ['returnPlace', 'returnTime', 'returnMeter', 'distance', 'rest', 'codStatus', 'codAmount', 'roadStatus', 'abnormalDetail'];
+        const returnData = {};
+        returnKeys.forEach(key => returnData[key] = data[key]);
+        returnData.submitTime = data.submitTime;
+        return returnData;
+    }
 </script>
 
 </body>
