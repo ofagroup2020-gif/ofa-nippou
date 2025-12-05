@@ -55,9 +55,8 @@
       color: #222;
       margin-bottom: 12px;
     }
-    /* OFAカラー: O=赤, F=黄, A=青 */
-    .logo-box span:nth-child(1) { color: #f97316; } /* O: orange-red */
-    .logo-box span:nth-child(2) { color: #facc15; } /* F: yellow */
+    .logo-box span:nth-child(1) { color: #ef4444; } /* O: red   */
+    .logo-box span:nth-child(2) { color: #facc15; } /* F: yellow*/
     .logo-box span:nth-child(3) { color: #3b82f6; } /* A: blue  */
 
     h1 {
@@ -104,6 +103,10 @@
       line-height: 1.5;
       margin-bottom: 12px;
     }
+    .note-important {
+      color: #dc2626;
+      font-weight: 700;
+    }
 
     label {
       display: block;
@@ -148,7 +151,8 @@
       margin-top: 2px;
     }
 
-    .radio-group {
+    .radio-group,
+    .check-group {
       display: flex;
       flex-wrap: wrap;
       gap: 8px;
@@ -235,7 +239,6 @@
 </head>
 <body>
   <div class="wrapper">
-
     <!-- ヘッダー -->
     <div class="card header-card">
       <div class="logo-box">
@@ -250,47 +253,46 @@
       </div>
     </div>
 
-    <!-- フォーム全体 -->
-    <form id="tenkoForm" enctype="multipart/form-data" class="card">
-
-      <!-- 01 基本情報 -->
+    <!-- 01 基本情報 -->
+    <div class="card">
       <div class="section-title">
         <div class="section-chip">01 基本情報</div>
         <span>本日の情報を入力してください</span>
       </div>
       <div class="note">
         ※ 日付は自動で本日が入ります。<br />
-        ※ 朝の「出発点呼」で1回送信し、夜の「帰庫点呼」で同じフォームをもう一度送信してください。
+        <span class="note-important">※ 朝の「出発点呼」で1回送信し、夜の「帰庫点呼」で同じフォームをもう一度送信してください。</span><br />
+        ※ メンバーシップLINEなどからアクセスして、毎日「出発前」に入力してください。
       </div>
 
       <label>日付 <span class="req">必須</span></label>
-      <input type="text" id="date" name="date" readonly />
+      <input type="text" id="date" readonly />
 
       <label>ドライバー名 <span class="req">必須</span></label>
-      <input type="text" id="driverName" name="driverName" placeholder="山田 太郎 など" />
+      <input type="text" id="driverName" placeholder="山田 太郎 など" />
 
       <label>所属会社 <span class="req">必須</span></label>
-      <input type="text" id="company" name="company" placeholder="株式会社OFA など" />
+      <input type="text" id="company" placeholder="株式会社OFA など" />
 
       <label>本日の主な案件（荷主・現場名） <span class="req">必須</span></label>
-      <input type="text" id="client" name="client" placeholder="Amazon / ヤマト / 佐川 / 日本郵便 など" />
+      <input type="text" id="client" placeholder="Amazon / ヤマト / 佐川 / 日本郵便 など" />
 
       <label>エリア <span class="req">必須</span></label>
-      <input type="text" id="area" name="area" placeholder="鹿児島市〇〇 / 熊本市〇〇 など" />
+      <input type="text" id="area" placeholder="鹿児島市〇〇 / 熊本市〇〇 など" />
 
       <label>出庫ベース（担当拠点） <span class="req">必須</span></label>
-      <input type="text" id="base" name="base" placeholder="伊敷営業所 / 〇〇デポ など" />
+      <input type="text" id="base" placeholder="伊敷営業所 / 〇〇デポ など" />
 
       <label>出庫場所（駐車場・センターなど） <span class="req">必須</span></label>
-      <input type="text" id="startPlace" name="startPlace" placeholder="鹿児島市〇〇駐車場 など" />
+      <input type="text" id="startPlace" placeholder="鹿児島市〇〇駐車場 など" />
 
       <label>メールアドレス（控え送信用）</label>
-      <input type="email" id="email" name="email" placeholder="example@ofa-group.jp" />
-      <div class="help">※ 入力すると、点呼結果のコピーとPDFが届きます。</div>
+      <input type="email" id="email" placeholder="example@ofa-group.jp" />
+      <div class="help">※ 入力すると、点呼結果のコピーが届きます。</div>
+    </div>
 
-      <hr style="margin:16px -18px 12px; border:none; border-top:1px solid #e5e7eb;" />
-
-      <!-- 02 出発前入力 -->
+    <!-- 02 出発前入力 -->
+    <div class="card">
       <div class="section-title">
         <div class="section-chip">02 出発前入力</div>
         <span>出勤前〜出発時の状態を記録</span>
@@ -299,11 +301,11 @@
       <div class="two-col">
         <div>
           <label>出勤時間</label>
-          <input type="time" id="workTime" name="workTime" />
+          <input type="time" id="workTime" />
         </div>
         <div>
           <label>出発時間</label>
-          <input type="time" id="startTime" name="startTime" />
+          <input type="time" id="startTime" />
         </div>
       </div>
 
@@ -315,7 +317,7 @@
       </div>
 
       <label>前日睡眠時間（h）</label>
-      <input type="number" step="0.1" id="sleep" name="sleep" placeholder="例：6.5" />
+      <input type="number" step="0.1" id="sleep" placeholder="例：6.5" />
 
       <label>飲酒（過去24h）</label>
       <div class="radio-group" data-name="drink">
@@ -330,24 +332,24 @@
       </div>
 
       <label>体温（℃）</label>
-      <input type="number" step="0.1" id="temp" name="temp" placeholder="例：36.5" />
+      <input type="number" step="0.1" id="temp" placeholder="例：36.5" />
 
       <label>アルコール検知器（mg/L）</label>
-      <input type="number" step="0.01" id="alcoholValue" name="alcoholValue" placeholder="0.00" />
+      <input type="number" step="0.01" id="alcoholValue" placeholder="0.00" />
 
       <label>出発前メーター（km）</label>
-      <input type="number" step="0.1" id="startMeter" name="startMeter" placeholder="例：47772" />
+      <input type="number" step="0.1" id="startMeter" placeholder="例：47772" />
 
-      <label>運転免許証写真アップロード</label>
-      <input type="file" id="licenseImg" name="licenseImg" accept="image/*" capture="environment" />
-      <div class="help">※ 1枚のみ。スマホカメラで撮影してそのまま添付できます。</div>
+      <label>運転免許証アップロード</label>
+      <input type="file" id="licenseFile" accept="image/*" />
+      <div class="help">※ 免許証写真を1枚アップロードしてください。</div>
 
       <label>メモ・注意事項</label>
-      <textarea id="memo" name="memo" placeholder="体調・車両の気になる点・当日の注意事項など"></textarea>
+      <textarea id="memo" placeholder="体調・車両の気になる点・当日の注意事項など"></textarea>
+    </div>
 
-      <hr style="margin:16px -18px 12px; border:none; border-top:1px solid #e5e7eb;" />
-
-      <!-- 03 日常点検 -->
+    <!-- 03 日常点検 -->
+    <div class="card">
       <div class="section-title">
         <div class="section-chip">03 日常点検</div>
         <span>出発前の日常点検を入力</span>
@@ -399,44 +401,43 @@
       </div>
 
       <label>点検メモ</label>
-      <textarea id="check_note" name="check_note" placeholder="気になる箇所・交換予定・整備予約など"></textarea>
+      <textarea id="check_note" placeholder="気になる箇所・交換予定・整備予約など"></textarea>
 
-      <!-- 車両異常写真 -->
-      <label>車両の異常箇所の写真アップロード（任意）</label>
-      <input type="file" id="carImage" name="carImage" accept="image/*" capture="environment" />
-      <div class="help">※ 事故・損傷・気になる箇所があれば、その場で撮影して添付してください。</div>
+      <label>車両異常箇所の写真アップロード</label>
+      <input type="file" id="carAbnormalFile" accept="image/*" />
+      <div class="help">※ 異常がある場合のみ1枚アップロードしてください。（Driveに保存され、URLが日報に記録されます）</div>
+    </div>
 
-      <hr style="margin:16px -18px 12px; border:none; border-top:1px solid #e5e7eb;" />
-
-      <!-- 04 帰庫後入力 -->
+    <!-- 04 帰庫後入力 -->
+    <div class="card">
       <div class="section-title">
         <div class="section-chip">04 帰庫後入力</div>
         <span>業務終了時に入力してください</span>
       </div>
       <div class="note">
         一日の運行が終わったら、帰庫後の情報を入力してから送信してください。<br />
-        （朝点呼だけの場合は、ここを空欄のまま送信しても構いません）
+        ※ 朝の「出発点呼」と夜の「帰庫点呼」で、同じフォームを2回送信します。
       </div>
 
       <label>帰庫場所</label>
-      <input type="text" id="returnPlace" name="returnPlace" placeholder="鹿児島市〇〇駐車場 など" />
+      <input type="text" id="returnPlace" placeholder="鹿児島市〇〇駐車場 など" />
 
       <div class="two-col">
         <div>
           <label>帰庫時間</label>
-          <input type="time" id="returnTime" name="returnTime" />
+          <input type="time" id="returnTime" />
         </div>
         <div>
           <label>帰庫メーター（km）</label>
-          <input type="number" step="0.1" id="returnMeter" name="returnMeter" placeholder="例：48210" />
+          <input type="number" step="0.1" id="returnMeter" placeholder="例：48210" />
         </div>
       </div>
 
       <label>走行距離（km）</label>
-      <input type="number" step="0.1" id="distance" name="distance" placeholder="※ 分かる場合は入力" />
+      <input type="number" step="0.1" id="distance" placeholder="※ 分かる場合は入力" />
 
       <label>休憩時間・休憩場所</label>
-      <input type="text" id="rest" name="rest" placeholder="例：合計1h / SA・コンビニなど" />
+      <input type="text" id="rest" placeholder="例：合計1h / SA・コンビニなど" />
 
       <label>代金入金状況</label>
       <div class="radio-group" data-name="codStatus">
@@ -446,31 +447,29 @@
       </div>
 
       <label>代金入金金額（円）</label>
-      <input type="number" step="1" id="codAmount" name="codAmount" placeholder="例：12500" />
+      <input type="number" step="1" id="codAmount" placeholder="例：12500" />
 
       <label>道路・運行状況（遅延・事故・渋滞など）</label>
-      <textarea id="roadStatus" name="roadStatus" placeholder="異常なしの場合は『異常なし』と入力"></textarea>
+      <textarea id="roadStatus" placeholder="異常なしの場合は『異常なし』と入力"></textarea>
 
       <label>異常の詳細（あれば）</label>
-      <textarea id="abnormalDetail" name="abnormalDetail" placeholder="事故・物損・クレームなどの概要と対応"></textarea>
+      <textarea id="abnormalDetail" placeholder="事故・物損・クレームなどの概要と対応"></textarea>
 
       <div class="section-footer-note">
-        ※ 入力後、「OFA GROUP Web点呼を送信する」を押すと、本部と本人（メール入力時）へ控えとPDFが送信されます。<br />
-        ※ 朝点呼と帰庫点呼で2回送信して構いません（シートには2行で記録されます）。
+        ※ 入力後、「OFA GROUP Web点呼を送信する」を押すと、本部と本人（メール入力時）へ控えが送信されます。
       </div>
 
-      <button id="submitBtn" class="submit-btn" type="submit">
+      <button id="submitBtn" class="submit-btn">
         <span class="icon">✅</span>
         <span>OFA GROUP Web点呼を送信する</span>
       </button>
       <div id="status" class="status-message"></div>
-
-    </form>
+    </div>
   </div>
 
   <script>
-    // ★★ あなたのApps Scriptの exec URL ★★
-    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbz15IIDPu1ILhw3sm3H8xPx-rcdLY5ZREzSUmr83x5MR1tqOQpzM6O2CyE8Kcvg4Q0O/exec';
+    // ★ Apps Script の WebアプリURL
+    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyzpyi0Mw4uDd_Wji1q0VcalWp5_mRMucEDdzaV_Vr6OPx2_ecqh7ZviPARq5MHPQvC/exec';
 
     // 日付を自動セット（YYYY/MM/DD）
     (function setToday() {
@@ -499,21 +498,23 @@
       });
     });
 
-    const form   = document.getElementById('tenkoForm');
-    const btn    = document.getElementById('submitBtn');
-    const status = document.getElementById('status');
+    function getRadioValue(name) {
+      const r = document.querySelector('input[name="' + name + '"]:checked');
+      return r ? r.value : '';
+    }
 
-    form.addEventListener('submit', async (e) => {
-      e.preventDefault();
+    document.getElementById('submitBtn').addEventListener('click', async () => {
+      const btn = document.getElementById('submitBtn');
+      const status = document.getElementById('status');
       status.textContent = '';
       status.className = 'status-message';
 
-      // 簡易必須チェック（朝・夜どちらでも必要な分のみ）
+      // 必須チェック
       const requiredIds = ['driverName', 'company', 'client', 'area', 'base', 'startPlace'];
       for (const id of requiredIds) {
         const el = document.getElementById(id);
         if (!el.value.trim()) {
-          status.textContent = '未入力の必須項目があります：「' + id + '」';
+          status.textContent = '未入力の必須項目があります：' + id;
           status.classList.add('status-error');
           el.focus();
           return;
@@ -523,18 +524,69 @@
       btn.disabled = true;
       btn.innerHTML = '<span class="icon">⏳</span><span>送信中です…</span>';
 
+      const payload = {
+        date: document.getElementById('date').value,
+        driverName: document.getElementById('driverName').value.trim(),
+        company: document.getElementById('company').value.trim(),
+        client: document.getElementById('client').value.trim(),
+        area: document.getElementById('area').value.trim(),
+        base: document.getElementById('base').value.trim(),
+        startPlace: document.getElementById('startPlace').value.trim(),
+        email: document.getElementById('email').value.trim(),
+
+        workTime: document.getElementById('workTime').value,
+        startTime: document.getElementById('startTime').value,
+        condition: getRadioValue('condition'),
+        sleep: document.getElementById('sleep').value,
+        drink: getRadioValue('drink'),
+        medicine: getRadioValue('medicine'),
+        temp: document.getElementById('temp').value,
+        alcoholValue: document.getElementById('alcoholValue').value,
+        startMeter: document.getElementById('startMeter').value,
+        memo: document.getElementById('memo').value,
+
+        check_brake: getRadioValue('check_brake'),
+        check_tire: getRadioValue('check_tire'),
+        check_light: getRadioValue('check_light'),
+        check_camera: getRadioValue('check_camera'),
+        check_body: getRadioValue('check_body'),
+        check_other: getRadioValue('check_other'),
+        check_note: document.getElementById('check_note').value,
+
+        returnPlace: document.getElementById('returnPlace').value.trim(),
+        returnTime: document.getElementById('returnTime').value,
+        returnMeter: document.getElementById('returnMeter').value,
+        distance: document.getElementById('distance').value,
+        rest: document.getElementById('rest').value,
+        codStatus: getRadioValue('codStatus'),
+        codAmount: document.getElementById('codAmount').value,
+        roadStatus: document.getElementById('roadStatus').value,
+        abnormalDetail: document.getElementById('abnormalDetail').value
+      };
+
+      const formData = new FormData();
+      formData.append('json', JSON.stringify(payload));
+
+      const licenseFile = document.getElementById('licenseFile').files[0];
+      if (licenseFile) {
+        formData.append('licenseFile', licenseFile);
+      }
+
+      const carAbnormalFile = document.getElementById('carAbnormalFile').files[0];
+      if (carAbnormalFile) {
+        formData.append('carAbnormalFile', carAbnormalFile);
+      }
+
       try {
-        const formData = new FormData(form);
         await fetch(SCRIPT_URL, {
           method: 'POST',
-          mode: 'no-cors',
           body: formData
         });
 
-        status.textContent = '送信しました。お疲れ様でした！（PDFはメールで届きます）';
+        status.textContent = '送信しました。お疲れ様でした！';
         status.classList.add('status-success');
-
       } catch (err) {
+        console.error(err);
         status.textContent = '送信エラーが発生しました。電波状況を確認して、再度お試しください。';
         status.classList.add('status-error');
       } finally {
