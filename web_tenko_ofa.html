@@ -33,9 +33,8 @@
       box-shadow: 0 10px 25px rgba(0,0,0,0.08);
       padding: 20px 18px 24px;
       margin-bottom: 16px;
-      transition: opacity 0.3s ease; /* セクション切り替え時のアニメーション */
+      /* フォーム表示制御を無効化するため、.card.hidden のスタイルは削除 */
     }
-    .card.hidden { display: none; } /* 非表示セクション用 */
     .header-card {
       background: linear-gradient(135deg, var(--color-primary), var(--color-primary-dark));
       color: #fff;
@@ -271,7 +270,7 @@
       </div>
       <div class="note">
         ※ 日付は自動で本日が入ります。<br />
-        <span class="note-important">※ **朝の出発前**と**夜の帰庫後**で、このフォームを<span id="submitCountText">2回送信</span>してください。</span><br />
+        <span class="note-important">※ **朝の出発前**と**夜の帰庫後**で、このフォームを2回送信してください。</span><br />
       </div>
 
       <label>日付 <span class="req">必須</span></label>
@@ -421,7 +420,8 @@
         <span>業務終了時に入力してください <span class="req">（夜必須）</span></span>
       </div>
       <div class="note">
-        一日の運行が終わったら、帰庫後の情報を入力してから送信してください。
+        一日の運行が終わったら、帰庫後の情報を入力してから送信してください。<br>
+        ※ 朝の点呼時に必要な情報は、夜の送信時にも空欄がないように入力してください。
       </div>
 
       <label>帰庫場所 <span class="req">必須</span></label>
@@ -465,8 +465,8 @@
       </div>
 
       <button id="submitBtn" class="submit-btn">
-        <span class="icon">☀️</span>
-        <span id="submitBtnText">出発点呼を送信する</span>
+        <span class="icon">✅</span>
+        <span id="submitBtnText">OFA GROUP Web点呼を送信する</span>
       </button>
       <div id="status" class="status-message"></div>
     </div>
@@ -474,19 +474,12 @@
 
   <script>
     // ★ Apps Script の WebアプリURL
-    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyzpyi0Mw4uDd_Wji1q0VcalWp5_mRMucEDdzaV_Vr6OPx2_ecqh7ZviPARq5MHPQvC/exec';
+    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyzpyi0Mw4uDd_Wji1q0VcalWp5_mRMucEDDzaV_Vr6OPx2_ecqh7ZviPARq5MHPQvC/exec';
     
     // Local Storage Key
     const LOCAL_STORAGE_KEY = 'ofaTenkoData';
     const LOCAL_STORAGE_DATE_KEY = 'ofaTenkoDate';
-
-    // フォームセクション
-    const sections = {
-        base: document.getElementById('section-01'),
-        morning: [document.getElementById('section-02'), document.getElementById('section-03')],
-        evening: [document.getElementById('section-04')]
-    };
-
+    
     // -------------------------------------------------------------------
     // 初期処理
     // -------------------------------------------------------------------
@@ -499,9 +492,7 @@
         const y = d.getFullYear();
         const m = ('0' + (d.getMonth() + 1)).slice(-2);
         const day = ('0' + d.getDate()).slice(-2);
-        const todayStr = `${y}/${m}/${day}`;
-        document.getElementById('date').value = todayStr;
-        return todayStr;
+        document.getElementById('date').value = `${y}/${m}/${day}`;
     }
 
     /**
@@ -514,13 +505,18 @@
         // 日付が変わっていたら古いデータをクリア
         if (storedDate !== todayStr) {
             localStorage.removeItem(LOCAL_STORAGE_KEY);
-            return;
+            // 本日初めてアクセスした場合、以前のドライバー名を覚えておく
+            const oldData = JSON.parse(localStorage.getItem(LOCAL_STORAGE_KEY + '_temp') || '{}');
+            if (oldData.driverName) {
+                document.getElementById('driverName').value = oldData.driverName;
+                document.getElementById('company').value = oldData.company;
+            }
         }
 
         const storedData = JSON.parse(localStorage.getItem(LOCAL_STORAGE_KEY) || '{}');
 
         // テキスト・メールフィールドの復元
-        document.querySelectorAll('input[data-local-save="true"]').forEach(el => {
+        document.querySelectorAll('input[data-local-save="true"], textarea, input[type="time"], input[type="number"]').forEach(el => {
             if (storedData[el.id]) {
                 el.value = storedData[el.id];
             }
@@ -532,22 +528,24 @@
             if (storedData[name]) {
                 const input = document.querySelector(`input[name="${name}"][value="${storedData[name]}"]`);
                 if (input) {
-                    // pill選択の見た目も復元
                     input.checked = true;
                     input.closest('.pill').classList.add('selected');
                 }
             }
         });
+        
+        // 読み込み後に走行距離を再計算
+        calculateDistance();
     }
 
     /**
-     * LocalStorageに基本情報とラジオボタンの状態を保存する
+     * LocalStorageに基本情報とフォームの状態を保存する
      */
     function saveLocalStorage() {
         const dataToSave = {};
         
-        // テキスト・メールフィールドの保存
-        document.querySelectorAll('input[data-local-save="true"]').forEach(el => {
+        // 全ての入力フィールドを保存
+        document.querySelectorAll('input[type="text"], input[type="email"], input[type="number"], input[type="time"], textarea').forEach(el => {
             dataToSave[el.id] = el.value.trim();
         });
 
@@ -562,55 +560,26 @@
 
         localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(dataToSave));
         localStorage.setItem(LOCAL_STORAGE_DATE_KEY, document.getElementById('date').value);
+        
+        // ドライバー名と会社名は次の日のために一時保存
+        localStorage.setItem(LOCAL_STORAGE_KEY + '_temp', JSON.stringify({
+            driverName: document.getElementById('driverName').value.trim(),
+            company: document.getElementById('company').value.trim()
+        }));
     }
     
     /**
-     * フォームの表示状態を制御する
-     * 必須項目(driverName, company, date)が埋まっていれば朝/夜の判定を行う
+     * 走行距離を自動計算する
      */
-    async function updateFormVisibility() {
-        const driverName = document.getElementById('driverName').value.trim();
-        const company = document.getElementById('company').value.trim();
-        const date = document.getElementById('date').value;
+    function calculateDistance() {
+        const start = parseFloat(document.getElementById('startMeter').value);
+        const end = parseFloat(document.getElementById('returnMeter').value);
+        const distanceEl = document.getElementById('distance');
         
-        // 基本情報が入力されていない場合は、全て表示（初回入力）
-        if (!driverName || !company || !date) {
-            sections.morning.forEach(s => s.classList.remove('hidden'));
-            sections.evening.forEach(s => s.classList.remove('hidden'));
-            document.getElementById('submitBtnText').textContent = '出発点呼を送信する';
-            document.getElementById('submitBtn').querySelector('.icon').textContent = '☀️';
-            document.getElementById('submitCountText').textContent = '2回送信';
-            return;
-        }
-        
-        // --- 過去の送信履歴を確認（App Script経由で） ---
-        const checkUrl = `${SCRIPT_URL}?action=check&driverName=${encodeURIComponent(driverName)}&date=${encodeURIComponent(date)}`;
-        
-        let sentBefore = false;
-        try {
-            const response = await fetch(checkUrl);
-            const result = await response.json();
-            sentBefore = result.sentBefore || false; 
-        } catch(e) {
-            console.error("送信履歴チェックエラー", e);
-            // エラー時も全てのフォームを表示して、ユーザーに判断させる
-            sentBefore = false;
-        }
-        
-        if (sentBefore) {
-            // ★夜（帰庫後）の入力モード
-            sections.morning.forEach(s => s.classList.add('hidden')); // 朝のセクションを非表示
-            sections.evening.forEach(s => s.classList.remove('hidden')); // 夜のセクションを表示
-            document.getElementById('submitBtnText').textContent = '帰庫点呼・日報を送信する';
-            document.getElementById('submitBtn').querySelector('.icon').textContent = '🌙';
-            document.getElementById('submitCountText').textContent = '朝の送信完了済';
-        } else {
-            // ★朝（出発前）の入力モード
-            sections.morning.forEach(s => s.classList.remove('hidden')); // 朝のセクションを表示
-            sections.evening.forEach(s => s.classList.add('hidden')); // 夜のセクションを非表示
-            document.getElementById('submitBtnText').textContent = '出発点呼を送信する';
-            document.getElementById('submitBtn').querySelector('.icon').textContent = '☀️';
-            document.getElementById('submitCountText').textContent = '2回送信';
+        if (!isNaN(start) && !isNaN(end) && end >= start) {
+            distanceEl.value = (end - start).toFixed(1);
+        } else if (distanceEl.value !== '') {
+             distanceEl.value = '';
         }
     }
 
@@ -643,25 +612,16 @@
         el.addEventListener('input', saveLocalStorage);
     });
     
-    // 基本情報の入力があったらフォーム表示を更新
-    document.getElementById('driverName').addEventListener('input', updateFormVisibility);
-    document.getElementById('company').addEventListener('input', updateFormVisibility);
-
-    // 走行距離の自動計算
-    document.getElementById('returnMeter').addEventListener('input', () => {
-        const start = parseFloat(document.getElementById('startMeter').value);
-        const end = parseFloat(document.getElementById('returnMeter').value);
-        const distanceEl = document.getElementById('distance');
-        
-        if (!isNaN(start) && !isNaN(end) && end >= start) {
-            distanceEl.value = (end - start).toFixed(1);
-        } else if (!isNaN(end) && start === 0) { // startMeterが未入力の場合の対応
-             distanceEl.value = '';
-        } else if (isNaN(end)) {
-            distanceEl.value = '';
-        }
+    // 走行距離の自動計算リスナー
+    document.getElementById('startMeter').addEventListener('input', () => {
+        calculateDistance();
         saveLocalStorage();
     });
+    document.getElementById('returnMeter').addEventListener('input', () => {
+        calculateDistance();
+        saveLocalStorage();
+    });
+
 
     // -------------------------------------------------------------------
     // 送信処理
@@ -671,6 +631,18 @@
       const r = document.querySelector('input[name="' + name + '"]:checked');
       return r ? r.value : '';
     }
+    
+    // 必須チェック項目を定義 (全てをチェック)
+    const requiredIds = [
+        'driverName', 'company', 'client', 'area', 'base', 'startPlace', // 01 基本情報
+        'workTime', 'startTime', 'sleep', 'temp', 'alcoholValue', 'startMeter', // 02 出発前
+        'returnPlace', 'returnTime', 'returnMeter', 'rest', 'roadStatus' // 04 帰庫後
+    ];
+    const requiredRadios = [
+        'condition', 'drink', 'medicine', // 02 出発前
+        'check_brake', 'check_tire', 'check_light', 'check_camera', 'check_body', 'check_other', // 03 日常点検
+        'codStatus' // 04 帰庫後
+    ];
 
     document.getElementById('submitBtn').addEventListener('click', async () => {
       const btn = document.getElementById('submitBtn');
@@ -678,35 +650,29 @@
       status.textContent = '';
       status.className = 'status-message';
       
-      const isMorningMode = !sections.evening[0].classList.contains('hidden'); // 夜のセクションが表示されていなければ朝モード
-
-      // 必須チェック項目を定義
-      const requiredIds = ['driverName', 'company', 'client', 'area', 'base', 'startPlace'];
-      let requiredRadios = [];
-      
-      if (isMorningMode) {
-          // 朝モードの必須項目
-          requiredIds.push('workTime', 'startTime', 'sleep', 'alcoholValue', 'startMeter');
-          requiredRadios = ['condition', 'drink', 'medicine', 'check_brake', 'check_tire', 'check_light', 'check_camera', 'check_body', 'check_other'];
-      } else {
-          // 夜モードの必須項目
-          requiredIds.push('returnPlace', 'returnTime', 'returnMeter', 'rest', 'roadStatus');
-          requiredRadios = ['codStatus'];
-      }
-
+      const originalBtnText = btn.innerHTML;
 
       // 1. テキスト/時間/数値の必須チェック
       for (const id of requiredIds) {
         const el = document.getElementById(id);
-        if (el && !el.value.trim()) {
+        // エリア、出庫場所、帰庫場所のように、内容がないと困るフィールドはtrim()でチェック
+        if (el && !el.value.trim()) { 
           status.textContent = '未入力の必須項目があります：' + (el.previousElementSibling.textContent.split(' ')[0] || id);
           status.classList.add('status-error');
           el.focus();
           return;
         }
       }
+      
+      // 2. 体温チェック（簡易的な異常値警告）
+      const temp = parseFloat(document.getElementById('temp').value);
+      if (!isNaN(temp) && temp >= 37.5) {
+          if (!confirm("体温が37.5℃以上です。業務を継続して問題ありませんか？")) {
+             return;
+          }
+      }
 
-      // 2. ラジオボタンの必須チェック
+      // 3. ラジオボタンの必須チェック
       for (const name of requiredRadios) {
           if (!getRadioValue(name)) {
               const labelText = document.querySelector(`div[data-name="${name}"]`).previousElementSibling.textContent.split(' ')[0];
@@ -715,12 +681,21 @@
               return;
           }
       }
+      
+      // 4. アルコールチェック（警告）
+      const alcoholValue = parseFloat(document.getElementById('alcoholValue').value);
+      if (!isNaN(alcoholValue) && alcoholValue > 0.00) {
+          status.textContent = 'アルコールが検出されました。送信できません。';
+          status.classList.add('status-error');
+          document.getElementById('alcoholValue').focus();
+          return;
+      }
+
 
       btn.disabled = true;
       btn.innerHTML = '<span class="icon">⏳</span><span>送信中です…</span>';
 
       const payload = {
-        // 基本情報 (両モードで送信)
         date: document.getElementById('date').value,
         driverName: document.getElementById('driverName').value.trim(),
         company: document.getElementById('company').value.trim(),
@@ -730,10 +705,7 @@
         startPlace: document.getElementById('startPlace').value.trim(),
         email: document.getElementById('email').value.trim(),
         
-        // モード識別用
-        mode: isMorningMode ? '出発点呼' : '帰庫点呼', 
-        
-        // 02 出発前入力 (朝モードで送信)
+        // 02 出発前入力
         workTime: document.getElementById('workTime').value,
         startTime: document.getElementById('startTime').value,
         condition: getRadioValue('condition'),
@@ -745,7 +717,7 @@
         startMeter: document.getElementById('startMeter').value,
         memo: document.getElementById('memo').value,
         
-        // 03 日常点検 (朝モードで送信)
+        // 03 日常点検
         check_brake: getRadioValue('check_brake'),
         check_tire: getRadioValue('check_tire'),
         check_light: getRadioValue('check_light'),
@@ -754,7 +726,7 @@
         check_other: getRadioValue('check_other'),
         check_note: document.getElementById('check_note').value,
 
-        // 04 帰庫後入力 (夜モードで送信)
+        // 04 帰庫後入力
         returnPlace: document.getElementById('returnPlace').value.trim(),
         returnTime: document.getElementById('returnTime').value,
         returnMeter: document.getElementById('returnMeter').value,
@@ -769,9 +741,8 @@
       const formData = new FormData();
       formData.append('json', JSON.stringify(payload));
       
-      // ファイルは朝・夜それぞれでチェック
       const licenseFile = document.getElementById('licenseFile').files[0];
-      if (licenseFile && isMorningMode) {
+      if (licenseFile) {
         formData.append('licenseFile', licenseFile);
       }
 
@@ -781,29 +752,26 @@
       }
 
       try {
-        const response = await fetch(SCRIPT_URL, {
+        await fetch(SCRIPT_URL, {
           method: 'POST',
           body: formData
         });
         
-        if (!response.ok) {
-            throw new Error('サーバーからの応答がエラーです');
-        }
-
-        status.textContent = (isMorningMode ? '出発点呼' : '帰庫点呼・日報') + 'を送信しました。お疲れ様でした！';
+        status.textContent = '送信しました。お疲れ様でした！';
         status.classList.add('status-success');
         
-        // 成功した場合、フォームをリセットし、表示を更新
-        if (isMorningMode) {
-             // 朝点呼成功後は、フォームをクリアせずに夜モードに移行するためにupdateFormVisibilityを再実行
-             await updateFormVisibility();
-        } else {
-             // 夜点呼成功後は、LocalStorageとフォームをクリア
-             localStorage.removeItem(LOCAL_STORAGE_KEY);
-             localStorage.removeItem(LOCAL_STORAGE_DATE_KEY);
-             document.querySelector('form') ? document.querySelector('form').reset() : location.reload();
+        // 送信成功後、フォームをリセットしLocalStorageもクリア
+        localStorage.removeItem(LOCAL_STORAGE_KEY);
+        // ドライバー名・会社名のみは残す
+        const tempNameData = localStorage.getItem(LOCAL_STORAGE_KEY + '_temp');
+        localStorage.removeItem(LOCAL_STORAGE_DATE_KEY);
+        
+        document.querySelector('form') ? document.querySelector('form').reset() : location.reload();
+        
+        // リロード後にtempNameDataを復元するため
+        if(tempNameData) {
+            localStorage.setItem(LOCAL_STORAGE_KEY + '_temp', tempNameData);
         }
-
 
       } catch (err) {
         console.error(err);
@@ -811,20 +779,17 @@
         status.classList.add('status-error');
       } finally {
         btn.disabled = false;
-        btn.innerHTML = `<span class="icon">${isMorningMode ? '☀️' : '🌙'}</span><span id="submitBtnText">${isMorningMode ? '出発点呼を送信する' : '帰庫点呼・日報を送信する'}</span>`;
-        // エラー後、ボタンテキストが元のモードに戻るように再設定
-        updateFormVisibility(); 
+        btn.innerHTML = originalBtnText;
       }
     });
 
     // -------------------------------------------------------------------
     // ページロード時の実行
     // -------------------------------------------------------------------
-    (async function initialize() {
+    (function initialize() {
         setToday();
         loadLocalStorage();
-        // 初期化完了後、非同期でフォームの表示状態を決定
-        await updateFormVisibility();
+        // ★表示制御ロジックを無効化しているため、ここでは何もしません
     })();
 
   </script>
