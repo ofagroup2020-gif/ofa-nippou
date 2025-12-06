@@ -8,7 +8,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700;900&display=swap" rel="stylesheet">
 
   <style>
-    :root {
+    :root{
       --ofa-green:#17B978;
       --ofa-red:#E74C3C;
       --ofa-blue:#3498DB;
@@ -18,10 +18,8 @@
       --text-main:#2C3E50;
       --border:#E0E0E0;
     }
+    *{box-sizing:border-box;}
 
-    * { box-sizing:border-box; }
-
-    /* 濃いめ虹色背景 */
     body{
       margin:0;
       font-family:'Noto Sans JP',sans-serif;
@@ -31,7 +29,6 @@
       color:var(--text-main);
       line-height:1.6;
     }
-
     .container{
       max-width:700px;
       margin:20px auto 40px;
@@ -42,11 +39,11 @@
       backdrop-filter:blur(8px);
     }
 
-    /* ===== ヘッダー（OFAロゴ＋虹色アニメーション） ===== */
+    /* ===== ヘッダー ===== */
     .header{
       background:linear-gradient(135deg,#ff7675,#f9ca24,#55efc4,#74b9ff,#a29bfe);
       background-size:300% 300%;
-      animation: headerRainbow 12s ease infinite;
+      animation:headerRainbow 12s ease infinite;
       color:#fff;
       padding:24px 16px 18px;
       text-align:center;
@@ -65,7 +62,6 @@
       background:radial-gradient(circle at 50% 0,#ffffff80,transparent 60%);
     }
     .header-inner{position:relative;z-index:1;}
-
     .header-top{
       display:flex;
       justify-content:center;
@@ -73,28 +69,26 @@
       gap:12px;
       margin-bottom:6px;
     }
-
-    /* 正方形OFAロゴ */
     .header-logo-square{
-      width:80px;
-      height:80px;
+      width:80px;height:80px;
       border-radius:18px;
-      background:#ffffff;
+      background:#fff;
       display:flex;
       align-items:center;
-      justify-content:center;
+      justify-content:space-around;
       box-shadow:0 0 0 3px rgba(255,255,255,.7),
                  0 8px 18px rgba(0,0,0,.35);
+      padding:3px;
     }
     .header-logo-square span{
       font-weight:900;
       font-size:34px;
-      letter-spacing:1px;
+      letter-spacing:0;
       font-family:'Noto Sans JP',sans-serif;
     }
-    .header-logo-square .logo-o{ color:#E74C3C; } /* 赤 */
-    .header-logo-square .logo-f{ color:#F1C40F; } /* 黄 */
-    .header-logo-square .logo-a{ color:#3498DB; } /* 青 */
+    .logo-o{color:#E74C3C;}
+    .logo-f{color:#F1C40F;}
+    .logo-a{color:#3498DB;}
 
     .header-brand-text{
       font-size:18px;
@@ -102,14 +96,12 @@
       letter-spacing:2px;
       text-shadow:0 1px 3px rgba(0,0,0,.25);
     }
-
     .header-title{
       font-size:22px;
       font-weight:900;
       margin-top:4px;
       text-shadow:0 1px 3px rgba(0,0,0,.3);
     }
-
     .header-badges{
       margin-top:8px;
       display:flex;
@@ -126,7 +118,7 @@
       backdrop-filter:blur(4px);
     }
 
-    /* タブ */
+    /* ===== タブ ===== */
     .tab-bar{
       display:flex;
       background:#fdfef9;
@@ -153,9 +145,8 @@
       background:#ffffff;
     }
 
-    .content{ padding:16px; }
+    .content{padding:16px;}
 
-    /* セクションタイトル（虹ライン） */
     .section-title{
       margin:18px 0 10px;
       padding:8px 10px;
@@ -170,9 +161,7 @@
     .section-title::before{
       content:"";
       position:absolute;
-      left:0;
-      top:0;
-      bottom:0;
+      left:0;top:0;bottom:0;
       width:6px;
       background:linear-gradient(180deg,#ff7675,#f9ca24,#55efc4,#74b9ff,#a29bfe);
     }
@@ -183,7 +172,7 @@
       font-size:13px;
       margin-top:14px;
     }
-    .required-mark{ color:var(--ofa-red); margin-left:4px; }
+    .required-mark{color:var(--ofa-red);margin-left:4px;}
 
     input[type="text"],
     input[type="tel"],
@@ -201,13 +190,8 @@
       font-size:14px;
       background:#fbfffa;
     }
-    textarea{ resize:vertical; }
-
-    .field-hint{
-      font-size:11px;
-      color:#777;
-      margin-top:2px;
-    }
+    textarea{resize:vertical;}
+    .field-hint{font-size:11px;color:#777;margin-top:2px;}
 
     .radio-card-group{
       margin-top:8px;
@@ -229,7 +213,6 @@
     }
     .radio-card input{margin:0;}
 
-    /* 大ボタン */
     .primary-btn{
       width:100%;
       padding:14px;
@@ -245,7 +228,6 @@
     }
     .primary-btn:active{transform:translateY(1px);box-shadow:none;}
 
-    /* サブボタン */
     .sub-btn{
       padding:8px 12px;
       border-radius:999px;
@@ -261,7 +243,6 @@
     .sub-btn.gray{background:#f2f2f2;color:#555;}
     .sub-btn.danger{background:#fdecea;color:var(--ofa-red);}
 
-    /* メッセージ */
     .message{
       margin-top:12px;
       font-size:13px;
@@ -269,18 +250,10 @@
       border-radius:6px;
       display:none;
     }
-    .message.success{
-      display:block;
-      background:#d4edda;
-      color:#155724;
-    }
-    .message.error{
-      display:block;
-      background:#f8d7da;
-      color:#721c24;
-    }
+    .message.success{display:block;background:#d4edda;color:#155724;}
+    .message.error{display:block;background:#f8d7da;color:#721c24;}
 
-    /* 履歴カード */
+    /* 履歴 */
     .history-note{font-size:11px;color:#666;margin-bottom:4px;}
     .history-filter{
       margin:8px 0 10px;
@@ -300,7 +273,6 @@
       padding:6px 8px;
       font-size:12px;
     }
-
     #historyList{margin-top:10px;}
     .history-item{
       padding:10px 12px;
@@ -323,21 +295,9 @@
       background:#ebf5fb;
       color:#2980b9;
     }
-    .history-item:hover{background:#f7f7f7;}
-    .history-item-title{
-      font-size:14px;
-      font-weight:700;
-    }
-    .history-item-sub{
-      font-size:11px;
-      color:#555;
-      margin-top:2px;
-    }
-    .history-item-status{
-      font-size:11px;
-      margin-top:2px;
-      color:#27ae60;
-    }
+    .history-item-title{font-size:14px;font-weight:700;}
+    .history-item-sub{font-size:11px;color:#555;margin-top:2px;}
+    .history-item-status{font-size:11px;margin-top:2px;color:#27ae60;}
 
     /* PDFビュー */
     #pdfOutput{margin-top:10px;}
@@ -392,12 +352,7 @@
     @media print{
       body{background:#fff;}
       .container{box-shadow:none;border-radius:0;margin:0;}
-      .header,
-      .tab-bar,
-      .content .form-area,
-      .history-area-controls,
-      #pdfPrintBtn,
-      #pdfBackBtn {display:none !important;}
+      .header,.tab-bar,.content .form-area,.content .history-area-controls{display:none;}
       #pdfOutput{margin:0;}
       #pdfOutput .pdf-doc{border:none;margin:0;padding:10px 6px;}
       #pdfOutput .page-break{display:block;}
@@ -448,12 +403,10 @@
         <label>点呼モード <span class="required-mark">*</span></label>
         <div class="radio-card-group">
           <label class="radio-card">
-            <input type="radio" name="mode" value="出発点呼" checked>
-            出発点呼
+            <input type="radio" name="mode" value="出発点呼" checked> 出発点呼
           </label>
           <label class="radio-card">
-            <input type="radio" name="mode" value="帰着点呼">
-            帰着点呼
+            <input type="radio" name="mode" value="帰着点呼"> 帰着点呼
           </label>
         </div>
 
@@ -683,6 +636,7 @@
 
 <script>
   const LOCAL_KEY = 'ofaGroupRecords';
+
   const form = document.getElementById('tenkoForm');
   const messageBox = document.getElementById('message');
 
@@ -704,10 +658,10 @@
 
   let currentFilter = {from:null,to:null};
 
-  // 今日の日付をセット
+  // 今日の日付
   document.getElementById('date').value = new Date().toISOString().slice(0,10);
 
-  // タブ切り替え
+  // タブ切替
   document.querySelectorAll('.tab-btn').forEach(btn=>{
     btn.addEventListener('click',()=>{
       document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
@@ -722,7 +676,6 @@
     });
   });
 
-  // ====== 共通：ローカルストレージ ======
   function getRecords(){
     const raw = localStorage.getItem(LOCAL_KEY);
     return raw ? JSON.parse(raw) : [];
@@ -731,17 +684,33 @@
     localStorage.setItem(LOCAL_KEY,JSON.stringify(list));
   }
 
-  // ====== モード別 required 切替 ＋ 出発メーター自動読込 ======
-  const departureRequiredIds = ['startTime','condition','temp','alcoholValue','startMeter'];
-  const returnRequiredIds    = ['returnPlace','returnTime','returnMeter'];
+  // 距離計算（常に同じロジック）
+  function calcDistance(){
+    const s = parseFloat(startMeterInput.value);
+    const e = parseFloat(returnMeterInput.value);
+    if(!isNaN(s) && !isNaN(e) && e >= s){
+      distanceInput.value = (e - s).toFixed(1);
+    }else{
+      distanceInput.value = '';
+    }
+  }
+  // 出発メーター or 帰着メーターが変わったら計算
+  startMeterInput.addEventListener('input',calcDistance);
+  startMeterInput.addEventListener('change',calcDistance);
+  returnMeterInput.addEventListener('input',calcDistance);
+  returnMeterInput.addEventListener('change',calcDistance);
 
-  function setRequired(ids, flag){
+  const departureRequiredIds = ['startTime','condition','temp','alcoholValue','startMeter'];
+  const returnRequiredIds = ['returnPlace','returnTime','returnMeter'];
+
+  function setRequired(ids,flag){
     ids.forEach(id=>{
       const el = document.getElementById(id);
       if(el) el.required = flag;
     });
   }
 
+  // モード切替
   function updateModeView(){
     const modeEl = document.querySelector('input[name="mode"]:checked');
     const mode = modeEl ? modeEl.value : '出発点呼';
@@ -750,10 +719,10 @@
     sectionDeparture.style.display = isDeparture ? 'block' : 'none';
     sectionReturn.style.display    = isDeparture ? 'none'  : 'block';
 
-    setRequired(departureRequiredIds, isDeparture);
-    setRequired(returnRequiredIds,   !isDeparture);
+    setRequired(departureRequiredIds,isDeparture);
+    setRequired(returnRequiredIds,!isDeparture);
 
-    // 帰着点呼に切り替えたとき → 朝の出発メーターを自動読み込み
+    // 帰着点呼に切り替えたら、同じ日・同じドライバー・会社の出発メーターを自動読み込み
     if(!isDeparture){
       const date    = document.getElementById('date').value;
       const driver  = document.getElementById('driverName').value;
@@ -770,31 +739,14 @@
         if(dep){
           startMeterInput.value = dep.startMeter;
           calcDistance();
-        }else{
-          startMeterInput.value = '';
-          distanceInput.value   = '';
         }
       }
     }
   }
-
   modeRadios.forEach(r=>r.addEventListener('change',updateModeView));
   updateModeView();
 
-  // ====== 走行距離 自動計算 ======
-  function calcDistance(){
-    const s = parseFloat(startMeterInput.value);
-    const e = parseFloat(returnMeterInput.value);
-    if(!isNaN(s) && !isNaN(e) && e >= s){
-      distanceInput.value = (e - s).toFixed(1);
-    }else{
-      distanceInput.value = '';
-    }
-  }
-  startMeterInput.addEventListener('input',calcDistance);
-  returnMeterInput.addEventListener('input',calcDistance);
-
-  // ====== フォーム送信 ======
+  // フォーム送信
   form.addEventListener('submit',e=>{
     e.preventDefault();
     const mode = document.querySelector('input[name="mode"]:checked').value;
@@ -813,6 +765,7 @@
     };
 
     let recordPart = {};
+    let records = getRecords();
 
     if(mode === '出発点呼'){
       recordPart = {
@@ -834,6 +787,11 @@
         check_other: document.querySelector('input[name="check_other"]:checked').value,
         check_note: document.getElementById('check_note').value
       };
+      const newRec = {...base,...recordPart};
+      records.push(newRec);
+      records.sort((a,b)=>b.id-a.id);
+      setRecords(records);
+      showMessage('出発点呼の記録を保存しました。','success');
     }else{
       recordPart = {
         returnPlace: document.getElementById('returnPlace').value,
@@ -848,11 +806,8 @@
         abnormalDetail: document.getElementById('abnormalDetail').value,
         returnAlcoholCheck: document.querySelector('input[name="returnAlcoholCheck"]:checked').value
       };
-    }
 
-    let records = getRecords();
-
-    if(mode === '帰着点呼'){
+      // 同じ日・ドライバー・会社で「まだ帰着が入っていない出発記録」を探す
       const idx = records.findIndex(r =>
         r.date === base.date &&
         r.driverName === base.driverName &&
@@ -860,22 +815,16 @@
         !r.returnTime
       );
       if(idx !== -1){
-        records[idx] = {...records[idx], ...recordPart, modeLast:'出発・帰着'};
+        records[idx] = {...records[idx],...recordPart,modeLast:'出発・帰着'};
         setRecords(records);
         showMessage('出発点呼の記録に帰着点呼を追加しました。','success');
       }else{
-        const newRec = {...base, ...recordPart};
+        const newRec = {...base,...recordPart};
         records.push(newRec);
         records.sort((a,b)=>b.id-a.id);
         setRecords(records);
         showMessage('帰着点呼の記録を保存しました。','success');
       }
-    }else{
-      const newRec = {...base, ...recordPart};
-      records.push(newRec);
-      records.sort((a,b)=>b.id-a.id);
-      setRecords(records);
-      showMessage('出発点呼の記録を保存しました。','success');
     }
 
     form.reset();
@@ -888,7 +837,7 @@
     messageBox.className = 'message ' + (type==='error'?'error':'success');
   }
 
-  // ====== 履歴フィルタ ======
+  // フィルタ
   function applyFilter(list){
     return list.filter(r=>{
       if(currentFilter.from && r.date < currentFilter.from) return false;
@@ -910,7 +859,8 @@
 
     list.forEach(rec=>{
       const completed = !!rec.returnTime;
-      const statusLabel = completed ? '出発・帰着 記録済み'
+      const statusLabel = completed
+        ? '出発・帰着 記録済み'
         : (rec.startTime ? '出発点呼のみ' : '帰着点呼のみ');
 
       const div = document.createElement('div');
@@ -931,7 +881,6 @@
     resetPdfView();
     renderHistory();
   });
-
   document.getElementById('filterClearBtn').addEventListener('click',()=>{
     historyFrom.value = '';
     historyTo.value = '';
@@ -948,27 +897,9 @@
     }
   });
 
-  // ====== PDF生成 ======
+  // PDF生成（1件 or 複数共通）
   function buildPdfHtml(records){
-    let html = `
-      <div class="pdf-wrap">
-        <style>
-          .pdf-wrap{font-family:'Noto Sans JP',sans-serif;}
-          .pdf-doc{border:1px solid #ccc;padding:12px 10px;margin-bottom:12px;background:#fff;}
-          .pdf-header{text-align:center;border-bottom:3px solid #38C172;padding-bottom:4px;margin-bottom:8px;}
-          .pdf-header-title{font-size:15px;font-weight:700;color:#3498DB;}
-          .pdf-header-sub{font-size:11px;color:#555;}
-          .pdf-section-box{margin-top:8px;}
-          .pdf-section-title{background:#f8f9f9;padding:5px 7px;border-left:4px solid #F1C40F;font-size:12px;font-weight:700;color:#3498DB;margin-bottom:3px;}
-          .pdf-row{display:flex;font-size:12px;padding:2px 0;border-bottom:1px dotted #eee;}
-          .pdf-row-label{width:38%;font-weight:700;}
-          .pdf-row-value{width:62%;}
-          .pdf-status{margin:4px 0 6px;padding:5px 7px;font-size:11px;border-radius:4px;background:#d4edda;color:#155724;text-align:center;}
-          .pdf-status.incomplete{background:#fff3cd;color:#856404;}
-          .page-break{page-break-after:always;}
-        </style>
-    `;
-
+    let html = '<div class="pdf-wrap">';
     records.forEach((d,idx)=>{
       const completed = !!d.returnTime;
       html += `
@@ -1003,7 +934,6 @@
             <div class="pdf-row"><div class="pdf-row-label">アルコール値</div><div class="pdf-row-value">${d.alcoholValue || '-'} mg/L</div></div>
             <div class="pdf-row"><div class="pdf-row-label">出発メーター</div><div class="pdf-row-value">${d.startMeter || '-'} km</div></div>
           </div>
-
           <div class="pdf-section-box">
             <div class="pdf-section-title">日常点検</div>
             <div class="pdf-row"><div class="pdf-row-label">ブレーキ / タイヤ</div><div class="pdf-row-value">${d.check_brake || '-'} / ${d.check_tire || '-'}</div></div>
@@ -1029,18 +959,16 @@
             <div class="pdf-row"><div class="pdf-row-label">アルコールチェック（帰着時）</div><div class="pdf-row-value">${d.returnAlcoholCheck || '-'}</div></div>
           </div>
           ` : '' }
-
         </div>
         ${idx < records.length-1 ? '<div class="page-break"></div>' : ''}
       `;
     });
-
     html += '</div>';
     return html;
   }
 
   function showRecordPdf(rec){
-    pdfOutput.innerHTML = buildPdfHtml([rec]);
+    pdfOutput.innerHTML = buildPdfHtml([rec]);  // 1件だけ表示
     pdfPrintBtn.style.display = 'inline-flex';
     pdfBackBtn.style.display = 'inline-flex';
     historyList.style.display = 'block';
@@ -1054,9 +982,12 @@
   }
 
   pdfBackBtn.addEventListener('click',resetPdfView);
-  pdfPrintBtn.addEventListener('click',()=>window.print());
+  // ★ ポップアップは使わず、window.print() だけ呼ぶ
+  pdfPrintBtn.addEventListener('click',()=>{
+    window.print();
+  });
 
-  // 初回：履歴描画
+  // 初期描画
   renderHistory();
 </script>
 
