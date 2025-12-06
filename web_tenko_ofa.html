@@ -392,7 +392,12 @@
     @media print{
       body{background:#fff;}
       .container{box-shadow:none;border-radius:0;margin:0;}
-      .header,.tab-bar,.content .form-area,.content .history-area-controls{display:none;}
+      .header,
+      .tab-bar,
+      .content .form-area,
+      .history-area-controls,
+      #pdfPrintBtn,
+      #pdfBackBtn {display:none !important;}
       #pdfOutput{margin:0;}
       #pdfOutput .pdf-doc{border:none;margin:0;padding:10px 6px;}
       #pdfOutput .page-break{display:block;}
@@ -591,10 +596,6 @@
           <label for="returnTime">帰着時間（自宅もしくは事務所） <span class="required-mark">*</span></label>
           <input id="returnTime" type="time">
 
-          <label for="startMeterReturn">出発メーター (km)【自動読み込み】</label>
-          <input id="startMeterReturn" type="number" readonly>
-          <div class="field-hint">※同じ日・同じドライバー名・同じ会社で保存した「出発点呼」の値を自動で読み込みます。</div>
-
           <label for="returnMeter">帰着メーター (km) <span class="required-mark">*</span></label>
           <input id="returnMeter" type="number">
 
@@ -690,7 +691,6 @@
   const sectionReturn = document.getElementById('section_return');
 
   const startMeterInput = document.getElementById('startMeter');
-  const startMeterReturnInput = document.getElementById('startMeterReturn');
   const returnMeterInput = document.getElementById('returnMeter');
   const distanceInput = document.getElementById('distance');
 
@@ -722,17 +722,7 @@
     });
   });
 
-  // モード別 required 切替
-  const departureRequiredIds = ['startTime','condition','temp','alcoholValue','startMeter'];
-  const returnRequiredIds = ['returnPlace','returnTime','returnMeter'];
-
-  function setRequired(ids, flag){
-    ids.forEach(id=>{
-      const el = document.getElementById(id);
-      if(el) el.required = flag;
-    });
-  }
-
+  // ====== 共通：ローカルストレージ ======
   function getRecords(){
     const raw = localStorage.getItem(LOCAL_KEY);
     return raw ? JSON.parse(raw) : [];
@@ -741,15 +731,15 @@
     localStorage.setItem(LOCAL_KEY,JSON.stringify(list));
   }
 
-  // 走行距離自動計算（出発メーターは startMeterReturnInput を使用）
-  function calcDistance(){
-    const s = parseFloat(startMeterReturnInput.value);
-    const e = parseFloat(returnMeterInput.value);
-    if(!isNaN(s) && !isNaN(e) && e >= s){
-      distanceInput.value = (e - s).toFixed(1);
-    }else{
-      distanceInput.value = '';
-    }
+  // ====== モード別 required 切替 ＋ 出発メーター自動読込 ======
+  const departureRequiredIds = ['startTime','condition','temp','alcoholValue','startMeter'];
+  const returnRequiredIds    = ['returnPlace','returnTime','returnMeter'];
+
+  function setRequired(ids, flag){
+    ids.forEach(id=>{
+      const el = document.getElementById(id);
+      if(el) el.required = flag;
+    });
   }
 
   function updateModeView(){
@@ -761,10 +751,10 @@
     sectionReturn.style.display    = isDeparture ? 'none'  : 'block';
 
     setRequired(departureRequiredIds, isDeparture);
-    setRequired(returnRequiredIds, !isDeparture);
+    setRequired(returnRequiredIds,   !isDeparture);
 
+    // 帰着点呼に切り替えたとき → 朝の出発メーターを自動読み込み
     if(!isDeparture){
-      // 帰着点呼：出発メーター自動読み込み
       const date    = document.getElementById('date').value;
       const driver  = document.getElementById('driverName').value;
       const company = document.getElementById('company').value;
@@ -778,33 +768,33 @@
           r.startMeter
         );
         if(dep){
-          startMeterReturnInput.value = dep.startMeter || '';
+          startMeterInput.value = dep.startMeter;
+          calcDistance();
         }else{
-          startMeterReturnInput.value = '';
+          startMeterInput.value = '';
+          distanceInput.value   = '';
         }
-      }else{
-        startMeterReturnInput.value = '';
       }
-      distanceInput.value = '';
-      returnMeterInput.value = '';
-    }else{
-      // 出発点呼に戻ったら表示用に同期しておく
-      startMeterReturnInput.value = startMeterInput.value;
-      distanceInput.value = '';
-      returnMeterInput.value = '';
     }
   }
+
   modeRadios.forEach(r=>r.addEventListener('change',updateModeView));
   updateModeView();
 
-  // 出発メーター入力時 → 表示用にも同期
-  startMeterInput.addEventListener('input',()=>{
-    startMeterReturnInput.value = startMeterInput.value;
-  });
-  // 帰着メーター入力時 → 自動計算
+  // ====== 走行距離 自動計算 ======
+  function calcDistance(){
+    const s = parseFloat(startMeterInput.value);
+    const e = parseFloat(returnMeterInput.value);
+    if(!isNaN(s) && !isNaN(e) && e >= s){
+      distanceInput.value = (e - s).toFixed(1);
+    }else{
+      distanceInput.value = '';
+    }
+  }
+  startMeterInput.addEventListener('input',calcDistance);
   returnMeterInput.addEventListener('input',calcDistance);
 
-  // フォーム送信
+  // ====== フォーム送信 ======
   form.addEventListener('submit',e=>{
     e.preventDefault();
     const mode = document.querySelector('input[name="mode"]:checked').value;
@@ -898,7 +888,7 @@
     messageBox.className = 'message ' + (type==='error'?'error':'success');
   }
 
-  // フィルタ
+  // ====== 履歴フィルタ ======
   function applyFilter(list){
     return list.filter(r=>{
       if(currentFilter.from && r.date < currentFilter.from) return false;
@@ -958,7 +948,7 @@
     }
   });
 
-  // PDF生成
+  // ====== PDF生成 ======
   function buildPdfHtml(records){
     let html = `
       <div class="pdf-wrap">
@@ -1064,31 +1054,9 @@
   }
 
   pdfBackBtn.addEventListener('click',resetPdfView);
+  pdfPrintBtn.addEventListener('click',()=>window.print());
 
-  // PDF印刷 / 保存：新しいタブを開いて印刷ダイアログを出す方式
-  pdfPrintBtn.addEventListener('click',()=>{
-    const html = pdfOutput.innerHTML;
-    if(!html){
-      alert('PDFを表示する記録を選択してください。');
-      return;
-    }
-    const win = window.open('', '_blank');
-    if(!win){
-      alert('ポップアップがブロックされています。端末の共有メニューから「プリント」や「PDFとして保存」を選んでください。');
-      return;
-    }
-    win.document.open();
-    win.document.write('<!DOCTYPE html><html lang="ja"><head><meta charset="UTF-8"><title>OFA GROUP Web点呼PDF</title>');
-    win.document.write('<style>body{font-family:"Noto Sans JP",sans-serif;margin:0;padding:10px;}@media print{.page-break{page-break-after:always;}}</style>');
-    win.document.write('</head><body>');
-    win.document.write(html);
-    win.document.write('</body></html>');
-    win.document.close();
-    win.focus();
-    win.print();
-  });
-
-  // 履歴初期描画
+  // 初回：履歴描画
   renderHistory();
 </script>
 
