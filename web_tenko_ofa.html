@@ -591,6 +591,10 @@
           <label for="returnTime">帰着時間（自宅もしくは事務所） <span class="required-mark">*</span></label>
           <input id="returnTime" type="time">
 
+          <label for="startMeterReturn">出発メーター (km)【自動読み込み】</label>
+          <input id="startMeterReturn" type="number" readonly>
+          <div class="field-hint">※同じ日・同じドライバー名・同じ会社で保存した「出発点呼」の値を自動で読み込みます。</div>
+
           <label for="returnMeter">帰着メーター (km) <span class="required-mark">*</span></label>
           <input id="returnMeter" type="number">
 
@@ -686,6 +690,7 @@
   const sectionReturn = document.getElementById('section_return');
 
   const startMeterInput = document.getElementById('startMeter');
+  const startMeterReturnInput = document.getElementById('startMeterReturn');
   const returnMeterInput = document.getElementById('returnMeter');
   const distanceInput = document.getElementById('distance');
 
@@ -737,7 +742,8 @@
   }
 
   function calcDistance(){
-    const s = parseFloat(startMeterInput.value);
+    const sVal = startMeterInput.value || (startMeterReturnInput ? startMeterReturnInput.value : '');
+    const s = parseFloat(sVal);
     const e = parseFloat(returnMeterInput.value);
     if(!isNaN(s) && !isNaN(e) && e >= s){
       distanceInput.value = (e - s).toFixed(1);
@@ -759,15 +765,14 @@
     setRequired(departureRequiredIds, isDeparture);
     setRequired(returnRequiredIds, !isDeparture);
 
-    // ★ 帰着点呼に切り替えた時：朝の出発メーターを自動で読み込む
     if(!isDeparture){
+      // 帰着点呼に切替 → 出発メーター自動読み込み
       const date    = document.getElementById('date').value;
       const driver  = document.getElementById('driverName').value;
       const company = document.getElementById('company').value;
 
       if(date && driver && company){
         const records = getRecords();
-        // 新しい順に保存してあるので、最初に見つかったものが直近
         const dep = records.find(r =>
           r.date === date &&
           r.driverName === driver &&
@@ -775,17 +780,33 @@
           r.startMeter
         );
         if(dep){
-          startMeterInput.value = dep.startMeter;
+          startMeterInput.value = dep.startMeter || '';
+          if(startMeterReturnInput) startMeterReturnInput.value = dep.startMeter || '';
           calcDistance();
+        }else{
+          startMeterInput.value = '';
+          if(startMeterReturnInput) startMeterReturnInput.value = '';
+          distanceInput.value = '';
         }
+      }else{
+        // 必要情報が揃ってない場合はクリア
+        startMeterInput.value = '';
+        if(startMeterReturnInput) startMeterReturnInput.value = '';
+        distanceInput.value = '';
       }
+    }else{
+      // 出発点呼に戻った時は表示用フィールドに同期
+      if(startMeterReturnInput) startMeterReturnInput.value = startMeterInput.value;
     }
   }
   modeRadios.forEach(r=>r.addEventListener('change',updateModeView));
   updateModeView();
 
   // 距離自動計算
-  startMeterInput.addEventListener('input',calcDistance);
+  startMeterInput.addEventListener('input',()=>{
+    if(startMeterReturnInput) startMeterReturnInput.value = startMeterInput.value;
+    calcDistance();
+  });
   returnMeterInput.addEventListener('input',calcDistance);
 
   // フォーム送信
@@ -1048,7 +1069,14 @@
   }
 
   pdfBackBtn.addEventListener('click',resetPdfView);
-  pdfPrintBtn.addEventListener('click',()=>window.print());
+  pdfPrintBtn.addEventListener('click',()=>{
+    try{
+      window.focus();
+      window.print();
+    }catch(e){
+      alert('印刷画面を開けませんでした。端末の共有メニューから「プリント」や「PDFとして保存」をお使いください。');
+    }
+  });
 
   // 履歴初期描画
   renderHistory();
