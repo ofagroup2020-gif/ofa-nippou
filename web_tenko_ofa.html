@@ -311,6 +311,9 @@
       cursor:pointer;
       position:relative;
       box-shadow:0 2px 6px rgba(0,0,0,.08);
+      display:flex;
+      gap:8px;
+      align-items:flex-start;
     }
     .history-item::after{
       content:"PDF";
@@ -324,6 +327,12 @@
       color:#2980b9;
     }
     .history-item:hover{background:#f7f7f7;}
+    .history-check{
+      margin-top:4px;
+    }
+    .history-item-main{
+      flex:1;
+    }
     .history-item-title{
       font-size:14px;
       font-weight:700;
@@ -667,6 +676,8 @@
       <div style="margin-top:10px;">
         <button type="button" class="sub-btn gray" id="pdfPrintBtn" style="display:none;">このPDFを印刷 / 保存</button>
         <button type="button" class="sub-btn gray" id="pdfBackBtn" style="display:none;">一覧に戻る</button>
+        <button type="button" class="sub-btn gray" id="csvExportBtn">表示中をCSV出力</button>
+        <button type="button" class="sub-btn danger" id="deleteSelectedBtn">選択した履歴を削除</button>
       </div>
 
       <div id="pdfOutput"></div>
@@ -691,6 +702,8 @@
   const pdfOutput = document.getElementById('pdfOutput');
   const pdfPrintBtn = document.getElementById('pdfPrintBtn');
   const pdfBackBtn = document.getElementById('pdfBackBtn');
+  const csvExportBtn = document.getElementById('csvExportBtn');
+  const deleteSelectedBtn = document.getElementById('deleteSelectedBtn');
 
   const historyFrom = document.getElementById('historyFrom');
   const historyTo   = document.getElementById('historyTo');
@@ -905,11 +918,17 @@
       const div = document.createElement('div');
       div.className = 'history-item';
       div.innerHTML = `
-        <div class="history-item-title">${rec.date} / ${statusLabel}</div>
-        <div class="history-item-sub">${rec.driverName || '-'} / ${rec.company || '-'}</div>
-        <div class="history-item-status">最終入力: ${rec.modeLast || (completed?'出発・帰着':'')}</div>
+        <div class="history-check">
+          <input type="checkbox" class="history-select" data-id="${rec.id}">
+        </div>
+        <div class="history-item-main">
+          <div class="history-item-title">${rec.date} / ${statusLabel}</div>
+          <div class="history-item-sub">${rec.driverName || '-'} / ${rec.company || '-'}</div>
+          <div class="history-item-status">最終入力: ${rec.modeLast || (completed?'出発・帰着':'')}</div>
+        </div>
       `;
-      div.addEventListener('click',()=>showRecordPdf(rec));
+      const main = div.querySelector('.history-item-main');
+      main.addEventListener('click',()=>showRecordPdf(rec));
       historyList.appendChild(div);
     });
   }
@@ -935,6 +954,78 @@
       resetPdfView();
       renderHistory();
     }
+  });
+
+  // CSV出力
+  csvExportBtn.addEventListener('click',()=>{
+    const all = getRecords();
+    const list = applyFilter(all);
+    if(!list.length){
+      alert('出力する記録がありません。');
+      return;
+    }
+
+    const headers = [
+      'id','date','driverName','company','tel','email','client','area','modeLast','submitTime',
+      'startPlace','workTime','startTime','condition','sleep','drink','medicine','temp','alcoholValue','startMeter',
+      'check_brake','check_tire','check_light','check_camera','check_body','check_other','check_note',
+      'returnPlace','offTime','returnTime','returnMeter','distance',
+      'rest','codStatus','codAmount','roadStatus','abnormalDetail','returnAlcoholCheck'
+    ];
+
+    function esc(v){
+      if(v===undefined || v===null) return '""';
+      const s = String(v).replace(/"/g,'""');
+      return `"${s}"`;
+    }
+
+    const lines = [];
+    lines.push(headers.join(','));
+
+    list.forEach(r=>{
+      const row = [
+        r.id,r.date,r.driverName,r.company,r.tel,r.email,r.client,r.area,r.modeLast,r.submitTime,
+        r.startPlace,r.workTime,r.startTime,r.condition,r.sleep,r.drink,r.medicine,r.temp,r.alcoholValue,r.startMeter,
+        r.check_brake,r.check_tire,r.check_light,r.check_camera,r.check_body,r.check_other,r.check_note,
+        r.returnPlace,r.offTime,r.returnTime,r.returnMeter,r.distance,
+        r.rest,r.codStatus,r.codAmount,r.roadStatus,r.abnormalDetail,r.returnAlcoholCheck
+      ].map(esc);
+      lines.push(row.join(','));
+    });
+
+    const csv = lines.join('\r\n');
+    const blob = new Blob([csv],{type:'text/csv'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+
+    const today = new Date();
+    const y = today.getFullYear();
+    const m = String(today.getMonth()+1).padStart(2,'0');
+    const d = String(today.getDate()).padStart(2,'0');
+
+    a.href = url;
+    a.download = `ofa_tenko_${y}${m}${d}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  });
+
+  // 選択した履歴を削除
+  deleteSelectedBtn.addEventListener('click',()=>{
+    const checked = historyList.querySelectorAll('.history-select:checked');
+    if(!checked.length){
+      alert('削除する履歴を選択してください。');
+      return;
+    }
+    if(!confirm('選択した履歴を削除しますか？')) return;
+
+    const ids = Array.from(checked).map(c=>parseInt(c.dataset.id,10));
+    let records = getRecords();
+    records = records.filter(r => !ids.includes(r.id));
+    setRecords(records);
+    resetPdfView();
+    renderHistory();
   });
 
   // PDF生成
@@ -1025,7 +1116,7 @@
     pdfOutput.innerHTML = buildPdfHtml([rec]);
     pdfPrintBtn.style.display = 'inline-flex';
     pdfBackBtn.style.display = 'inline-flex';
-    historyList.style.display = 'block';
+    historyList.style.display = 'none';
   }
 
   function resetPdfView(){
@@ -1037,8 +1128,50 @@
 
   pdfBackBtn.addEventListener('click',resetPdfView);
 
-  // 印刷ボタン：ブラウザの印刷ダイアログ → 端末側で PDF 保存 or 共有
-  pdfPrintBtn.addEventListener('click',()=>window.print());
+  // 印刷ボタン：別タブでPDF用HTMLを開いて印刷
+  pdfPrintBtn.addEventListener('click',()=>{
+    if(!pdfOutput.innerHTML.trim()){
+      alert('PDFを表示してから印刷してください。');
+      return;
+    }
+    const printWindow = window.open('','_blank');
+    if(!printWindow){
+      alert('ポップアップがブロックされています。別のブラウザでお試しください。');
+      return;
+    }
+    printWindow.document.open();
+    printWindow.document.write(`<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>OFA GROUP Web点呼・日報</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700;900&display=swap" rel="stylesheet">
+<style>
+body{margin:0;font-family:'Noto Sans JP',sans-serif;background:#fff;}
+.pdf-wrap{padding:10px;}
+.pdf-doc{border:1px solid #ccc;padding:16px 14px;margin-bottom:12px;background:#fff;}
+.pdf-header{text-align:center;border-bottom:3px solid #17B978;padding-bottom:6px;margin-bottom:10px;}
+.pdf-header-title{font-size:16px;font-weight:700;color:#3498DB;}
+.pdf-header-sub{font-size:11px;color:#555;}
+.pdf-section-box{margin-top:10px;}
+.pdf-section-title{background:#f8f9f9;padding:6px 8px;border-left:4px solid #F9CA24;font-size:12px;font-weight:700;color:#3498DB;margin-bottom:4px;}
+.pdf-row{display:flex;font-size:12px;padding:3px 0;border-bottom:1px dotted #eee;}
+.pdf-row-label{width:38%;font-weight:700;}
+.pdf-row-value{width:62%;}
+.pdf-status{margin:4px 0 6px;padding:6px 8px;font-size:11px;border-radius:4px;background:#d4edda;color:#155724;text-align:center;}
+.pdf-status.incomplete{background:#fff3cd;color:#856404;}
+.page-break{page-break-after:always;}
+@media print{
+  body{background:#fff;}
+}
+</style>
+</head>
+<body>${pdfOutput.innerHTML}</body>
+</html>`);
+    printWindow.document.close();
+    printWindow.focus();
+    printWindow.print();
+  });
 
   // 履歴初期描画
   renderHistory();
