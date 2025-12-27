@@ -2,115 +2,248 @@
 <html lang="ja">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
   <title>OFA 点呼・点検</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;600;700;900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="./style.css" />
 </head>
+
 <body>
-  <div class="wrap">
-    <header class="head">
-      <div class="brand">🚚 <b>OFA</b> 点呼・点検</div>
-      <div class="sub">出発点呼 / 帰着点呼を切り替えて入力（スマホ最適）</div>
-    </header>
+  <div class="bg"></div>
 
+  <header class="top">
+    <div class="brand">
+      <div class="logo">🚚</div>
+      <div>
+        <div class="title">OFA 点呼・点検</div>
+        <div class="subtitle">出発点呼 / 帰着点呼 / 日常点検（スマホ最適）</div>
+      </div>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <!-- API / ステータス -->
     <section class="card">
-      <div class="pillrow">
-        <button id="modeBtn" class="pill">出発点呼モード</button>
-        <button id="pingBtn" class="btn">接続テスト</button>
+      <div class="card-head">
+        <div class="card-title">接続設定</div>
+        <button class="btn ghost" id="btnTest">接続テスト</button>
       </div>
 
-      <div class="apiBox">
-        <div class="apiLabel">API URL</div>
-        <div id="apiUrl" class="apiUrl"></div>
-        <div id="pingStatus" class="status bad">未確認</div>
-        <div id="pingMsg" class="hint">まず「接続テスト」を押してください。</div>
+      <label class="field">
+        <span>API URL（/exec）</span>
+        <input id="apiUrl" type="url" placeholder="https://script.google.com/macros/s/XXXXX/exec" />
+        <small class="hint">※ここだけ正しければ動きます（保存されます）</small>
+      </label>
+
+      <div class="status" id="statusBox">
+        <span class="dot gray" id="statusDot"></span>
+        <div class="status-text">
+          <div class="status-main" id="statusMain">未確認</div>
+          <div class="status-sub" id="statusSub">接続テストを押してください</div>
+        </div>
       </div>
 
-      <div class="reportRow">
-        <button id="dailyPdfBtn" class="btn ghost">日報PDF</button>
-        <input id="dailyDate" type="date" class="input date" />
-        <button id="monthlyPdfBtn" class="btn ghost">月報PDF</button>
-        <input id="monthlyMonth" type="month" class="input month" />
+      <div class="pdfRow">
+        <button class="btn soft" id="btnDailyPdf">日報PDF</button>
+        <input class="mini" id="dailyDate" type="date" />
       </div>
-      <div id="pdfLink" class="pdfLink"></div>
+
+      <div class="pdfRow">
+        <button class="btn soft" id="btnMonthlyPdf">月報PDF</button>
+        <input class="mini" id="monthlyYm" type="month" />
+      </div>
+      <small class="hint">PDFは「氏名」で絞り込みできます（下の氏名が使われます）</small>
+    </section>
+
+    <!-- モード -->
+    <section class="card">
+      <div class="seg">
+        <button class="seg-btn active" id="modeStart">出発点呼</button>
+        <button class="seg-btn" id="modeEnd">帰着点呼</button>
+      </div>
+
+      <div class="grid">
+        <label class="field">
+          <span>氏名 <b class="req">*</b></span>
+          <input id="driver" type="text" placeholder="例：森下 洸" />
+        </label>
+
+        <label class="field">
+          <span>車両番号 <b class="req">*</b></span>
+          <input id="vehicleNo" type="text" placeholder="例：鹿児島 480 あ 12-34" />
+        </label>
+
+        <label class="field">
+          <span>電話（任意）</span>
+          <input id="phone" type="tel" placeholder="例：090-xxxx-xxxx" />
+        </label>
+
+        <label class="field">
+          <span>エリア（任意）</span>
+          <input id="area" type="text" placeholder="例：鹿児島市 / 世田谷区" />
+        </label>
+
+        <label class="field">
+          <span>ルート/コース（任意）</span>
+          <input id="route" type="text" placeholder="例：Aコース / 〇〇便" />
+        </label>
+      </div>
+    </section>
+
+    <!-- 点呼（体調など） -->
+    <section class="card">
+      <div class="card-title">点呼（健康・酒気帯び確認）</div>
+
+      <div class="grid">
+        <label class="field">
+          <span>アルコールチェック <b class="req">*</b></span>
+          <select id="alcoholResult">
+            <option value="問題なし" selected>問題なし</option>
+            <option value="注意（再検査）">注意（再検査）</option>
+            <option value="NG（運行不可）">NG（運行不可）</option>
+          </select>
+        </label>
+
+        <label class="field">
+          <span>数値（任意）</span>
+          <input id="alcoholValue" type="text" inputmode="decimal" placeholder="例：0.00" />
+        </label>
+
+        <label class="field">
+          <span>体調 <b class="req">*</b></span>
+          <select id="condition">
+            <option value="良好" selected>良好</option>
+            <option value="普通">普通</option>
+            <option value="やや不調">やや不調</option>
+            <option value="不調（報告）">不調（報告）</option>
+          </select>
+        </label>
+
+        <label class="field">
+          <span>疲労度（任意）</span>
+          <select id="fatigueLevel">
+            <option value="" selected>未入力</option>
+            <option value="低い">低い</option>
+            <option value="普通">普通</option>
+            <option value="高い">高い</option>
+          </select>
+        </label>
+
+        <label class="field">
+          <span>体温（任意）</span>
+          <input id="temperature" type="text" inputmode="decimal" placeholder="例：36.5" />
+        </label>
+
+        <label class="field">
+          <span>睡眠時間（任意）</span>
+          <input id="sleepHours" type="number" step="0.5" min="0" placeholder="例：7" />
+        </label>
+
+        <label class="field">
+          <span>服薬（任意）</span>
+          <select id="medication">
+            <option value="" selected>未入力</option>
+            <option value="なし">なし</option>
+            <option value="あり（業務に支障なし）">あり（業務に支障なし）</option>
+            <option value="あり（要相談）">あり（要相談）</option>
+          </select>
+        </label>
+
+        <label class="field wide">
+          <span>健康メモ（任意）</span>
+          <textarea id="notesHealth" placeholder="例：頭痛あり/花粉症/通院後 など"></textarea>
+        </label>
+      </div>
+    </section>
+
+    <!-- 点検（チェックリスト） -->
+    <section class="card">
+      <div class="card-title">日常点検（チェックリスト）</div>
+
+      <div class="checkGrid">
+        <label class="check"><input type="checkbox" id="c_tires" />タイヤ（空気圧/溝/損傷）</label>
+        <label class="check"><input type="checkbox" id="c_lights" />灯火類（ライト/ウィンカー/ブレーキ）</label>
+        <label class="check"><input type="checkbox" id="c_brake" />ブレーキ（踏みしろ/効き/異音）</label>
+        <label class="check"><input type="checkbox" id="c_wiper" />ワイパー/ウォッシャー</label>
+        <label class="check"><input type="checkbox" id="c_oil" />エンジンオイル（量/漏れ）</label>
+        <label class="check"><input type="checkbox" id="c_coolant" />冷却水（量/漏れ）</label>
+        <label class="check"><input type="checkbox" id="c_fuel" />燃料（残量/警告灯）</label>
+        <label class="check"><input type="checkbox" id="c_battery" />バッテリー（警告灯/始動）</label>
+        <label class="check"><input type="checkbox" id="c_damage" />外観（損傷/ガラス/ミラー）</label>
+        <label class="check"><input type="checkbox" id="c_loadSecure" />荷崩れ防止/積載固定</label>
+        <label class="check"><input type="checkbox" id="c_other" />その他（自由項目）</label>
+      </div>
+
+      <div class="grid">
+        <label class="field">
+          <span>点検結果 <b class="req">*</b></span>
+          <select id="inspectionResult">
+            <option value="OK" selected>OK</option>
+            <option value="NG（異常あり）">NG（異常あり）</option>
+          </select>
+        </label>
+
+        <label class="field wide">
+          <span>異常内容（NGの場合）</span>
+          <textarea id="inspectionDetail" placeholder="例：左前輪 空気圧低下 / ブレーキ鳴き / 警告灯点灯 など"></textarea>
+        </label>
+      </div>
+    </section>
+
+    <!-- メーター / 写真 -->
+    <section class="card">
+      <div class="card-title">メーター・写真（証跡）</div>
+
+      <div class="grid" id="meterBlock">
+        <label class="field" id="meterStartWrap">
+          <span>メーター（出発）</span>
+          <input id="meterStart" type="number" inputmode="numeric" placeholder="例：12345" />
+        </label>
+
+        <label class="field" id="meterEndWrap">
+          <span>メーター（帰着）</span>
+          <input id="meterEnd" type="number" inputmode="numeric" placeholder="例：23456" />
+        </label>
+
+        <label class="field">
+          <span>点検写真（メーター/外観/警告灯など）</span>
+          <input id="photoExterior" type="file" accept="image/*" />
+          <small class="hint">※iPhoneでHEICのときは変換できずエラーになる場合があります（その場合JPEGで選択）</small>
+        </label>
+
+        <label class="field">
+          <span>アルコール検知器写真</span>
+          <input id="photoAlcohol" type="file" accept="image/*" />
+        </label>
+
+        <label class="field">
+          <span>メーター写真</span>
+          <input id="photoMeter" type="file" accept="image/*" />
+        </label>
+
+        <label class="field">
+          <span>その他写真（任意）</span>
+          <input id="photoOther" type="file" accept="image/*" />
+        </label>
+
+        <label class="field wide">
+          <span>備考（任意）</span>
+          <textarea id="memo" placeholder="連絡事項/遅延/クレーム/車両異常の詳細など"></textarea>
+        </label>
+      </div>
     </section>
 
     <section class="card">
-      <div class="tabs">
-        <button id="tabStart" class="tab active">出発点呼</button>
-        <button id="tabEnd" class="tab">帰着点呼</button>
-      </div>
-
-      <form id="form" class="form">
-        <label class="lbl">氏名 <span class="req">*</span></label>
-        <input id="driver" class="input" placeholder="例：山田 太郎" required />
-
-        <label class="lbl">車両番号 <span class="req">*</span></label>
-        <input id="vehicle" class="input" placeholder="例：鹿児島 480 あ 12-34" required />
-
-        <label class="lbl">アルコールチェック <span class="req">*</span></label>
-        <select id="alcohol" class="input" required>
-          <option>問題なし</option>
-          <option>反応あり</option>
-        </select>
-
-        <label class="lbl">体調 <span class="req">*</span></label>
-        <select id="condition" class="input" required>
-          <option>良好</option>
-          <option>普通</option>
-          <option>不調</option>
-        </select>
-
-        <div class="grid2">
-          <div>
-            <label class="lbl">体温（任意）</label>
-            <input id="temp" class="input" inputmode="decimal" placeholder="例：36.5" />
-          </div>
-          <div>
-            <label class="lbl">睡眠時間（任意）</label>
-            <input id="sleep" class="input" inputmode="decimal" placeholder="例：7" />
-          </div>
-        </div>
-
-        <label class="lbl">日常点検（異常有無） <span class="req">*</span></label>
-        <select id="inspection" class="input" required>
-          <option>異常なし</option>
-          <option>異常あり</option>
-        </select>
-
-        <label class="lbl">異常内容（異常ありの場合）</label>
-        <input id="inspectionDetail" class="input" placeholder="例：左前輪 空気圧低下 / ブレーキ鳴き など" />
-
-        <div id="meterStartWrap">
-          <label class="lbl">メーター（出発）</label>
-          <input id="meterStart" class="input" inputmode="numeric" placeholder="例：12345" />
-        </div>
-
-        <div id="meterEndWrap" class="hidden">
-          <label class="lbl">メーター（帰着） <span class="req">*</span></label>
-          <input id="meterEnd" class="input" inputmode="numeric" placeholder="例：23456" />
-          <div class="note">※帰着点呼は「帰着メーター」を必須にしています（運用に合わせて変更可）</div>
-        </div>
-
-        <label class="lbl">点検写真（メーター/外観/警告灯など）</label>
-        <input id="inspectionPhoto" type="file" accept="image/*" class="file" />
-
-        <label class="lbl">アルコール検知器写真（出発）</label>
-        <input id="startAlcoholPhoto" type="file" accept="image/*" class="file" />
-
-        <div id="endAlcoholWrap" class="hidden">
-          <label class="lbl">アルコール検知器写真（帰着・任意）</label>
-          <input id="endAlcoholPhoto" type="file" accept="image/*" class="file" />
-        </div>
-
-        <label class="lbl">備考</label>
-        <textarea id="memo" class="input area" placeholder="連絡事項など"></textarea>
-
-        <button id="submitBtn" type="submit" class="btn primary">送信</button>
-        <div id="toast" class="toast"></div>
-      </form>
+      <button class="btn main" id="btnSubmit">送信</button>
+      <div class="toast" id="toast" aria-live="polite"></div>
     </section>
-  </div>
+
+    <footer class="foot">
+      <div class="footNote">© OFA Group / Tenko & Inspection</div>
+    </footer>
+  </main>
 
   <script src="./app.js"></script>
 </body>
