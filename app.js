@@ -1,439 +1,429 @@
-/* =========================
-   OFA Tenko & Inspection - Frontend
-   - API URL: localStorage
-   - Ping
-   - Send (depart/arrive)
-   - PDF/CSV links
-   - Image compress to JPEG (HEIC warn)
-========================= */
+(() => {
+  const $ = (id) => document.getElementById(id);
 
-const $ = (id) => document.getElementById(id);
+  const els = {
+    apiUrl: $("apiUrl"),
+    btnPing: $("btnPing"),
+    dot: $("dot"),
+    statusText: $("statusText"),
+    statusMsg: $("statusMsg"),
+    linkArea: $("linkArea"),
 
-const ui = {
-  apiUrl: $("apiUrl"),
-  btnSaveUrl: $("btnSaveUrl"),
-  btnClearUrl: $("btnClearUrl"),
-  btnPing: $("btnPing"),
-  connStatus: $("connStatus"),
+    tabStart: $("tabStart"),
+    tabEnd: $("tabEnd"),
 
-  tabDepart: $("tabDepart"),
-  tabArrive: $("tabArrive"),
+    dailyDate: $("dailyDate"),
+    monthYm: $("monthYm"),
+    btnDailyPdf: $("btnDailyPdf"),
+    btnMonthlyPdf: $("btnMonthlyPdf"),
+    btnMonthlyCsv: $("btnMonthlyCsv"),
 
-  driver: $("driver"),
-  vehicle: $("vehicle"),
-  phone: $("phone"),
-  area: $("area"),
-  route: $("route"),
+    driver: $("driver"),
+    vehicle: $("vehicle"),
+    phone: $("phone"),
+    area: $("area"),
+    route: $("route"),
 
-  alcohol: $("alcohol"),
-  alcoholValue: $("alcoholValue"),
-  condition: $("condition"),
-  fatigue: $("fatigue"),
-  temp: $("temp"),
-  sleep: $("sleep"),
-  medication: $("medication"),
-  healthMemo: $("healthMemo"),
+    alcohol: $("alcohol"),
+    alcoholValue: $("alcoholValue"),
+    condition: $("condition"),
+    fatigue: $("fatigue"),
+    temp: $("temp"),
+    sleep: $("sleep"),
+    medicine: $("medicine"),
+    healthMemo: $("healthMemo"),
+    runMemo: $("runMemo"),
 
-  inspection: $("inspection"),
-  inspectionDetailWrap: $("inspectionDetailWrap"),
-  inspectionDetail: $("inspectionDetail"),
+    inspection: $("inspection"),
+    inspectionDetail: $("inspectionDetail"),
+    meterStart: $("meterStart"),
+    meterEnd: $("meterEnd"),
 
-  meterStartWrap: $("meterStartWrap"),
-  meterEndWrap: $("meterEndWrap"),
-  meterStartLabel: $("meterStartLabel"),
-  meterEndLabel: $("meterEndLabel"),
-  meterStart: $("meterStart"),
-  meterEnd: $("meterEnd"),
+    chkTire: $("chkTire"),
+    chkBrake: $("chkBrake"),
+    chkLight: $("chkLight"),
+    chkOil: $("chkOil"),
+    chkCoolant: $("chkCoolant"),
+    chkWiper: $("chkWiper"),
+    chkHorn: $("chkHorn"),
+    chkMirror: $("chkMirror"),
+    chkLoad: $("chkLoad"),
+    chkWarning: $("chkWarning"),
 
-  photoInspection: $("photoInspection"),
-  photoAlcohol: $("photoAlcohol"),
-  photoMeter: $("photoMeter"),
-  photoOther: $("photoOther"),
+    photoInspection: $("photoInspection"),
+    photoAlcohol: $("photoAlcohol"),
+    photoMeter: $("photoMeter"),
+    photoOther: $("photoOther"),
 
-  memo: $("memo"),
-  btnSend: $("btnSend"),
+    memo: $("memo"),
+    btnSubmit: $("btnSubmit"),
+    submitMsg: $("submitMsg")
+  };
 
-  dayDate: $("dayDate"),
-  monthYm: $("monthYm"),
-  dayCsvDate: $("dayCsvDate"),
-  monthCsvYm: $("monthCsvYm"),
-  btnDayPdf: $("btnDayPdf"),
-  btnMonthPdf: $("btnMonthPdf"),
-  btnDayCsv: $("btnDayCsv"),
-  btnMonthCsv: $("btnMonthCsv"),
+  let mode = "start"; // start / end
 
-  toast: $("toast"),
-};
-
-const LS = {
-  apiUrl: "ofa_tenko_apiUrl",
-  driver: "ofa_tenko_driver",
-  vehicle: "ofa_tenko_vehicle",
-  phone: "ofa_tenko_phone",
-  area: "ofa_tenko_area",
-  route: "ofa_tenko_route",
-};
-
-let mode = "depart"; // depart | arrive
-let lastPingOk = false;
-
-function toast(type, msg) {
-  ui.toast.className = "toast " + (type || "");
-  ui.toast.textContent = msg;
-  ui.toast.style.display = "block";
-  clearTimeout(toast._t);
-  toast._t = setTimeout(() => (ui.toast.style.display = "none"), 3500);
-}
-
-function setConn(ok, title, sub) {
-  const dot = ui.connStatus.querySelector(".dot");
-  dot.className = "dot " + (ok === true ? "dot-ok" : ok === false ? "dot-ng" : "dot-gray");
-  ui.connStatus.querySelector(".status-title").textContent = title;
-  ui.connStatus.querySelector(".status-sub").textContent = sub;
-  lastPingOk = ok === true;
-}
-
-function getApiUrl() {
-  return (ui.apiUrl.value || "").trim();
-}
-
-function saveApiUrl() {
-  const url = getApiUrl();
-  if (!url) return toast("ng", "API URLを入力してください");
-  if (!/\/exec$/.test(url)) return toast("warn", "URLは /exec まで含めてください");
-  localStorage.setItem(LS.apiUrl, url);
-  toast("ok", "API URLを保存しました");
-}
-
-function clearApiUrl() {
-  localStorage.removeItem(LS.apiUrl);
-  ui.apiUrl.value = "";
-  setConn(null, "未確認", "接続テストを押してください");
-  toast("ok", "URLをクリアしました");
-}
-
-function saveProfile() {
-  localStorage.setItem(LS.driver, ui.driver.value.trim());
-  localStorage.setItem(LS.vehicle, ui.vehicle.value.trim());
-  localStorage.setItem(LS.phone, ui.phone.value.trim());
-  localStorage.setItem(LS.area, ui.area.value.trim());
-  localStorage.setItem(LS.route, ui.route.value.trim());
-}
-
-function loadProfile() {
-  ui.apiUrl.value = localStorage.getItem(LS.apiUrl) || "";
-  ui.driver.value = localStorage.getItem(LS.driver) || "";
-  ui.vehicle.value = localStorage.getItem(LS.vehicle) || "";
-  ui.phone.value = localStorage.getItem(LS.phone) || "";
-  ui.area.value = localStorage.getItem(LS.area) || "";
-  ui.route.value = localStorage.getItem(LS.route) || "";
-
-  // date defaults
-  const today = new Date();
-  const yyyy = today.getFullYear();
-  const mm = String(today.getMonth() + 1).padStart(2, "0");
-  const dd = String(today.getDate()).padStart(2, "0");
-  const ymd = `${yyyy}-${mm}-${dd}`;
-  ui.dayDate.value = ymd;
-  ui.dayCsvDate.value = ymd;
-  ui.monthYm.value = `${yyyy}-${mm}`;
-  ui.monthCsvYm.value = `${yyyy}-${mm}`;
-}
-
-function setMode(nextMode) {
-  mode = nextMode;
-
-  ui.tabDepart.classList.toggle("active", mode === "depart");
-  ui.tabArrive.classList.toggle("active", mode === "arrive");
-  ui.tabDepart.setAttribute("aria-selected", String(mode === "depart"));
-  ui.tabArrive.setAttribute("aria-selected", String(mode === "arrive"));
-
-  // Meter labels + required toggles
-  if (mode === "depart") {
-    ui.meterStartLabel.textContent = "メーター（出発）";
-    ui.meterEndLabel.textContent = "メーター（帰着）";
-    ui.meterStartWrap.style.display = "";
-    ui.meterEndWrap.style.display = "none"; // 出発時は帰着不要
-  } else {
-    ui.meterStartLabel.textContent = "メーター（出発）";
-    ui.meterEndLabel.textContent = "メーター（帰着）";
-    ui.meterStartWrap.style.display = "none"; // 帰着時は出発不要
-    ui.meterEndWrap.style.display = "";
+  // ---- LocalStorage (API URL) ----
+  const KEY = "ofa_api_url";
+  function loadApiUrl(){
+    const v = localStorage.getItem(KEY);
+    if (v) els.apiUrl.value = v;
   }
-}
-
-function setInspectionRule() {
-  const val = ui.inspection.value;
-  ui.inspectionDetailWrap.style.display = (val === "異常あり") ? "" : "";
-  // 表示は残すが、必須判定は validate() で行う
-}
-
-function validate() {
-  const driver = ui.driver.value.trim();
-  const vehicle = ui.vehicle.value.trim();
-  if (!driver) return "氏名（必須）が未入力です";
-  if (!vehicle) return "車両番号（必須）が未入力です";
-
-  // Law template: required differs by mode
-  if (mode === "depart") {
-    // 出発: meterStart required
-    if (!ui.meterStart.value.trim()) return "メーター（出発）は必須です";
-  } else {
-    // 帰着: meterEnd required
-    if (!ui.meterEnd.value.trim()) return "メーター（帰着）は必須です";
+  function saveApiUrl(){
+    const v = (els.apiUrl.value || "").trim();
+    localStorage.setItem(KEY, v);
   }
 
-  // Inspection abnormal requires detail
-  if (ui.inspection.value === "異常あり" && !ui.inspectionDetail.value.trim()) {
-    return "異常ありの場合は「異常内容」を入力してください";
+  // ---- Date init ----
+  function initDates(){
+    const today = new Date();
+    const y = today.getFullYear();
+    const m = String(today.getMonth()+1).padStart(2,"0");
+    const d = String(today.getDate()).padStart(2,"0");
+    els.dailyDate.value = `${y}-${m}-${d}`;
+    els.monthYm.value = `${y}-${m}`;
   }
 
-  // Tenko minimum: alcohol + condition already selected (always)
-  return null;
-}
+  // ---- Mode toggle (法令テンプレ: 必須切替) ----
+  function setMode(next){
+    mode = next;
+    els.tabStart.classList.toggle("on", mode==="start");
+    els.tabEnd.classList.toggle("on", mode==="end");
 
-function timeoutFetch(url, opts = {}, ms = 12000) {
-  const ctrl = new AbortController();
-  const t = setTimeout(() => ctrl.abort(), ms);
-  return fetch(url, { ...opts, signal: ctrl.signal }).finally(() => clearTimeout(t));
-}
+    // show/hide fields
+    document.querySelectorAll(".onlyStart").forEach(el => el.style.display = (mode==="start" ? "" : "none"));
+    document.querySelectorAll(".onlyEnd").forEach(el => el.style.display = (mode==="end" ? "" : "none"));
 
-async function ping() {
-  const url = getApiUrl();
-  if (!url) return toast("ng", "API URLを入力してください");
-  if (!/\/exec$/.test(url)) return toast("warn", "URLは /exec まで含めてください");
+    // meter required
+    els.meterStart.required = (mode==="start");
+    els.meterEnd.required = (mode==="end");
+  }
 
-  setConn(null, "確認中…", "サーバーへ接続しています");
-  try {
-    const res = await timeoutFetch(url + "?ping=1", { method: "GET" }, 12000);
+  // ---- UI status ----
+  function setStatus(kind, text, msg=""){
+    els.dot.classList.remove("gray","green","red");
+    if (kind==="ok") els.dot.classList.add("green");
+    else if (kind==="ng") els.dot.classList.add("red");
+    else els.dot.classList.add("gray");
+
+    els.statusText.textContent = text;
+    els.statusMsg.textContent = msg;
+  }
+
+  function api(){
+    const url = (els.apiUrl.value || "").trim();
+    return url;
+  }
+
+  async function fetchJson(url, opt){
+    const res = await fetch(url, opt);
     const txt = await res.text();
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    // try parse
     let j = null;
-    try { j = JSON.parse(txt); } catch {}
-    if (j && j.ok) {
-      setConn(true, "接続OK", "接続できました。送信テストOKです。");
-      toast("ok", "接続OK（到達）");
-    } else {
-      setConn(false, "接続NG", "応答はあるが形式が違います（GASコードを確認）");
-      toast("ng", "接続NG（応答形式エラー）");
+    try { j = JSON.parse(txt); } catch(_) {}
+    if (!res.ok) throw new Error(`HTTP ${res.status} ${txt.slice(0,200)}`);
+    if (!j) throw new Error(`JSONではありません: ${txt.slice(0,200)}`);
+    return j;
+  }
+
+  // ---- Connection test ----
+  async function ping(){
+    saveApiUrl();
+    const url = api();
+    if (!url){
+      setStatus("ng","未設定","API URL を入れてください");
+      return;
     }
-  } catch (e) {
-    setConn(false, "接続NG", "通信に失敗しました（URL/デプロイ設定を確認）");
-    toast("ng", "接続NG（URL/デプロイ設定を確認）");
-  }
-}
-
-async function fileToJpegDataUrl(file, { maxW = 1600, quality = 0.82 } = {}) {
-  if (!file) return "";
-
-  const name = (file.name || "").toLowerCase();
-  const type = (file.type || "").toLowerCase();
-
-  // HEIC warning (browsers often can't decode it)
-  if (name.endsWith(".heic") || type.includes("heic")) {
-    throw new Error("HEIC画像は変換できない場合があります。JPEGで選択してください（写真をスクショでもOK）");
+    setStatus("mid","接続中…","");
+    try{
+      const j = await fetchJson(`${url}?ping=1`, { method:"GET" });
+      if (j && j.ok){
+        setStatus("ok","接続OK","接続できました。送信テストOKです。");
+      }else{
+        setStatus("ng","接続NG","URL/デプロイ設定を確認してください");
+      }
+    }catch(e){
+      setStatus("ng","接続NG", String(e.message || e));
+    }
   }
 
-  // If browser can decode -> compress using canvas
-  const blobUrl = URL.createObjectURL(file);
-  try {
-    const img = await new Promise((resolve, reject) => {
-      const im = new Image();
-      im.onload = () => resolve(im);
-      im.onerror = () => reject(new Error("画像を読み込めません（形式をJPEG/PNGにしてください）"));
-      im.src = blobUrl;
+  // ---- Image -> base64 jpeg (HEICは弾く) ----
+  async function fileToJpegDataUrl(file){
+    if (!file) return "";
+    const t = (file.type || "").toLowerCase();
+
+    // HEIC/HEIF はブラウザで読めないことが多いので止めない（警告してスキップ）
+    if (t.includes("heic") || t.includes("heif")){
+      throw new Error("HEIC/HEIFは変換できない場合があります。JPEG/PNGで選択してください（写真なしでも送信できます）");
+    }
+
+    // 画像以外は不可
+    if (!t.startsWith("image/")){
+      throw new Error("画像ファイルを選択してください");
+    }
+
+    const dataUrl = await new Promise((resolve, reject) => {
+      const fr = new FileReader();
+      fr.onload = () => resolve(fr.result);
+      fr.onerror = () => reject(new Error("ファイル読込に失敗しました"));
+      fr.readAsDataURL(file);
     });
 
-    const w = img.naturalWidth || img.width;
-    const h = img.naturalHeight || img.height;
-    let nw = w, nh = h;
-    if (w > maxW) {
-      nw = maxW;
-      nh = Math.round(h * (maxW / w));
-    }
+    // すでにjpeg/pngならそのままでもOKだが、容量削減のためcanvasでjpeg化
+    const img = await new Promise((resolve, reject) => {
+      const i = new Image();
+      i.onload = () => resolve(i);
+      i.onerror = () => reject(new Error("画像の読み込みに失敗しました（HEICの可能性）"));
+      i.src = dataUrl;
+    });
+
+    const max = 1600; // 長辺
+    let w = img.width, h = img.height;
+    const scale = Math.min(1, max / Math.max(w,h));
+    w = Math.round(w*scale); h = Math.round(h*scale);
 
     const canvas = document.createElement("canvas");
-    canvas.width = nw;
-    canvas.height = nh;
+    canvas.width = w; canvas.height = h;
     const ctx = canvas.getContext("2d");
-    ctx.drawImage(img, 0, 0, nw, nh);
+    ctx.drawImage(img, 0, 0, w, h);
 
-    return canvas.toDataURL("image/jpeg", quality);
-  } finally {
-    URL.revokeObjectURL(blobUrl);
+    // 0.78 くらいで十分きれい＆軽い
+    return canvas.toDataURL("image/jpeg", 0.78);
   }
-}
 
-function buildPayload(photoUrls) {
-  return {
-    type: mode, // depart|arrive
-    driver: ui.driver.value.trim(),
-    vehicle: ui.vehicle.value.trim(),
-    phone: ui.phone.value.trim(),
-    area: ui.area.value.trim(),
-    route: ui.route.value.trim(),
+  async function multiFilesToDataUrls(fileList){
+    if (!fileList || !fileList.length) return [];
+    const out = [];
+    for (const f of fileList){
+      try{
+        out.push(await fileToJpegDataUrl(f));
+      }catch(e){
+        // 変換失敗でも業務停止させない（メッセージだけ出す）
+        out.push("");
+        console.warn(e);
+      }
+    }
+    return out.filter(Boolean);
+  }
 
-    alcohol: ui.alcohol.value,
-    alcoholValue: ui.alcoholValue.value.trim(),
-    condition: ui.condition.value,
-    fatigue: ui.fatigue.value,
-    temp: ui.temp.value.trim(),
-    sleep: ui.sleep.value.trim(),
-    medication: ui.medication.value,
-    healthMemo: ui.healthMemo.value.trim(),
+  function collectChecks(){
+    return {
+      tire: !!els.chkTire.checked,
+      brake: !!els.chkBrake.checked,
+      light: !!els.chkLight.checked,
+      oil: !!els.chkOil.checked,
+      coolant: !!els.chkCoolant.checked,
+      wiper: !!els.chkWiper.checked,
+      horn: !!els.chkHorn.checked,
+      mirror: !!els.chkMirror.checked,
+      load: !!els.chkLoad.checked,
+      warning: !!els.chkWarning.checked,
+    };
+  }
 
-    inspection: ui.inspection.value,
-    inspectionDetail: ui.inspectionDetail.value.trim(),
+  function validate(){
+    const driver = (els.driver.value||"").trim();
+    const vehicle = (els.vehicle.value||"").trim();
 
-    meterStart: ui.meterStart.value.trim(),
-    meterEnd: ui.meterEnd.value.trim(),
+    if (!api()) return "API URL を入れてください";
+    if (!driver) return "氏名は必須です";
+    if (!vehicle) return "車両番号は必須です";
 
-    memo: ui.memo.value.trim(),
+    if (mode==="start"){
+      if (!(els.meterStart.value||"").trim()) return "メーター（出発）は必須です";
+    }
+    if (mode==="end"){
+      if (!(els.meterEnd.value||"").trim()) return "メーター（帰着）は必須です";
+    }
 
-    photos: photoUrls, // dataURL strings
-    client: {
-      ua: navigator.userAgent,
+    // 異常ありなら内容推奨
+    if (els.inspection.value==="異常あり" && !(els.inspectionDetail.value||"").trim()){
+      return "異常ありの場合、異常内容を入力してください";
+    }
+    return "";
+  }
+
+  function setSubmitMsg(kind, text){
+    els.submitMsg.classList.remove("ok","ng");
+    if (kind==="ok") els.submitMsg.classList.add("ok");
+    if (kind==="ng") els.submitMsg.classList.add("ng");
+    els.submitMsg.textContent = text;
+  }
+
+  async function submit(){
+    saveApiUrl();
+    setSubmitMsg("", "");
+
+    const err = validate();
+    if (err){
+      setSubmitMsg("ng", "✖ " + err);
+      return;
+    }
+
+    els.btnSubmit.disabled = true;
+    els.btnSubmit.textContent = "送信中…";
+
+    // 写真は失敗しても送信は止めない（重要）
+    let inspectionPhotoUrl = "";
+    let alcoholPhotoUrl = "";
+    let meterPhotoUrl = "";
+    let otherPhotos = [];
+
+    try{ inspectionPhotoUrl = await fileToJpegDataUrl(els.photoInspection.files[0]); }catch(e){ console.warn(e); }
+    try{ alcoholPhotoUrl = await fileToJpegDataUrl(els.photoAlcohol.files[0]); }catch(e){ console.warn(e); }
+    try{ meterPhotoUrl = await fileToJpegDataUrl(els.photoMeter.files[0]); }catch(e){ console.warn(e); }
+    try{ otherPhotos = await multiFilesToDataUrls(els.photoOther.files); }catch(e){ console.warn(e); }
+
+    const payload = {
+      type: mode, // start / end
       ts: new Date().toISOString(),
-      tz: Intl.DateTimeFormat().resolvedOptions().timeZone || "",
+
+      driver: (els.driver.value||"").trim(),
+      vehicle: (els.vehicle.value||"").trim(),
+      phone: (els.phone.value||"").trim(),
+      area: (els.area.value||"").trim(),
+      route: (els.route.value||"").trim(),
+
+      alcohol: els.alcohol.value,
+      alcoholValue: (els.alcoholValue.value||"").trim(),
+      condition: els.condition.value,
+      fatigue: els.fatigue.value,
+      temp: (els.temp.value||"").trim(),
+      sleep: (els.sleep.value||"").trim(),
+      medicine: els.medicine.value,
+      healthMemo: (els.healthMemo.value||"").trim(),
+      runMemo: (els.runMemo?.value||"").trim(),
+
+      inspection: els.inspection.value,
+      inspectionDetail: (els.inspectionDetail.value||"").trim(),
+
+      meterStart: (els.meterStart.value||"").trim(),
+      meterEnd: (els.meterEnd.value||"").trim(),
+
+      checks: collectChecks(),
+
+      photos: {
+        inspection: inspectionPhotoUrl,
+        alcohol: alcoholPhotoUrl,
+        meter: meterPhotoUrl,
+        other: otherPhotos
+      },
+
+      memo: (els.memo.value||"").trim()
+    };
+
+    try{
+      const j = await fetchJson(api(), {
+        method:"POST",
+        headers: { "Content-Type":"text/plain;charset=utf-8" },
+        body: JSON.stringify(payload)
+      });
+
+      if (j.ok){
+        setSubmitMsg("ok", "✅ 送信しました");
+      }else{
+        setSubmitMsg("ng", "✖ 送信に失敗しました（GASの権限/デプロイ/URLを確認）");
+      }
+    }catch(e){
+      setSubmitMsg("ng", "✖ 送信に失敗しました（通信/権限/URL）：" + String(e.message || e));
+    }finally{
+      els.btnSubmit.disabled = false;
+      els.btnSubmit.textContent = "送信";
     }
-  };
-}
-
-async function send() {
-  const err = validate();
-  if (err) return toast("ng", err);
-
-  const url = getApiUrl();
-  if (!url) return toast("ng", "API URLを入力してください");
-  if (!/\/exec$/.test(url)) return toast("warn", "URLは /exec まで含めてください");
-
-  // optional but recommended
-  saveProfile();
-  if (!lastPingOk) {
-    toast("warn", "接続テストを推奨します（ただし送信は試行します）");
   }
 
-  ui.btnSend.disabled = true;
-  ui.btnSend.textContent = "送信中…";
-
-  try {
-    // photos -> compress
-    const photos = {};
-    const tasks = [
-      ["inspectionPhoto", ui.photoInspection.files?.[0]],
-      ["alcoholPhoto", ui.photoAlcohol.files?.[0]],
-      ["meterPhoto", ui.photoMeter.files?.[0]],
-      ["otherPhoto", ui.photoOther.files?.[0]],
-    ];
-
-    for (const [key, file] of tasks) {
-      if (!file) { photos[key] = ""; continue; }
-      photos[key] = await fileToJpegDataUrl(file, { maxW: 1600, quality: 0.82 });
-    }
-
-    const payload = buildPayload(photos);
-
-    const res = await timeoutFetch(url, {
-      method: "POST",
-      headers: { "Content-Type": "text/plain;charset=utf-8" },
-      body: JSON.stringify(payload),
-    }, 20000);
-
-    const txt = await res.text();
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-
-    let j = null;
-    try { j = JSON.parse(txt); } catch {}
-    if (!j || !j.ok) {
-      throw new Error(j?.error || "送信に失敗しました（GAS応答が不正）");
-    }
-
-    toast("ok", "✅ 送信しました");
-  } catch (e) {
-    toast("ng", "❌ 送信に失敗： " + (e?.message || String(e)));
-  } finally {
-    ui.btnSend.disabled = false;
-    ui.btnSend.textContent = "送信";
+  // ---- PDF/CSV ----
+  function clearLinks(){
+    els.linkArea.innerHTML = "";
   }
-}
-
-function openLink(url) {
-  window.open(url, "_blank", "noopener");
-}
-
-function buildReportUrl(kind, params) {
-  const base = getApiUrl();
-  if (!base) return "";
-  const u = new URL(base);
-  Object.entries(params).forEach(([k, v]) => u.searchParams.set(k, v));
-  return u.toString();
-}
-
-function normalizeYmd(d) { return d; } // already yyyy-mm-dd
-function normalizeYm(m) { return m; } // yyyy-mm
-
-function bind() {
-  ui.btnSaveUrl.addEventListener("click", saveApiUrl);
-  ui.btnClearUrl.addEventListener("click", clearApiUrl);
-  ui.btnPing.addEventListener("click", ping);
-
-  ui.tabDepart.addEventListener("click", () => setMode("depart"));
-  ui.tabArrive.addEventListener("click", () => setMode("arrive"));
-
-  ui.inspection.addEventListener("change", setInspectionRule);
-
-  ["driver","vehicle","phone","area","route"].forEach(id=>{
-    ui[id].addEventListener("change", saveProfile);
-  });
-
-  ui.btnSend.addEventListener("click", send);
-
-  // PDF
-  ui.btnDayPdf.addEventListener("click", () => {
-    const ymd = normalizeYmd(ui.dayDate.value);
-    const driver = ui.driver.value.trim();
-    const link = buildReportUrl("pdfDay", { pdf: "day", date: ymd, driver });
-    if (!link) return toast("ng", "API URLを入力してください");
-    openLink(link);
-  });
-
-  ui.btnMonthPdf.addEventListener("click", () => {
-    const ym = normalizeYm(ui.monthYm.value);
-    const driver = ui.driver.value.trim();
-    const link = buildReportUrl("pdfMonth", { pdf: "month", ym, driver });
-    if (!link) return toast("ng", "API URLを入力してください");
-    openLink(link);
-  });
-
-  // CSV
-  ui.btnDayCsv.addEventListener("click", () => {
-    const ymd = normalizeYmd(ui.dayCsvDate.value);
-    const driver = ui.driver.value.trim();
-    const link = buildReportUrl("csvDay", { csv: "day", date: ymd, driver });
-    if (!link) return toast("ng", "API URLを入力してください");
-    openLink(link);
-  });
-
-  ui.btnMonthCsv.addEventListener("click", () => {
-    const ym = normalizeYm(ui.monthCsvYm.value);
-    const driver = ui.driver.value.trim();
-    const link = buildReportUrl("csvMonth", { csv: "month", ym, driver });
-    if (!link) return toast("ng", "API URLを入力してください");
-    openLink(link);
-  });
-}
-
-(function init(){
-  loadProfile();
-  setMode("depart");
-  setInspectionRule();
-  setConn(null, "未確認", "接続テストを押してください");
-
-  // auto ping if url exists
-  if (getApiUrl()) {
-    // do not spam; just set hint
-    setConn(null, "未確認", "URLは保存済みです。接続テストを押してください");
+  function addLink(label, url){
+    const a = document.createElement("a");
+    a.href = url; a.target = "_blank"; a.rel="noopener";
+    a.textContent = "▶ " + label;
+    els.linkArea.appendChild(a);
   }
-  bind();
+
+  async function dailyPdf(){
+    saveApiUrl();
+    clearLinks();
+    const url = api();
+    if (!url) return setSubmitMsg("ng","✖ API URL を入れてください");
+
+    const date = els.dailyDate.value;
+    const driver = (els.driver.value||"").trim();
+
+    try{
+      const j = await fetchJson(`${url}?action=dailyPdf&date=${encodeURIComponent(date)}&driver=${encodeURIComponent(driver)}`, { method:"GET" });
+      if (j.ok && j.url){
+        addLink("日報PDFを開く", j.url);
+        setSubmitMsg("ok","✅ 日報PDFを作成しました");
+      }else{
+        setSubmitMsg("ng","✖ 日報PDF作成に失敗しました");
+      }
+    }catch(e){
+      setSubmitMsg("ng","✖ 日報PDF作成に失敗：" + String(e.message||e));
+    }
+  }
+
+  async function monthlyPdf(){
+    saveApiUrl();
+    clearLinks();
+    const url = api();
+    if (!url) return setSubmitMsg("ng","✖ API URL を入れてください");
+
+    const ym = els.monthYm.value;
+    const driver = (els.driver.value||"").trim();
+
+    try{
+      const j = await fetchJson(`${url}?action=monthlyPdf&ym=${encodeURIComponent(ym)}&driver=${encodeURIComponent(driver)}`, { method:"GET" });
+      if (j.ok && j.url){
+        addLink("月報PDFを開く", j.url);
+        setSubmitMsg("ok","✅ 月報PDFを作成しました");
+      }else{
+        setSubmitMsg("ng","✖ 月報PDF作成に失敗しました");
+      }
+    }catch(e){
+      setSubmitMsg("ng","✖ 月報PDF作成に失敗：" + String(e.message||e));
+    }
+  }
+
+  async function monthlyCsv(){
+    saveApiUrl();
+    clearLinks();
+    const url = api();
+    if (!url) return setSubmitMsg("ng","✖ API URL を入れてください");
+
+    const ym = els.monthYm.value;
+    const driver = (els.driver.value||"").trim();
+
+    try{
+      const j = await fetchJson(`${url}?action=monthlyCsv&ym=${encodeURIComponent(ym)}&driver=${encodeURIComponent(driver)}`, { method:"GET" });
+      if (j.ok && j.url){
+        addLink("月次CSVをダウンロード", j.url);
+        setSubmitMsg("ok","✅ 月次CSVを作成しました");
+      }else{
+        setSubmitMsg("ng","✖ 月次CSV作成に失敗しました");
+      }
+    }catch(e){
+      setSubmitMsg("ng","✖ 月次CSV作成に失敗：" + String(e.message||e));
+    }
+  }
+
+  // ---- Events ----
+  els.apiUrl.addEventListener("change", () => { saveApiUrl(); setStatus("mid","未確認","接続テストを押してください"); });
+
+  els.btnPing.addEventListener("click", ping);
+
+  els.tabStart.addEventListener("click", () => setMode("start"));
+  els.tabEnd.addEventListener("click", () => setMode("end"));
+
+  els.btnSubmit.addEventListener("click", submit);
+
+  els.btnDailyPdf.addEventListener("click", dailyPdf);
+  els.btnMonthlyPdf.addEventListener("click", monthlyPdf);
+  els.btnMonthlyCsv.addEventListener("click", monthlyCsv);
+
+  // ---- Init ----
+  loadApiUrl();
+  initDates();
+  setMode("start");
+  setStatus("mid","未確認","接続テストを押してください");
 })();
