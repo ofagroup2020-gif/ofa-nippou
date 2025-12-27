@@ -182,23 +182,6 @@
     .guide.open .guide-body{display:block;}
     .guide ul{margin:8px 0 0 18px;}
     .guide li{margin:6px 0;}
-    .gas-row{
-      margin-top:10px;
-      display:flex;gap:8px;flex-wrap:wrap;align-items:center;
-    }
-    .gas-row input{
-      flex:1;
-      min-width:220px;
-      padding:10px;border:1px solid #ddd;border-radius:12px;
-      font-size:12px;
-      background:#fbfffa;
-    }
-    .gas-row button{
-      padding:10px 12px;border:none;border-radius:12px;
-      font-weight:900;font-size:12px;cursor:pointer;
-      background:#e8f4fd;color:#1b4f72;
-    }
-
     body.printing{background:#fff !important;}
     @media print{
       body{background:#fff !important;}
@@ -243,7 +226,7 @@
         </div>
         <div class="guide-body">
           <b>① 出発点呼</b> → 体調・アルコール値・車番・確認者を入力し保存。<br/>
-          <b>② 帰着点呼</b> → 同じ日付・同じドライバー・同じ車番で帰着を入力し保存（自動で出発記録に合体）。<br/>
+          <b>② 帰着点呼</b> → 同じ日付・同じドライバーで帰着を入力し保存（自動で出発記録に合体）。<br/>
           <b>③ 履歴</b> → 期間で絞り込み、<b>日次PDF</b>（1件） or <b>月次PDF</b>（表示中まとめ）を出力。<br/>
           <b>④ 写真</b> → アルコール検知器の画面写真をアップ（自動圧縮→Drive保存）。<br/><br/>
           <ul>
@@ -251,23 +234,12 @@
             <li>写真は端末に保存しません（Drive URLだけ履歴に残します）。</li>
             <li>Drive内の写真は<b>60日経過で自動削除（ゴミ箱へ）</b>されます。</li>
           </ul>
-
-          <div class="small-note" style="margin-top:12px;">
-            <b>GAS URL（Webアプリ /exec）</b><br/>
-            ※通常は埋め込み済みですが、万一変更時はここで上書きできます（端末に保存）。
-            <div class="gas-row">
-              <input id="gasUrlInput" type="text" placeholder="https://script.google.com/macros/s/.../exec">
-              <button type="button" id="gasUrlSaveBtn">GAS URLを設定/変更</button>
-              <button type="button" id="gasUrlResetBtn">埋め込みに戻す</button>
-            </div>
-            <div class="field-hint">※ URLは <b>/exec</b> まで含めてください。</div>
-          </div>
         </div>
       </div>
 
       <div class="small-note" style="margin-top:12px;">
-        <b>Google Drive保存：</b>保存ボタンで、写真を<b>自動圧縮</b>してDriveへ保存します。<br/>
-        ※ 履歴は<b>この端末・このブラウザ</b>に保存されます（写真URLはDrive）。
+        <b>Google Drive保存：</b>GAS（Webアプリ）URLをこのHTML内に設定すれば動きます。<br/>
+        ※ 履歴は<b>この端末・このブラウザ</b>に保存されます（写真はDriveへ）。
       </div>
 
       <form id="tenkoForm" autocomplete="off">
@@ -414,11 +386,10 @@
 
 <script>
 /**
- * ✅ 埋め込みGAS URL（/exec まで含む）
- * 端末側で上書きしたい場合はガイド内「GAS URLを設定/変更」を使う（端末保存）。
+ * ★GAS WebアプリURL（/exec まで含めてOK）
+ * ここは差し替え済み
  */
-const DEFAULT_GAS_URL = "https://script.google.com/macros/s/AKfycbwfbh0zX5XdC8tpUOBwcmQKbXmK4COcV-_ozQKEnzdOunRqvGXh9ZYKuIr3qhpQO4o0/exec";
-const GAS_URL_KEY = "ofa_gas_url_override_v1";
+const GAS_URL = "https://script.google.com/macros/s/AKfycbwq4_CAQOoUS7-H_cKcW1jNMAh1DKji71kp4voKXCfXygbf3MwlbjTDpYx3irxMVk2QBw/exec";
 
 const LOCAL_KEY = "ofaGroupRecords_v2_drive";
 const IMG_MAX_SIZE = 1280;
@@ -448,40 +419,6 @@ document.getElementById("date").value = new Date().toISOString().slice(0,10);
 document.getElementById("guideToggle").addEventListener("click",()=>{
   document.getElementById("guideBox").classList.toggle("open");
 });
-
-// GAS URL UI
-const gasUrlInput = document.getElementById("gasUrlInput");
-const gasUrlSaveBtn = document.getElementById("gasUrlSaveBtn");
-const gasUrlResetBtn = document.getElementById("gasUrlResetBtn");
-
-function getGasUrl(){
-  const override = localStorage.getItem(GAS_URL_KEY);
-  return override && override.trim() ? override.trim() : DEFAULT_GAS_URL;
-}
-function setGasUrl(url){
-  localStorage.setItem(GAS_URL_KEY, url.trim());
-}
-function resetGasUrl(){
-  localStorage.removeItem(GAS_URL_KEY);
-}
-function syncGasUrlUI(){
-  gasUrlInput.value = getGasUrl();
-}
-gasUrlSaveBtn.addEventListener("click", ()=>{
-  const v = gasUrlInput.value.trim();
-  if(!v || !v.includes("script.google.com") || !v.endsWith("/exec")){
-    alert("GAS URLが正しくありません。\n例）https://script.google.com/macros/s/.../exec");
-    return;
-  }
-  setGasUrl(v);
-  alert("GAS URLを保存しました（この端末に保存）");
-});
-gasUrlResetBtn.addEventListener("click", ()=>{
-  resetGasUrl();
-  syncGasUrlUI();
-  alert("埋め込みURLに戻しました");
-});
-syncGasUrlUI();
 
 // タブ
 document.querySelectorAll(".tab-btn").forEach(btn=>{
@@ -593,20 +530,23 @@ function fileToCompressedDataURL(file, maxSize=IMG_MAX_SIZE, quality=IMG_QUALITY
   });
 }
 
-// GASへ送信
+// GASへ送信（※iPhoneでLoad failedになりやすいCORSのプリフライトを回避するため text/plain で送る）
 async function uploadAlcoholPhotosToDrive(payload){
-  const gasUrl = getGasUrl();
-  if(!gasUrl || !gasUrl.includes("/exec")){
-    throw new Error("GAS_URL 未設定です（ガイド内の『GAS URLを設定/変更』で /exec を登録してください）");
+  if(!GAS_URL || !GAS_URL.includes("/exec")){
+    throw new Error("GAS_URL 未設定です（HTML内のGAS_URLに /exec を貼ってください）");
   }
-  const res = await fetch(gasUrl, {
+
+  const res = await fetch(GAS_URL, {
     method:"POST",
-    headers:{ "Content-Type":"application/json" },
-    body: JSON.stringify(payload),
-    mode:"cors"
+    headers:{ "Content-Type":"text/plain;charset=utf-8" },
+    body: JSON.stringify(payload)
   });
-  const data = await res.json().catch(()=>null);
-  if(!data || !data.ok) throw new Error(data?.error || "Drive保存に失敗");
+
+  const text = await res.text();
+  let data = null;
+  try{ data = JSON.parse(text); }catch(e){}
+
+  if(!data || !data.ok) throw new Error(data?.error || "Drive保存に失敗（GAS応答が不正/空）");
   return data.urls || {};
 }
 
