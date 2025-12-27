@@ -1,305 +1,134 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <title>OFA GROUP 点呼＋点検</title>
-  <meta name="theme-color" content="#2bb673" />
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;600;700;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="./style.css" />
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OFA 点呼・点検</title>
+
+<style>
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  background: linear-gradient(135deg,#2ecc71,#6dd5fa,#ff9ff3);
+  margin: 0;
+  padding: 12px;
+}
+
+.card {
+  background: #fff;
+  border-radius: 18px;
+  padding: 16px;
+  box-shadow: 0 10px 30px rgba(0,0,0,.15);
+  max-width: 640px;
+  margin: auto;
+}
+
+h1 {
+  text-align: center;
+  margin-bottom: 12px;
+}
+
+label {
+  font-weight: bold;
+  display: block;
+  margin-top: 12px;
+}
+
+input, select, textarea, button {
+  width: 100%;
+  padding: 12px;
+  margin-top: 6px;
+  border-radius: 10px;
+  border: 1px solid #ccc;
+  font-size: 16px;
+}
+
+button {
+  background: linear-gradient(90deg,#ff7a18,#ffb347);
+  color: #fff;
+  border: none;
+  margin-top: 18px;
+  font-size: 18px;
+}
+
+.status {
+  margin-top: 12px;
+  text-align: center;
+  font-weight: bold;
+}
+</style>
 </head>
 
 <body>
-  <div class="wrap">
-    <!-- HERO -->
-    <header class="hero">
-      <div class="heroInner">
-        <div class="brand">
-          <div class="logoBox">
-            <div class="logoCircle">OFA</div>
-          </div>
-          <div class="brandText">
-            <div class="brandTop">OFA GROUP</div>
-            <div class="brandMain">点呼＋点検（Googleログイン必須 / Drive保存）</div>
-          </div>
-        </div>
+<div class="card">
+<h1>🚚 OFA 点呼・点検</h1>
 
-        <div class="badges">
-          <div class="badge ok">✅ CORSなし・確実に保存</div>
-          <div class="badge ok">✅ 写真＋記録JSONをDriveへ</div>
-          <div class="badge ok">✅ ログはスプレッドシートへ</div>
-        </div>
-      </div>
-    </header>
+<label>日付</label>
+<input type="date" id="date">
 
-    <!-- TABS -->
-    <div class="tabs">
-      <button class="tab active" data-tab="input"><span class="tabIco">📝</span>入力（点呼＋点検）</button>
-      <button class="tab" data-tab="history"><span class="tabIco">📂</span>履歴（この端末）</button>
-    </div>
+<label>ドライバー名</label>
+<input type="text" id="driver">
 
-    <!-- INPUT TAB -->
-    <main class="panel active" id="tab-input">
-      <!-- Connection -->
-      <section class="card">
-        <div class="cardHead">
-          <h2>接続・出力</h2>
-          <button id="btnPing" class="btn ghost">接続テスト</button>
-        </div>
+<label>車両番号</label>
+<input type="text" id="vehicle">
 
-        <label class="field">
-          <div class="label">API URL（/exec）</div>
-          <input id="apiUrl" class="input mono" placeholder="https://script.google.com/macros/s/XXXXX/exec" />
-          <div class="help">※ここが正しければ動きます（端末に保存されます）</div>
-        </label>
+<label>アルコールチェック</label>
+<select id="alcohol">
+  <option>問題なし</option>
+  <option>異常あり</option>
+</select>
 
-        <div class="statusBox" id="connBox">
-          <div class="statusDot" id="connDot"></div>
-          <div class="statusText" id="connText">未確認：接続テストを押してください</div>
-        </div>
+<label>体調</label>
+<select id="condition">
+  <option>良好</option>
+  <option>注意</option>
+  <option>不良</option>
+</select>
 
-        <div class="grid2">
-          <div class="subCard">
-            <div class="subTitle">日報PDF（日付）</div>
-            <input id="pdfDate" class="input" type="date"/>
-            <button id="btnDailyPdf" class="btn soft">日報PDF</button>
-            <div class="help">※氏名で絞り込み可能（下の氏名が使われます）</div>
-          </div>
+<label>点検結果</label>
+<select id="inspection">
+  <option>異常なし</option>
+  <option>異常あり</option>
+</select>
 
-          <div class="subCard">
-            <div class="subTitle">月報PDF（年月）</div>
-            <input id="pdfMonth" class="input" type="month"/>
-            <button id="btnMonthlyPdf" class="btn soft">月報PDF</button>
-            <div class="help">※月次一覧CSVも出せます</div>
-            <button id="btnMonthlyCsv" class="btn soft2">月次CSV（ダウンロード）</button>
-          </div>
-        </div>
-      </section>
+<label>備考</label>
+<textarea id="memo"></textarea>
 
-      <!-- Mode -->
-      <section class="card">
-        <div class="seg">
-          <button class="segBtn active" id="modeDeparture">出発点呼</button>
-          <button class="segBtn" id="modeArrival">帰着点呼</button>
-        </div>
+<button onclick="submitData()">この記録を保存（Driveへ）</button>
 
-        <div class="grid2">
-          <label class="field">
-            <div class="label">日付 <span class="req">*</span></div>
-            <input id="date" class="input" type="date">
-          </label>
+<div class="status" id="status"></div>
+</div>
 
-          <label class="field">
-            <div class="label">ドライバー名 <span class="req">*</span></div>
-            <input id="driver" class="input" placeholder="例：森下 洸">
-          </label>
+<script>
+const API_URL =
+"https://script.google.com/macros/s/AKfycbwh73384H_iIizFTE01dcETTGxQZ29fKN_UhgKA3iCMcuiHVOiXeybRgg9nRT6Jzh9EMg/exec";
 
-          <label class="field">
-            <div class="label">所属会社 <span class="req">*</span></div>
-            <input id="company" class="input" placeholder="例：株式会社OFA">
-          </label>
+function submitData(){
+  document.getElementById("status").textContent = "送信中…";
 
-          <label class="field">
-            <div class="label">車両番号 <span class="req">*</span></div>
-            <input id="vehicle" class="input" placeholder="例：鹿児島 480 あ 12-34 / 21-45">
-          </label>
+  const data = {
+    date: date.value,
+    driver: driver.value,
+    vehicle: vehicle.value,
+    alcohol: alcohol.value,
+    condition: condition.value,
+    inspection: inspection.value,
+    memo: memo.value
+  };
 
-          <label class="field">
-            <div class="label">電話（任意）</div>
-            <input id="phone" class="input" placeholder="例：090-XXXX-XXXX">
-          </label>
-
-          <label class="field">
-            <div class="label">エリア（任意）</div>
-            <input id="area" class="input" placeholder="例：鹿児島市 / 世田谷区">
-          </label>
-
-          <label class="field">
-            <div class="label">ルート/コース（任意）</div>
-            <input id="route" class="input" placeholder="例：Aコース / ○○便">
-          </label>
-        </div>
-      </section>
-
-      <!-- Call -->
-      <section class="card tint green">
-        <h2>点呼（健康・酒気帯び確認）</h2>
-
-        <div class="grid2">
-          <label class="field">
-            <div class="label">アルコールチェック <span class="req">*</span></div>
-            <select id="alcohol" class="input">
-              <option>問題なし</option>
-              <option>要再検査</option>
-              <option>異常あり（運行不可）</option>
-            </select>
-          </label>
-
-          <label class="field">
-            <div class="label">数値（任意）</div>
-            <input id="alcoholValue" class="input" inputmode="decimal" placeholder="例：0.00">
-          </label>
-
-          <label class="field">
-            <div class="label">体調 <span class="req">*</span></div>
-            <select id="condition" class="input">
-              <option>良好</option>
-              <option>軽い不調</option>
-              <option>不調（要相談）</option>
-            </select>
-          </label>
-
-          <label class="field">
-            <div class="label">疲労度（任意）</div>
-            <select id="fatigue" class="input">
-              <option value="">未入力</option>
-              <option>低い</option>
-              <option>普通</option>
-              <option>高い</option>
-            </select>
-          </label>
-
-          <label class="field">
-            <div class="label">体温（任意）</div>
-            <input id="temp" class="input" inputmode="decimal" placeholder="例：36.5">
-          </label>
-
-          <label class="field">
-            <div class="label">睡眠時間（任意）</div>
-            <input id="sleep" class="input" inputmode="decimal" placeholder="例：7">
-          </label>
-
-          <label class="field">
-            <div class="label">服薬（任意）</div>
-            <select id="meds" class="input">
-              <option value="">未入力</option>
-              <option>なし</option>
-              <option>あり（眠気なし）</option>
-              <option>あり（注意）</option>
-            </select>
-          </label>
-
-          <label class="field col2">
-            <div class="label">健康メモ（任意）</div>
-            <input id="healthMemo" class="input" placeholder="例：頭痛あり/花粉症/通院後など">
-          </label>
-        </div>
-
-        <div class="grid2">
-          <label class="field">
-            <div class="label" id="labelStartAlcohol">アルコール検知器写真（出発・任意）</div>
-            <input id="startAlcoholPhoto" class="input file" type="file" accept="image/*">
-            <div class="help">※iPhoneでHEICのときは変換できずエラーになる場合があります（その場合JPEGで選択）</div>
-            <div class="preview" id="prevStartAlcohol"></div>
-          </label>
-
-          <label class="field">
-            <div class="label" id="labelEndAlcohol">アルコール検知器写真（帰着・任意）</div>
-            <input id="endAlcoholPhoto" class="input file" type="file" accept="image/*">
-            <div class="help">※帰着モードで使います（任意）</div>
-            <div class="preview" id="prevEndAlcohol"></div>
-          </label>
-        </div>
-      </section>
-
-      <!-- Inspection -->
-      <section class="card tint mint">
-        <h2>運行前点検（必須）</h2>
-
-        <label class="field">
-          <div class="label">点検結果 <span class="req">*</span></div>
-          <select id="inspection" class="input">
-            <option>異常なし</option>
-            <option>異常あり</option>
-          </select>
-        </label>
-
-        <label class="field" id="inspectionDetailWrap">
-          <div class="label">異常内容（異常ありの場合）</div>
-          <input id="inspectionDetail" class="input" placeholder="例：左前輪 空気圧低下 / ブレーキ鳴き など">
-        </label>
-
-        <label class="field">
-          <div class="label">点検チェック（確認）</div>
-          <select id="inspectionLevel" class="input">
-            <option>簡易点検（項目はメモに記載）</option>
-            <option>標準点検（タイヤ/灯火/油脂/外観）</option>
-            <option>詳細点検（標準＋積載/警告灯/工具）</option>
-          </select>
-        </label>
-
-        <label class="field">
-          <div class="label">点検写真 <span class="req">*</span></div>
-          <input id="inspectionPhoto" class="input file" type="file" accept="image/*">
-          <div class="help">※必須（メーター/外観/警告灯など）。自動で圧縮してDriveへ保存。</div>
-          <div class="preview" id="prevInspection"></div>
-        </label>
-      </section>
-
-      <!-- Meter -->
-      <section class="card tint sky">
-        <h2>メーター</h2>
-
-        <div class="grid2">
-          <label class="field" id="meterStartWrap">
-            <div class="label">メーター（出発） <span class="req">*</span></div>
-            <input id="meterStart" class="input" inputmode="numeric" placeholder="例：123507">
-          </label>
-
-          <label class="field" id="meterEndWrap">
-            <div class="label">メーター（帰着） <span class="req">*</span></div>
-            <input id="meterEnd" class="input" inputmode="numeric" placeholder="例：122548">
-          </label>
-        </div>
-
-        <label class="field">
-          <div class="label">メーター写真（任意）</div>
-          <input id="meterPhoto" class="input file" type="file" accept="image/*">
-          <div class="preview" id="prevMeter"></div>
-        </label>
-
-        <label class="field">
-          <div class="label">その他写真（任意）</div>
-          <input id="otherPhoto" class="input file" type="file" accept="image/*">
-          <div class="preview" id="prevOther"></div>
-        </label>
-      </section>
-
-      <!-- Memo -->
-      <section class="card">
-        <label class="field">
-          <div class="label">備考（任意）</div>
-          <textarea id="memo" class="textarea" rows="4" placeholder="連絡事項/遅延/クレーム/車両異常の詳細など"></textarea>
-        </label>
-
-        <div class="actions">
-          <button id="btnSave" class="btn primary big">この記録を保存（Driveへ）</button>
-          <div class="result" id="resultBox"></div>
-        </div>
-
-        <div class="actions2">
-          <button id="btnClearLocal" class="btn danger">この端末の履歴を全削除（ローカル）</button>
-        </div>
-      </section>
-    </main>
-
-    <!-- HISTORY TAB -->
-    <main class="panel" id="tab-history">
-      <section class="card">
-        <div class="cardHead">
-          <h2>履歴（この端末）</h2>
-          <button id="btnExportLocal" class="btn ghost">JSON書き出し</button>
-        </div>
-        <div class="help">※この端末に保存した送信履歴です。Driveの公式ログとは別です。</div>
-        <div id="historyList" class="history"></div>
-      </section>
-    </main>
-
-    <footer class="foot">© OFA Group / Tenko & Inspection</footer>
-  </div>
-
-  <script src="./app.js"></script>
+  fetch(API_URL,{
+    method:"POST",
+    body: JSON.stringify(data)
+  })
+  .then(r=>r.json())
+  .then(()=>{
+    document.getElementById("status").textContent =
+      "✅ 保存完了（Drive＋ログOK）";
+  })
+  .catch(()=>{
+    document.getElementById("status").textContent =
+      "❌ 送信失敗（通信エラー）";
+  });
+}
+</script>
 </body>
 </html>
