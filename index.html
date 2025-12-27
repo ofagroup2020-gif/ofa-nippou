@@ -1,71 +1,43 @@
-<script>
-  const LOCAL_KEY = 'ofaGroupRecords';
-  const form = document.getElementById('tenkoForm');
-  const messageBox = document.getElementById('message');
-
-  const modeRadios = document.querySelectorAll('input[name="mode"]');
-  const sectionDeparture = document.getElementById('section_departure');
-  const sectionReturn = document.getElementById('section_return');
-
-  const startMeterInput = document.getElementById('startMeter');
-  const returnMeterInput = document.getElementById('returnMeter');
-  const distanceInput = document.getElementById('distance');
-
-  const historyList = document.getElementById('historyList');
-  const pdfOutput = document.getElementById('pdfOutput');
-  const pdfPrintBtn = document.getElementById('pdfPrintBtn');
-  const pdfBackBtn = document.getElementById('pdfBackBtn');
-
-  const historyFrom = document.getElementById('historyFrom');
-  const historyTo   = document.getElementById('historyTo');
-
-  let currentFilter = {from:null,to:null};
-
-  // 今日の日付をセット
-  document.getElementById('date').value = new Date().toISOString().slice(0,10);
-
-  // タブ切り替え
-  document.querySelectorAll('.tab-btn').forEach(btn=>{
-    btn.addEventListener('click',()=>{
-      document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
-      btn.classList.add('active');
-      const tab = btn.dataset.tab;
-      document.getElementById('tab_form').style.display = tab==='form'?'block':'none';
-      document.getElementById('tab_history').style.display = tab==='history'?'block':'none';
-      if(tab==='history'){
-        resetPdfView();
-        renderHistory();
-      }
-    });
-  });
-
-  // ====== 共通：ローカルストレージ ======
-  function getRecords(){
-    const raw = localStorage.getItem(LOCAL_KEY);
-    return raw ? JSON.parse(raw) : [];
-  }
-  function setRecords(list){
-    localStorage.setItem(LOCAL_KEY,JSON.stringify(list));
-  }
-
-  // ====== モード別 required 切替 ＋ 出発メーター自動読込 ======
-  const departureRequiredIds = ['startTime','condition','temp','alcoholValue','startMeter'];
-  const returnRequiredIds    = ['returnPlace','returnTime','returnMeter'];
-
-  function setRequired(ids, flag){
-    ids.forEach(id=>{
-      const el = document.getElementById(id);
-      if(el) el.required = flag;
-    });
-  }
-
-  function updateModeView(){
-    const modeEl = document.querySelector('input[name="mode"]:checked');
-    const mode = modeEl ? modeEl.value : '出発点呼';
-    const isDeparture = mode === '出発点呼';
-
-    sectionDeparture.style.display = isDeparture ? 'block' : 'none';
-    sectionReturn.style.display    = isDeparture ? 'none'  : 'block';
-
-    setRequired(departureRequiredIds, isDeparture);
-    setRequired
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="refresh" content="0; URL=./web_tenko_ofa.html">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>OFA｜Web点呼システム</title>
+  <style>
+    body{
+      font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Noto Sans JP", sans-serif;
+      background:#f5f7f7;
+      display:flex;
+      justify-content:center;
+      align-items:center;
+      height:100vh;
+      margin:0;
+      color:#333;
+    }
+    .box{
+      text-align:center;
+      background:#fff;
+      padding:24px;
+      border-radius:16px;
+      box-shadow:0 10px 24px rgba(0,0,0,.1);
+    }
+    a{
+      color:#2b7cff;
+      font-weight:900;
+      text-decoration:none;
+    }
+  </style>
+</head>
+<body>
+  <div class="box">
+    <h2>OFA Web点呼システム</h2>
+    <p>自動的に移動します。</p>
+    <p>
+      移動しない場合は<br>
+      <a href="./web_tenko_ofa.html">こちらをタップしてください</a>
+    </p>
+  </div>
+</body>
+</html>
