@@ -136,7 +136,6 @@
       position:absolute;right:10px;top:8px;font-size:10px;padding:2px 6px;border-radius:999px;
       background:#ebf5fb;color:#2980b9;
     }
-    .history-check{margin-top:4px;}
     .history-item-main{flex:1;}
     .history-item-title{font-size:14px;font-weight:900;}
     .history-item-sub{font-size:11px;color:#555;margin-top:2px;}
@@ -235,11 +234,22 @@
             <li>写真は端末に保存しません（Drive URLだけ履歴に残します）。</li>
             <li>Drive内の写真は<b>60日経過で自動削除（ゴミ箱へ）</b>されます。</li>
           </ul>
+
+          <div style="margin-top:10px;padding-top:10px;border-top:1px dashed #ddd;">
+            <b>🔧 GAS（Drive保存）URL設定</b><br/>
+            ・初回だけ /exec のURLを登録すると、この端末で保持します。<br/>
+            <div style="margin-top:6px;">
+              <button type="button" class="sub-btn blue" id="gasSetBtn">GAS URLを設定/変更</button>
+              <button type="button" class="sub-btn gray" id="gasShowBtn">現在のGAS URL表示</button>
+              <button type="button" class="sub-btn danger" id="gasClearBtn">GAS URLを削除</button>
+            </div>
+            <div class="field-hint">URL例： https://script.google.com/macros/s/XXXXXXXX/exec</div>
+          </div>
         </div>
       </div>
 
       <div class="small-note" style="margin-top:12px;">
-        <b>Google Drive保存：</b>GAS（Webアプリ）URLをこのHTML内に設定すれば動きます。<br/>
+        <b>Google Drive保存：</b>このページ内でGAS WebアプリURL（/exec）を1回設定すれば動きます。<br/>
         ※ 履歴は<b>この端末・このブラウザ</b>に保存されます（写真はDriveへ）。
       </div>
 
@@ -387,9 +397,13 @@
 
 <script>
 /**
- * ★ここだけあなたが貼り替える（GASのWebアプリURL /exec）
+ * ✅ GAS_URL は「コードに直書き」しません。
+ * 1) 初回はボタンから /exec URL を登録（localStorageに保存）
+ * 2) 以降は自動利用
+ * 3) URLパラメータでも設定可能： ?gas=https://script.google.com/macros/s/XXXX/exec
  */
-const GAS_URL = "PASTE_YOUR_GAS_WEBAPP_URL_HERE";
+const GAS_URL_DEFAULT = ""; // ここは空でOK（自動設定方式）
+const GAS_URL_KEY = "ofa_gas_webapp_exec_url";
 
 const LOCAL_KEY = "ofaGroupRecords_v2_drive";
 const IMG_MAX_SIZE = 1280;
@@ -530,10 +544,68 @@ function fileToCompressedDataURL(file, maxSize=IMG_MAX_SIZE, quality=IMG_QUALITY
   });
 }
 
+// ✅ GAS URL 周り（自動設定）
+function normalizeGasUrl(url){
+  if(!url) return "";
+  let u = String(url).trim();
+  // 末尾に /exec が無ければ付ける
+  if(u.endsWith("/")) u = u.slice(0,-1);
+  if(!u.endsWith("/exec")){
+    // /dev を貼った場合は /exec に寄せる（安全策）
+    if(u.endsWith("/dev")) u = u.slice(0, -4) + "/exec";
+    else u = u + "/exec";
+  }
+  return u;
+}
+function getGasUrlFromQuery(){
+  const params = new URLSearchParams(location.search);
+  const gas = params.get("gas");
+  return normalizeGasUrl(gas || "");
+}
+function getGasUrl(){
+  // 1) URLパラメータ（優先）
+  const fromQuery = getGasUrlFromQuery();
+  if(fromQuery){
+    localStorage.setItem(GAS_URL_KEY, fromQuery);
+    return fromQuery;
+  }
+  // 2) localStorage
+  const saved = normalizeGasUrl(localStorage.getItem(GAS_URL_KEY) || "");
+  if(saved) return saved;
+  // 3) デフォルト（未使用でもOK）
+  return normalizeGasUrl(GAS_URL_DEFAULT);
+}
+function setGasUrlInteractive(){
+  const current = localStorage.getItem(GAS_URL_KEY) || "";
+  const input = prompt("GAS WebアプリURL（/exec）を貼り付けてください。\n例: https://script.google.com/macros/s/XXXX/exec", current);
+  if(input === null) return; // cancel
+  const normalized = normalizeGasUrl(input);
+  if(!normalized.startsWith("https://script.google.com/macros/s/")){
+    alert("URL形式が不正です。/exec までのWebアプリURLを貼ってください。");
+    return;
+  }
+  localStorage.setItem(GAS_URL_KEY, normalized);
+  alert("保存しました！\n" + normalized);
+}
+function showGasUrl(){
+  const u = getGasUrl();
+  alert(u ? ("現在のGAS URL:\n" + u) : "GAS URLが未設定です。\nガイド内の「GAS URLを設定/変更」を押してください。");
+}
+function clearGasUrl(){
+  if(confirm("この端末に保存しているGAS URLを削除します。よろしいですか？")){
+    localStorage.removeItem(GAS_URL_KEY);
+    alert("削除しました。");
+  }
+}
+document.getElementById("gasSetBtn").addEventListener("click", setGasUrlInteractive);
+document.getElementById("gasShowBtn").addEventListener("click", showGasUrl);
+document.getElementById("gasClearBtn").addEventListener("click", clearGasUrl);
+
 // GASへ送信
 async function uploadAlcoholPhotosToDrive(payload){
-  if(!GAS_URL || GAS_URL.includes("PASTE_YOUR_GAS_WEBAPP_URL_HERE")){
-    throw new Error("GAS_URL 未設定です（HTML内のGAS_URLに /exec を貼ってください）");
+  const GAS_URL = getGasUrl();
+  if(!GAS_URL){
+    throw new Error("GAS_URL 未設定です（ガイド内の「GAS URLを設定/変更」で /exec を登録してください）");
   }
   const res = await fetch(GAS_URL, {
     method:"POST",
