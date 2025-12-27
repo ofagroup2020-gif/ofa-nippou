@@ -40,25 +40,24 @@
       color:#fff;
       padding:20px 16px 16px;
       text-align:center;
-      position:relative;
     }
     @keyframes headerRainbow{
       0%{background-position:0% 50%;}
       50%{background-position:100% 50%;}
       100%{background-position:0% 50%;}
     }
-    .header-top{
-      display:flex;justify-content:center;align-items:center;gap:12px;margin-bottom:6px;
-    }
     .header-logo-square{
       width:72px;height:72px;border-radius:16px;background:#fff;
+      margin:0 auto 6px;
       display:flex;align-items:center;justify-content:center;
       box-shadow:0 0 0 3px rgba(255,255,255,.7), 0 8px 18px rgba(0,0,0,.35);
+      font-weight:900;font-size:30px;
     }
-    .header-logo-square span{font-weight:900;font-size:30px;letter-spacing:1px;}
-    .logo-o{color:#E74C3C;} .logo-f{color:#F1C40F;} .logo-a{color:#3498DB;}
-    .header-brand-text{font-size:18px;font-weight:800;letter-spacing:2px;text-shadow:0 1px 3px rgba(0,0,0,.25);}
-    .header-title{font-size:20px;font-weight:900;margin-top:4px;text-shadow:0 1px 3px rgba(0,0,0,.3);}
+    .logo-o{color:#E74C3C;}
+    .logo-f{color:#F1C40F;}
+    .logo-a{color:#3498DB;}
+
+    .header-title{font-size:20px;font-weight:900;}
     .header-badges{
       margin-top:8px;display:flex;justify-content:center;flex-wrap:wrap;gap:6px;font-size:11px;
     }
@@ -66,804 +65,185 @@
       padding:4px 10px;border-radius:999px;
       background:rgba(255,255,255,.35);
       border:1px solid rgba(255,255,255,.8);
-      backdrop-filter:blur(4px);
     }
-    .tab-bar{display:flex;background:#fdfef9;border-bottom:1px solid #ecf0f1;}
-    .tab-btn{
-      flex:1;padding:10px 4px;border:none;background:none;font-weight:800;font-size:14px;cursor:pointer;
-      display:flex;align-items:center;justify-content:center;gap:4px;border-bottom:3px solid transparent;
-    }
-    .tab-btn span.icon{font-size:16px;}
-    .tab-btn.active{border-bottom-color:var(--ofa-green);color:var(--ofa-green);background:#fff;}
+
     .content{padding:16px;}
-    .section-title{
-      margin:16px 0 10px;padding:8px 10px;background:#FDFBF5;border-radius:8px;
-      font-weight:800;font-size:14px;color:#2d98da;position:relative;overflow:hidden;
-    }
-    .section-title::before{
-      content:"";position:absolute;left:0;top:0;bottom:0;width:6px;
-      background:linear-gradient(180deg,#ff7675,#f9ca24,#55efc4,#74b9ff,#a29bfe);
-    }
     label{display:block;font-weight:800;font-size:13px;margin-top:12px;}
-    .required-mark{color:var(--ofa-red);margin-left:4px;}
-    input[type="text"],input[type="tel"],input[type="email"],input[type="date"],input[type="time"],input[type="number"],select,textarea{
-      width:100%;padding:10px;margin-top:4px;border:1px solid var(--border);border-radius:12px;
-      font-size:14px;background:#fbfffa;
+    .required{color:#E74C3C;}
+
+    input,select{
+      width:100%;
+      padding:10px;
+      border-radius:12px;
+      border:1px solid #ddd;
+      margin-top:4px;
+      font-size:14px;
     }
-    textarea{resize:vertical;}
-    .field-hint{font-size:11px;color:#777;margin-top:2px;}
-    .small-note{font-size:12px;color:#555;background:#f7fbff;border:1px solid #e6f2ff;border-radius:10px;padding:10px;margin-top:10px;}
-    .small-note b{color:#1f6fb2;}
-    .radio-card-group{margin-top:8px;display:flex;gap:10px;flex-wrap:wrap;}
-    .radio-card{
-      flex:1 1 120px;border:1px solid var(--border);border-radius:999px;padding:6px 10px;
-      display:flex;align-items:center;gap:6px;font-size:13px;background:#fff;box-shadow:0 1px 0 rgba(0,0,0,.03);
-    }
-    .radio-card input{margin:0;}
-    .primary-btn{
-      width:100%;padding:14px;margin-top:20px;border:none;border-radius:999px;
+
+    .radio-row{display:flex;gap:10px;margin-top:6px;}
+    .radio-row label{font-weight:600;}
+
+    button{
+      width:100%;
+      padding:14px;
+      margin-top:20px;
+      border:none;
+      border-radius:999px;
       background:linear-gradient(135deg,#ff7675,#e74c3c);
-      color:#fff;font-size:16px;font-weight:900;cursor:pointer;box-shadow:0 4px 0 #c0392b;
+      color:#fff;
+      font-size:16px;
+      font-weight:900;
+      cursor:pointer;
     }
-    .primary-btn:active{transform:translateY(1px);box-shadow:none;}
-    .primary-btn[disabled]{opacity:.55;cursor:not-allowed;box-shadow:none;transform:none;}
-    .sub-btn{
-      padding:8px 12px;border-radius:999px;border:none;font-size:12px;font-weight:900;cursor:pointer;
-      display:inline-flex;align-items:center;gap:4px;margin:4px 6px 4px 0;
+
+    .message{
+      margin-top:12px;
+      padding:10px;
+      border-radius:10px;
+      display:none;
     }
-    .sub-btn.gray{background:#f2f2f2;color:#555;}
-    .sub-btn.blue{background:#eaf5ff;color:#2471a3;}
-    .sub-btn.green{background:#e8fff3;color:#1e8449;}
-    .sub-btn.danger{background:#fdecea;color:var(--ofa-red);}
-    .message{margin-top:12px;font-size:13px;padding:10px 12px;border-radius:10px;display:none;}
-    .message.success{display:block;background:#d4edda;color:#155724;}
-    .message.error{display:block;background:#f8d7da;color:#721c24;}
-    .message.info{display:block;background:#e8f4fd;color:#1b4f72;}
-    .history-note{font-size:11px;color:#666;margin-bottom:4px;}
-    .history-filter{
-      margin:8px 0 10px;padding:10px;background:#f8f9f9;border-radius:12px;font-size:12px;border:1px solid #eee;
-    }
-    .history-filter-row{display:flex;align-items:center;gap:6px;margin-top:6px;}
-    .history-filter-row input[type="date"]{flex:1;padding:8px 10px;font-size:12px;}
-    #historyList{margin-top:10px;}
-    .history-item{
-      padding:10px 12px;border-radius:14px;border:1px solid #ddd;background:#fff;margin-bottom:8px;cursor:pointer;
-      position:relative;box-shadow:0 2px 6px rgba(0,0,0,.08);
-      display:flex;gap:8px;align-items:flex-start;
-    }
-    .history-item::after{
-      content:"PDF";
-      position:absolute;right:10px;top:8px;font-size:10px;padding:2px 6px;border-radius:999px;
-      background:#ebf5fb;color:#2980b9;
-    }
-    .history-item-main{flex:1;}
-    .history-item-title{font-size:14px;font-weight:900;}
-    .history-item-sub{font-size:11px;color:#555;margin-top:2px;}
-    .history-item-status{font-size:11px;margin-top:2px;color:#27ae60;}
-    #pdfOutput{margin-top:10px;}
-    .pdf-wrap{font-family:'Noto Sans JP',sans-serif;}
-    .pdf-doc{
-      border:1px solid #ccc;padding:16px 14px;margin-bottom:12px;background:#fff;border-radius:10px;
-    }
-    .pdf-header{text-align:center;border-bottom:3px solid var(--ofa-green);padding-bottom:6px;margin-bottom:10px;}
-    .pdf-header-title{font-size:16px;font-weight:900;color:var(--ofa-blue);}
-    .pdf-header-sub{font-size:11px;color:#555;}
-    .pdf-section-box{margin-top:10px;}
-    .pdf-section-title{
-      background:#f8f9f9;padding:6px 8px;border-left:4px solid var(--ofa-yellow);
-      font-size:12px;font-weight:900;color:var(--ofa-blue);margin-bottom:4px;
-    }
-    .pdf-row{display:flex;font-size:12px;padding:3px 0;border-bottom:1px dotted #eee;}
-    .pdf-row-label{width:38%;font-weight:900;}
-    .pdf-row-value{width:62%;}
-    .pdf-status{
-      margin:4px 0 6px;padding:6px 8px;font-size:11px;border-radius:6px;background:#d4edda;color:#155724;text-align:center;font-weight:800;
-    }
-    .pdf-status.incomplete{background:#fff3cd;color:#856404;}
-    .month-table-wrap{overflow:auto;border:1px solid #e5e5e5;border-radius:10px;}
-    table.month-table{width:100%;border-collapse:collapse;font-size:11px;min-width:760px;}
-    .month-table th,.month-table td{border:1px solid #e5e5e5;padding:6px 6px;white-space:nowrap;}
-    .month-table th{background:#1f5136;color:#fff;font-weight:900;}
-    .month-table td{background:#fff;}
-    .month-table .center{text-align:center;}
-    .pill{
-      display:inline-block;padding:2px 8px;border-radius:999px;font-size:10px;font-weight:900;
-      border:1px solid #ddd;background:#f7f7f7;color:#555;
-    }
-    .pill.ok{background:#e8fff3;border-color:#baf2d1;color:#1e8449;}
-    .pill.warn{background:#fff3cd;border-color:#ffeeba;color:#856404;}
-    .a-link{color:#1f6fb2;text-decoration:underline;}
-    .guide{margin-top:12px;border:1px solid #e7e7e7;border-radius:14px;background:#fff;overflow:hidden;}
-    .guide .guide-head{
-      display:flex;align-items:center;justify-content:space-between;gap:10px;
-      padding:12px 14px;background:#f7fbff;font-weight:900;cursor:pointer;
-    }
-    .guide .guide-body{padding:12px 14px;display:none;font-size:13px;}
-    .guide.open .guide-body{display:block;}
-    .guide ul{margin:8px 0 0 18px;}
-    .guide li{margin:6px 0;}
-    body.printing{background:#fff !important;}
-    @media print{
-      body{background:#fff !important;}
-      .container{box-shadow:none;border-radius:0;margin:0;max-width:none;}
-      .header,.tab-bar,.content .form-area,.content .history-filter,.content .history-note,.content .top-actions{display:none !important;}
-      #historyList{display:none !important;}
-      #pdfOutput{margin:0 !important;}
-      #pdfOutput .pdf-doc{border:none;margin:0;padding:10px 6px;}
-      a{color:#000;text-decoration:none;}
-    }
+    .message.error{background:#f8d7da;color:#721c24;}
+    .message.success{background:#d4edda;color:#155724;}
+    .message.info{background:#e8f4fd;color:#1b4f72;}
   </style>
 </head>
 
 <body>
 <div class="container">
-  <header class="header">
-    <div class="header-top">
-      <div class="header-logo-square">
-        <span class="logo-o">O</span><span class="logo-f">F</span><span class="logo-a">A</span>
-      </div>
-      <div class="header-brand-text">OFA GROUP</div>
+  <div class="header">
+    <div class="header-logo-square">
+      <span class="logo-o">O</span><span class="logo-f">F</span><span class="logo-a">A</span>
     </div>
     <div class="header-title">Web点呼・日報フォーム（Drive保存版）</div>
     <div class="header-badges">
-      <div class="header-badge">ドライバー入力 → 証跡保存</div>
-      <div class="header-badge">写真はDriveへ保存（60日で整理）</div>
-      <div class="header-badge">日次・月次PDF出力</div>
+      <div class="header-badge">写真はDrive保存</div>
+      <div class="header-badge">60日自動整理</div>
+      <div class="header-badge">法令対応</div>
     </div>
-  </header>
-
-  <div class="tab-bar">
-    <button class="tab-btn active" data-tab="form"><span class="icon">📝</span>点呼・日報入力</button>
-    <button class="tab-btn" data-tab="history"><span class="icon">📄</span>履歴・検索・PDF</button>
   </div>
 
   <div class="content">
-    <div id="tab_form" class="form-area">
-      <div class="guide" id="guideBox">
-        <div class="guide-head" id="guideToggle">
-          <div>📌 使い方（タップで開く）</div>
-          <div class="pill">ガイド</div>
-        </div>
-        <div class="guide-body">
-          <b>① 出発点呼</b> → 体調・アルコール値・車番・確認者を入力し保存。<br/>
-          <b>② 帰着点呼</b> → 同じ日付・同じドライバーで帰着を入力し保存（自動で出発記録に合体）。<br/>
-          <b>③ 履歴</b> → 期間で絞り込み、<b>日次PDF</b>（1件） or <b>月次PDF</b>（表示中まとめ）を出力。<br/>
-          <b>④ 写真</b> → アルコール検知器の画面写真をアップ（自動圧縮→Drive保存）。<br/><br/>
-          <ul>
-            <li>LINE内ブラウザで印刷が不安定な時は「Safari/Chromeで開く」を推奨。</li>
-            <li>写真は端末に保存しません（Drive URLだけ履歴に残します）。</li>
-            <li>Drive内の写真は<b>60日経過で自動削除（ゴミ箱へ）</b>されます。</li>
-          </ul>
+    <form id="tenkoForm">
+      <label>日付 <span class="required">*</span></label>
+      <input type="date" id="date" required>
 
-          <div style="margin-top:10px;padding-top:10px;border-top:1px dashed #ddd;">
-            <b>🔧 GAS（Drive保存）URL設定</b><br/>
-            ・初回だけ /exec のURLを登録すると、この端末で保持します。<br/>
-            <div style="margin-top:6px;">
-              <button type="button" class="sub-btn blue" id="gasSetBtn">GAS URLを設定/変更</button>
-              <button type="button" class="sub-btn gray" id="gasShowBtn">現在のGAS URL表示</button>
-              <button type="button" class="sub-btn danger" id="gasClearBtn">GAS URLを削除</button>
-            </div>
-            <div class="field-hint">URL例： https://script.google.com/macros/s/XXXXXXXX/exec</div>
-          </div>
-        </div>
-      </div>
+      <label>ドライバー名 <span class="required">*</span></label>
+      <input type="text" id="driver" required>
 
-      <div class="small-note" style="margin-top:12px;">
-        <b>Google Drive保存：</b>このページ内でGAS WebアプリURL（/exec）を1回設定すれば動きます。<br/>
-        ※ 履歴は<b>この端末・このブラウザ</b>に保存されます（写真はDriveへ）。
-      </div>
+      <label>所属会社 <span class="required">*</span></label>
+      <input type="text" id="company" required>
 
-      <form id="tenkoForm" autocomplete="off">
-        <div class="section-title">0. モード選択</div>
-        <label>点呼モード <span class="required-mark">*</span></label>
-        <div class="radio-card-group">
-          <label class="radio-card"><input type="radio" name="mode" value="出発点呼" checked>出発点呼</label>
-          <label class="radio-card"><input type="radio" name="mode" value="帰着点呼">帰着点呼</label>
-        </div>
+      <label>車両番号 <span class="required">*</span></label>
+      <input type="text" id="vehicle" required>
 
-        <div class="section-title">1. 基本情報</div>
-        <label for="date">日付 <span class="required-mark">*</span></label>
-        <input id="date" type="date" required>
+      <label>確認者（点呼実施者） <span class="required">*</span></label>
+      <input type="text" id="checker" required>
 
-        <label for="driverName">ドライバー名 <span class="required-mark">*</span></label>
-        <input id="driverName" type="text" required>
+      <label>体調</label>
+      <select id="condition">
+        <option>良好</option>
+        <option>普通</option>
+        <option>不調</option>
+      </select>
 
-        <label for="company">所属会社 <span class="required-mark">*</span></label>
-        <input id="company" type="text" required>
+      <label>睡眠時間（時間）</label>
+      <input type="number" step="0.5" id="sleep">
 
-        <label for="vehicleNo">車両番号（ナンバー） <span class="required-mark">*</span></label>
-        <input id="vehicleNo" type="text" placeholder="例：鹿児島 500 あ 1234" required>
+      <label>アルコール検査値（mg/L） <span class="required">*</span></label>
+      <input type="text" id="alcohol" required>
 
-        <label for="checkerName">確認者（点呼実施者） <span class="required-mark">*</span></label>
-        <input id="checkerName" type="text" placeholder="例：森下 / 担当者名" required>
+      <label>アルコール検査写真 <span class="required">*</span></label>
+      <input type="file" id="photo" accept="image/*" required>
 
-        <label for="tel">電話番号 <span class="required-mark">*</span></label>
-        <input id="tel" type="tel" required>
+      <label>出発前メーター（km） <span class="required">*</span></label>
+      <input type="number" id="meter" required>
 
-        <label for="email">メールアドレス（任意）</label>
-        <input id="email" type="email">
+      <button type="submit">この記録を保存（Driveへ）</button>
+    </form>
 
-        <label for="client">案件（荷主）</label>
-        <input id="client" type="text">
-
-        <label for="area">エリア（都道府県）</label>
-        <input id="area" type="text" placeholder="例: 鹿児島県 / 熊本県など">
-
-        <div id="section_departure">
-          <div class="section-title">2. 出発前チェック</div>
-
-          <label for="startPlace">出発場所（自宅、もしくは事務所）</label>
-          <input id="startPlace" type="text">
-
-          <label for="workTime">出勤時間</label>
-          <input id="workTime" type="time">
-
-          <label for="startTime">出発時間 <span class="required-mark">*</span></label>
-          <input id="startTime" type="time" required>
-
-          <label for="condition">体調 <span class="required-mark">*</span></label>
-          <select id="condition" required>
-            <option value="">選択してください</option>
-            <option value="良好">良好</option>
-            <option value="普通">普通</option>
-            <option value="不調">不調</option>
-          </select>
-
-          <label for="sleep">睡眠時間（時間）</label>
-          <input id="sleep" type="number" step="0.5" placeholder="例: 6.5">
-
-          <label>飲酒（24h以内） <span class="required-mark">*</span></label>
-          <div class="radio-card-group">
-            <label class="radio-card"><input type="radio" name="drink" value="なし" checked>なし</label>
-            <label class="radio-card"><input type="radio" name="drink" value="あり">あり</label>
-          </div>
-
-          <label>服薬（運転に影響する薬）</label>
-          <div class="radio-card-group">
-            <label class="radio-card"><input type="radio" name="medicine" value="なし" checked>なし</label>
-            <label class="radio-card"><input type="radio" name="medicine" value="あり">あり</label>
-          </div>
-
-          <label for="temp">体温 (℃) <span class="required-mark">*</span></label>
-          <input id="temp" type="number" step="0.1" required>
-
-          <label for="alcoholValue">アルコール検査値 (mg/L) <span class="required-mark">*</span></label>
-          <input id="alcoholValue" type="text" required placeholder="例: 0.00">
-
-          <label for="startAlcoholPhoto">アルコール検査 写真（出発） <span class="required-mark">*</span></label>
-          <input id="startAlcoholPhoto" type="file" accept="image/*" required>
-          <div class="field-hint">※自動で圧縮してGoogle Driveへ保存します。</div>
-
-          <label for="startMeter">出発前メーター (km) <span class="required-mark">*</span></label>
-          <input id="startMeter" type="number" required>
-        </div>
-
-        <div id="section_return" style="display:none;">
-          <div class="section-title">2. 帰着記録</div>
-
-          <label for="returnPlace">帰着場所 <span class="required-mark">*</span></label>
-          <input id="returnPlace" type="text" required>
-
-          <label for="returnTime">帰着時間（自宅もしくは事務所） <span class="required-mark">*</span></label>
-          <input id="returnTime" type="time" required>
-
-          <label for="returnAlcoholValue">アルコール検査値（帰着）(mg/L) <span class="required-mark">*</span></label>
-          <input id="returnAlcoholValue" type="text" required placeholder="例: 0.00">
-
-          <label for="endAlcoholPhoto">アルコール検査 写真（帰着） <span class="required-mark">*</span></label>
-          <input id="endAlcoholPhoto" type="file" accept="image/*" required>
-          <div class="field-hint">※自動で圧縮してGoogle Driveへ保存します。</div>
-
-          <label for="returnMeter">帰着メーター (km) <span class="required-mark">*</span></label>
-          <input id="returnMeter" type="number" required>
-        </div>
-
-        <button id="saveBtn" type="submit" class="primary-btn">この記録を保存（写真はDriveへ）</button>
-      </form>
-
-      <div id="message" class="message"></div>
-    </div>
-
-    <div id="tab_history" style="display:none;">
-      <div class="section-title" style="margin-top:0;">保存された点呼履歴</div>
-      <div class="history-note">※この端末・このブラウザにだけ履歴が保存されます（写真はDrive URLを保存）</div>
-
-      <div class="history-filter">
-        <div><b>期間で絞り込み</b></div>
-        <div class="history-filter-row">
-          <input id="historyFrom" type="date">
-          <span>〜</span>
-          <input id="historyTo" type="date">
-        </div>
-        <div style="margin-top:8px;">
-          <button type="button" class="sub-btn gray" id="filterApplyBtn">この期間で絞り込み</button>
-          <button type="button" class="sub-btn gray" id="filterClearBtn">絞り込み解除</button>
-          <button type="button" class="sub-btn blue" id="setThisMonthBtn">今月</button>
-        </div>
-      </div>
-
-      <div id="historyList"></div>
-
-      <div style="margin-top:10px;">
-        <button type="button" class="sub-btn green" id="pdfPrintBtn" style="display:none;">表示中PDFを印刷 / 保存</button>
-        <button type="button" class="sub-btn gray" id="pdfBackBtn" style="display:none;">一覧に戻る</button>
-        <button type="button" class="sub-btn blue" id="monthPdfBtn">表示中を月次PDF（一覧）</button>
-      </div>
-
-      <div id="pdfOutput"></div>
-    </div>
+    <div id="msg" class="message"></div>
   </div>
 </div>
 
 <script>
 /**
- * ✅ GAS_URL は「コードに直書き」しません。
- * 1) 初回はボタンから /exec URL を登録（localStorageに保存）
- * 2) 以降は自動利用
- * 3) URLパラメータでも設定可能： ?gas=https://script.google.com/macros/s/XXXX/exec
+ * ★ 実運用GAS WebアプリURL（/execまで含む）
  */
-const GAS_URL_DEFAULT = ""; // ここは空でOK（自動設定方式）
-const GAS_URL_KEY = "ofa_gas_webapp_exec_url";
-
-const LOCAL_KEY = "ofaGroupRecords_v2_drive";
-const IMG_MAX_SIZE = 1280;
-const IMG_QUALITY  = 0.72;
+const GAS_URL = "https://script.google.com/macros/s/AKfycbwfbh0zX5XdC8tpUOBwcmQKbXmK4COcV-_ozQKEnzdOunRqvGXh9ZYKuIr3qhpQO4o0/exec";
 
 const form = document.getElementById("tenkoForm");
-const messageBox = document.getElementById("message");
-const saveBtn = document.getElementById("saveBtn");
+const msg  = document.getElementById("msg");
 
-const modeRadios = document.querySelectorAll('input[name="mode"]');
-const sectionDeparture = document.getElementById("section_departure");
-const sectionReturn = document.getElementById("section_return");
+document.getElementById("date").value =
+  new Date().toISOString().slice(0,10);
 
-const historyList = document.getElementById("historyList");
-const pdfOutput = document.getElementById("pdfOutput");
-const pdfPrintBtn = document.getElementById("pdfPrintBtn");
-const pdfBackBtn = document.getElementById("pdfBackBtn");
-const monthPdfBtn = document.getElementById("monthPdfBtn");
-const historyFrom = document.getElementById("historyFrom");
-const historyTo = document.getElementById("historyTo");
-
-let currentFilter = {from:null,to:null};
-
-document.getElementById("date").value = new Date().toISOString().slice(0,10);
-
-// ガイド
-document.getElementById("guideToggle").addEventListener("click",()=>{
-  document.getElementById("guideBox").classList.toggle("open");
-});
-
-// タブ
-document.querySelectorAll(".tab-btn").forEach(btn=>{
-  btn.addEventListener("click",()=>{
-    document.querySelectorAll(".tab-btn").forEach(b=>b.classList.remove("active"));
-    btn.classList.add("active");
-    const tab = btn.dataset.tab;
-    document.getElementById("tab_form").style.display = tab==="form" ? "block" : "none";
-    document.getElementById("tab_history").style.display = tab==="history" ? "block" : "none";
-    if(tab==="history"){
-      resetPdfView();
-      renderHistory();
-    }
-  });
-});
-
-// required切替
-const departureRequiredIds = ["startTime","condition","temp","alcoholValue","startMeter","startAlcoholPhoto"];
-const returnRequiredIds = ["returnPlace","returnTime","returnMeter","returnAlcoholValue","endAlcoholPhoto"];
-function setRequired(ids, flag){
-  ids.forEach(id=>{
-    const el = document.getElementById(id);
-    if(el) el.required = flag;
-  });
-}
-function updateModeView(){
-  const mode = document.querySelector('input[name="mode"]:checked')?.value || "出発点呼";
-  const isDeparture = (mode==="出発点呼");
-  sectionDeparture.style.display = isDeparture ? "block" : "none";
-  sectionReturn.style.display    = isDeparture ? "none"  : "block";
-  setRequired(departureRequiredIds, isDeparture);
-  setRequired(returnRequiredIds, !isDeparture);
-}
-modeRadios.forEach(r=>r.addEventListener("change",updateModeView));
-updateModeView();
-
-function getRecords(){
-  const raw = localStorage.getItem(LOCAL_KEY);
-  return raw ? JSON.parse(raw) : [];
-}
-function setRecords(list){
-  localStorage.setItem(LOCAL_KEY, JSON.stringify(list));
-}
-function showMessage(text, type="success"){
-  messageBox.textContent = text;
-  messageBox.className = "message " + (type==="error" ? "error" : type==="info" ? "info" : "success");
-}
-function applyFilter(list){
-  return list.filter(r=>{
-    if(currentFilter.from && r.date < currentFilter.from) return false;
-    if(currentFilter.to && r.date > currentFilter.to) return false;
-    return true;
-  });
+function show(text,type){
+  msg.textContent = text;
+  msg.className = "message " + type;
+  msg.style.display = "block";
 }
 
-// フィルタボタン
-document.getElementById("filterApplyBtn").addEventListener("click",()=>{
-  currentFilter.from = historyFrom.value || null;
-  currentFilter.to   = historyTo.value   || null;
-  resetPdfView();
-  renderHistory();
-});
-document.getElementById("filterClearBtn").addEventListener("click",()=>{
-  historyFrom.value = "";
-  historyTo.value = "";
-  currentFilter = {from:null,to:null};
-  resetPdfView();
-  renderHistory();
-});
-document.getElementById("setThisMonthBtn").addEventListener("click",()=>{
-  const now = new Date();
-  const y = now.getFullYear();
-  const m = String(now.getMonth()+1).padStart(2,"0");
-  historyFrom.value = `${y}-${m}-01`;
-  historyTo.value = new Date(y, now.getMonth()+1, 0).toISOString().slice(0,10);
-  currentFilter.from = historyFrom.value;
-  currentFilter.to = historyTo.value;
-  resetPdfView();
-  renderHistory();
-});
-
-// 画像圧縮
-function fileToCompressedDataURL(file, maxSize=IMG_MAX_SIZE, quality=IMG_QUALITY){
-  return new Promise((resolve, reject)=>{
-    if(!file) return resolve(null);
-    const reader = new FileReader();
-    reader.onload = ()=>{
-      const img = new Image();
-      img.onload = ()=>{
-        const w = img.width, h = img.height;
-        let nw=w, nh=h;
-        const longSide = Math.max(w,h);
-        if(longSide > maxSize){
-          const scale = maxSize / longSide;
-          nw = Math.round(w * scale);
-          nh = Math.round(h * scale);
+function compressImage(file){
+  return new Promise(res=>{
+    const r=new FileReader();
+    r.onload=()=>{
+      const img=new Image();
+      img.onload=()=>{
+        const c=document.createElement("canvas");
+        const max=1280;
+        let w=img.width,h=img.height;
+        if(Math.max(w,h)>max){
+          const s=max/Math.max(w,h);
+          w*=s;h*=s;
         }
-        const canvas = document.createElement("canvas");
-        canvas.width = nw; canvas.height = nh;
-        const ctx = canvas.getContext("2d");
-        ctx.drawImage(img, 0, 0, nw, nh);
-        resolve(canvas.toDataURL("image/jpeg", quality));
+        c.width=w;c.height=h;
+        c.getContext("2d").drawImage(img,0,0,w,h);
+        res(c.toDataURL("image/jpeg",0.7));
       };
-      img.onerror = ()=>reject(new Error("画像の読み込みに失敗"));
-      img.src = reader.result;
+      img.src=r.result;
     };
-    reader.onerror = ()=>reject(new Error("ファイル読み込みに失敗"));
-    reader.readAsDataURL(file);
+    r.readAsDataURL(file);
   });
 }
 
-// ✅ GAS URL 周り（自動設定）
-function normalizeGasUrl(url){
-  if(!url) return "";
-  let u = String(url).trim();
-  // 末尾に /exec が無ければ付ける
-  if(u.endsWith("/")) u = u.slice(0,-1);
-  if(!u.endsWith("/exec")){
-    // /dev を貼った場合は /exec に寄せる（安全策）
-    if(u.endsWith("/dev")) u = u.slice(0, -4) + "/exec";
-    else u = u + "/exec";
-  }
-  return u;
-}
-function getGasUrlFromQuery(){
-  const params = new URLSearchParams(location.search);
-  const gas = params.get("gas");
-  return normalizeGasUrl(gas || "");
-}
-function getGasUrl(){
-  // 1) URLパラメータ（優先）
-  const fromQuery = getGasUrlFromQuery();
-  if(fromQuery){
-    localStorage.setItem(GAS_URL_KEY, fromQuery);
-    return fromQuery;
-  }
-  // 2) localStorage
-  const saved = normalizeGasUrl(localStorage.getItem(GAS_URL_KEY) || "");
-  if(saved) return saved;
-  // 3) デフォルト（未使用でもOK）
-  return normalizeGasUrl(GAS_URL_DEFAULT);
-}
-function setGasUrlInteractive(){
-  const current = localStorage.getItem(GAS_URL_KEY) || "";
-  const input = prompt("GAS WebアプリURL（/exec）を貼り付けてください。\n例: https://script.google.com/macros/s/XXXX/exec", current);
-  if(input === null) return; // cancel
-  const normalized = normalizeGasUrl(input);
-  if(!normalized.startsWith("https://script.google.com/macros/s/")){
-    alert("URL形式が不正です。/exec までのWebアプリURLを貼ってください。");
-    return;
-  }
-  localStorage.setItem(GAS_URL_KEY, normalized);
-  alert("保存しました！\n" + normalized);
-}
-function showGasUrl(){
-  const u = getGasUrl();
-  alert(u ? ("現在のGAS URL:\n" + u) : "GAS URLが未設定です。\nガイド内の「GAS URLを設定/変更」を押してください。");
-}
-function clearGasUrl(){
-  if(confirm("この端末に保存しているGAS URLを削除します。よろしいですか？")){
-    localStorage.removeItem(GAS_URL_KEY);
-    alert("削除しました。");
-  }
-}
-document.getElementById("gasSetBtn").addEventListener("click", setGasUrlInteractive);
-document.getElementById("gasShowBtn").addEventListener("click", showGasUrl);
-document.getElementById("gasClearBtn").addEventListener("click", clearGasUrl);
-
-// GASへ送信
-async function uploadAlcoholPhotosToDrive(payload){
-  const GAS_URL = getGasUrl();
-  if(!GAS_URL){
-    throw new Error("GAS_URL 未設定です（ガイド内の「GAS URLを設定/変更」で /exec を登録してください）");
-  }
-  const res = await fetch(GAS_URL, {
-    method:"POST",
-    headers:{ "Content-Type":"application/json" },
-    body: JSON.stringify(payload),
-    mode:"cors"
-  });
-  const data = await res.json().catch(()=>null);
-  if(!data || !data.ok) throw new Error(data?.error || "Drive保存に失敗");
-  return data.urls || {};
-}
-
-// 保存
-form.addEventListener("submit", async (e)=>{
+form.addEventListener("submit",async e=>{
   e.preventDefault();
-  const mode = document.querySelector('input[name="mode"]:checked').value;
-
-  saveBtn.disabled = true;
-  showMessage("保存中…（写真を圧縮→Driveへ保存）", "info");
+  show("保存中…","info");
 
   try{
-    const base = {
-      id: Date.now(),
-      date: document.getElementById("date").value,
-      driverName: document.getElementById("driverName").value.trim(),
-      company: document.getElementById("company").value.trim(),
-      vehicleNo: document.getElementById("vehicleNo").value.trim(),
-      checkerName: document.getElementById("checkerName").value.trim(),
-      tel: document.getElementById("tel").value.trim(),
-      email: document.getElementById("email").value.trim(),
-      client: document.getElementById("client").value.trim(),
-      area: document.getElementById("area").value.trim(),
-      modeLast: mode,
-      submitTime: new Date().toLocaleTimeString("ja-JP"),
+    const photo = await compressImage(
+      document.getElementById("photo").files[0]
+    );
+
+    const payload = {
+      date: date.value,
+      driver: driver.value,
+      company: company.value,
+      vehicle: vehicle.value,
+      checker: checker.value,
+      condition: condition.value,
+      sleep: sleep.value,
+      alcohol: alcohol.value,
+      photo
     };
 
-    let records = getRecords();
+    const r = await fetch(GAS_URL,{
+      method:"POST",
+      headers:{ "Content-Type":"application/json" },
+      body: JSON.stringify(payload)
+    });
 
-    if(mode === "出発点呼"){
-      const startFile = document.getElementById("startAlcoholPhoto").files?.[0] || null;
-      const startDataUrl = await fileToCompressedDataURL(startFile);
+    const j = await r.json();
+    if(!j.ok) throw new Error(j.error||"保存失敗");
 
-      const uploaded = await uploadAlcoholPhotosToDrive({
-        date: base.date, driver: base.driverName, vehicle: base.vehicleNo,
-        startAlcoholPhoto: startDataUrl
-      });
-
-      const rec = {
-        ...base,
-        startTime: document.getElementById("startTime").value,
-        condition: document.getElementById("condition").value,
-        temp: document.getElementById("temp").value,
-        alcoholValue: document.getElementById("alcoholValue").value.trim(),
-        startAlcoholPhotoUrl: uploaded.startAlcoholPhotoUrl || "",
-        startMeter: document.getElementById("startMeter").value,
-      };
-
-      records.push(rec);
-      records.sort((a,b)=>b.id-a.id);
-      setRecords(records);
-      showMessage("✅ 出発点呼を保存しました（写真はDriveへ保存済み）", "success");
-
-    }else{
-      const endFile = document.getElementById("endAlcoholPhoto").files?.[0] || null;
-      const endDataUrl = await fileToCompressedDataURL(endFile);
-
-      const uploaded = await uploadAlcoholPhotosToDrive({
-        date: base.date, driver: base.driverName, vehicle: base.vehicleNo,
-        endAlcoholPhoto: endDataUrl
-      });
-
-      const depIndex = records.findIndex(r =>
-        r.date === base.date &&
-        r.driverName === base.driverName &&
-        r.company === base.company &&
-        r.vehicleNo === base.vehicleNo &&
-        !r.returnTime
-      );
-
-      const retPart = {
-        returnPlace: document.getElementById("returnPlace").value.trim(),
-        returnTime: document.getElementById("returnTime").value,
-        returnAlcoholValue: document.getElementById("returnAlcoholValue").value.trim(),
-        endAlcoholPhotoUrl: uploaded.endAlcoholPhotoUrl || "",
-        returnMeter: document.getElementById("returnMeter").value,
-      };
-
-      if(depIndex !== -1){
-        records[depIndex] = { ...records[depIndex], ...retPart, modeLast:"出発・帰着" };
-        setRecords(records);
-        showMessage("✅ 出発記録に帰着点呼を追加しました（写真はDriveへ保存済み）", "success");
-      }else{
-        records.push({ ...base, ...retPart });
-        records.sort((a,b)=>b.id-a.id);
-        setRecords(records);
-        showMessage("✅ 帰着点呼を保存しました（写真はDriveへ保存済み）", "success");
-      }
-    }
-
+    show("✅ 保存しました（Driveへ保存完了）","success");
     form.reset();
-    document.getElementById("date").value = new Date().toISOString().slice(0,10);
-    updateModeView();
+    date.value=new Date().toISOString().slice(0,10);
 
   }catch(err){
-    showMessage("❌ " + (err?.message || String(err)), "error");
-  }finally{
-    saveBtn.disabled = false;
+    show("❌ "+err.message,"error");
   }
 });
-
-// 履歴
-function renderHistory(){
-  const all = getRecords();
-  const list = applyFilter(all);
-  historyList.innerHTML = "";
-  if(list.length === 0){
-    historyList.innerHTML = '<p style="text-align:center;color:#777;padding:12px;">記録がありません。</p>';
-    return;
-  }
-  list.forEach(rec=>{
-    const statusLabel = rec.returnTime ? "出発・帰着 記録済み" : (rec.startTime ? "出発点呼のみ" : "帰着点呼のみ");
-    const div = document.createElement("div");
-    div.className = "history-item";
-    div.innerHTML = `
-      <div class="history-item-main">
-        <div class="history-item-title">${rec.date} / ${statusLabel}</div>
-        <div class="history-item-sub">${rec.driverName || "-"} / ${rec.company || "-"} / ${rec.vehicleNo || "-"}</div>
-        <div class="history-item-status">確認者: ${rec.checkerName || "-"} / 最終: ${rec.modeLast || "-"}</div>
-      </div>`;
-    div.addEventListener("click",()=>showRecordPdf(rec));
-    historyList.appendChild(div);
-  });
-}
-function resetPdfView(){
-  pdfOutput.innerHTML = "";
-  pdfPrintBtn.style.display = "none";
-  pdfBackBtn.style.display = "none";
-  historyList.style.display = "block";
-}
-pdfBackBtn.addEventListener("click", resetPdfView);
-
-function buildSinglePdfHtml(rec){
-  const startPhotoLink = rec.startAlcoholPhotoUrl ? `<a class="a-link" href="${rec.startAlcoholPhotoUrl}" target="_blank" rel="noopener">写真を開く</a>` : "-";
-  const endPhotoLink = rec.endAlcoholPhotoUrl ? `<a class="a-link" href="${rec.endAlcoholPhotoUrl}" target="_blank" rel="noopener">写真を開く</a>` : "-";
-  const completed = !!rec.returnTime;
-
-  return `
-    <div class="pdf-wrap">
-      <div class="pdf-doc">
-        <div class="pdf-header">
-          <div class="pdf-header-title">OFA GROUP Web点呼（Drive保存版）</div>
-          <div class="pdf-header-sub">${rec.date || "-"} / ${rec.driverName || "-"} / ${rec.company || "-"}</div>
-        </div>
-        <div class="pdf-status ${completed ? "" : "incomplete"}">
-          ${completed ? "出発・帰着ともに記録済み" : (rec.startTime ? "出発点呼のみ" : "帰着点呼のみ")}
-        </div>
-
-        <div class="pdf-section-box">
-          <div class="pdf-section-title">基本情報</div>
-          <div class="pdf-row"><div class="pdf-row-label">車両番号</div><div class="pdf-row-value">${rec.vehicleNo || "-"}</div></div>
-          <div class="pdf-row"><div class="pdf-row-label">確認者</div><div class="pdf-row-value">${rec.checkerName || "-"}</div></div>
-        </div>
-
-        ${rec.startTime ? `
-        <div class="pdf-section-box">
-          <div class="pdf-section-title">出発</div>
-          <div class="pdf-row"><div class="pdf-row-label">出発時間</div><div class="pdf-row-value">${rec.startTime || "-"}</div></div>
-          <div class="pdf-row"><div class="pdf-row-label">体温</div><div class="pdf-row-value">${rec.temp || "-"}℃</div></div>
-          <div class="pdf-row"><div class="pdf-row-label">アルコール値</div><div class="pdf-row-value">${rec.alcoholValue || "-"} mg/L</div></div>
-          <div class="pdf-row"><div class="pdf-row-label">写真</div><div class="pdf-row-value">${startPhotoLink}</div></div>
-        </div>` : ""}
-
-        ${rec.returnTime ? `
-        <div class="pdf-section-box">
-          <div class="pdf-section-title">帰着</div>
-          <div class="pdf-row"><div class="pdf-row-label">帰着時間</div><div class="pdf-row-value">${rec.returnTime || "-"}</div></div>
-          <div class="pdf-row"><div class="pdf-row-label">アルコール値</div><div class="pdf-row-value">${rec.returnAlcoholValue || "-"} mg/L</div></div>
-          <div class="pdf-row"><div class="pdf-row-label">写真</div><div class="pdf-row-value">${endPhotoLink}</div></div>
-        </div>` : ""}
-
-      </div>
-    </div>
-  `;
-}
-function showRecordPdf(rec){
-  pdfOutput.innerHTML = buildSinglePdfHtml(rec);
-  pdfPrintBtn.style.display = "inline-flex";
-  pdfBackBtn.style.display = "inline-flex";
-  historyList.style.display = "none";
-}
-pdfPrintBtn.addEventListener("click", ()=>{
-  document.body.classList.add("printing");
-  setTimeout(()=>{
-    window.print();
-    setTimeout(()=>document.body.classList.remove("printing"), 300);
-  }, 200);
-});
-
-function buildMonthPdfHtml(list){
-  const sorted = [...list].sort((a,b)=> (a.date>b.date?1:a.date<b.date?-1:0));
-  const fromTo = (currentFilter.from || "—") + " 〜 " + (currentFilter.to || "—");
-  const pill = (v)=>{
-    if(v===undefined || v===null || v==="") return `<span class="pill warn">未</span>`;
-    const s = String(v).trim();
-    if(s==="0" || s==="0.0" || s==="0.00") return `<span class="pill ok">0.00</span>`;
-    return `<span class="pill">${s}</span>`;
-  };
-
-  let html = `
-    <div class="pdf-wrap">
-      <div class="pdf-doc">
-        <div class="pdf-header">
-          <div class="pdf-header-title">アルコールチェック 月次一覧（表示中）</div>
-          <div class="pdf-header-sub">期間：${fromTo} / 出力：${new Date().toLocaleString("ja-JP")}</div>
-        </div>
-        <div class="month-table-wrap">
-          <table class="month-table">
-            <thead>
-              <tr>
-                <th>日付</th><th>運転者</th><th>車両番号</th>
-                <th class="center">(出発)時刻</th><th class="center">(出発)値</th><th class="center">(出発)写真</th>
-                <th class="center">(帰着)時刻</th><th class="center">(帰着)値</th><th class="center">(帰着)写真</th>
-                <th>確認者</th><th>所属</th>
-              </tr>
-            </thead>
-            <tbody>
-  `;
-  sorted.forEach(r=>{
-    const startLink = r.startAlcoholPhotoUrl ? `<a class="a-link" href="${r.startAlcoholPhotoUrl}" target="_blank" rel="noopener">開く</a>` : "-";
-    const endLink = r.endAlcoholPhotoUrl ? `<a class="a-link" href="${r.endAlcoholPhotoUrl}" target="_blank" rel="noopener">開く</a>` : "-";
-    html += `
-      <tr>
-        <td>${r.date||"-"}</td><td>${r.driverName||"-"}</td><td>${r.vehicleNo||"-"}</td>
-        <td class="center">${r.startTime||"-"}</td><td class="center">${pill(r.alcoholValue)}</td><td class="center">${startLink}</td>
-        <td class="center">${r.returnTime||"-"}</td><td class="center">${pill(r.returnAlcoholValue)}</td><td class="center">${endLink}</td>
-        <td>${r.checkerName||"-"}</td><td>${r.company||"-"}</td>
-      </tr>`;
-  });
-
-  html += `
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-  `;
-  return html;
-}
-monthPdfBtn.addEventListener("click", ()=>{
-  const list = applyFilter(getRecords());
-  if(!list.length){ alert("表示中の記録がありません"); return; }
-  pdfOutput.innerHTML = buildMonthPdfHtml(list);
-  pdfPrintBtn.style.display = "inline-flex";
-  pdfBackBtn.style.display = "inline-flex";
-  historyList.style.display = "none";
-});
-
-renderHistory();
 </script>
 </body>
 </html>
