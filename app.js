@@ -1,191 +1,335 @@
-// ====================
-// GitHub Pages -> GAS WebApp
-// ====================
+/* OFA 点呼・点検（フル版） */
 
-// ★ここだけあなたの最新URLに固定（貼り替え済み）
-const API_URL = "https://script.google.com/macros/s/AKfycbzoEn9NU_ejtAwjwYz4K5ahrVo5Usl_4KH22BvUV8-YFgsxAa8BAMOBZ3U2IudVSHsyvw/exec";
+const $ = (id) => document.getElementById(id);
 
-const el = (id) => document.getElementById(id);
+const apiUrlEl = $('apiUrl');
+const btnTest = $('btnTest');
+const statusDot = $('statusDot');
+const statusMain = $('statusMain');
+const statusSub = $('statusSub');
 
-let mode = "start"; // start / end
+const modeStartBtn = $('modeStart');
+const modeEndBtn = $('modeEnd');
 
-function setMode(nextMode){
-  mode = nextMode;
+const btnSubmit = $('btnSubmit');
+const toast = $('toast');
 
-  el("tabStart").classList.toggle("active", mode==="start");
-  el("tabEnd").classList.toggle("active", mode==="end");
+const btnDailyPdf = $('btnDailyPdf');
+const btnMonthlyPdf = $('btnMonthlyPdf');
+const dailyDate = $('dailyDate');
+const monthlyYm = $('monthlyYm');
 
-  el("modeBtn").textContent = mode==="start" ? "出発点呼モード" : "帰着点呼モード";
+let mode = 'start'; // start/end
 
-  el("meterStartWrap").classList.toggle("hidden", mode==="end");
-  el("meterEndWrap").classList.toggle("hidden", mode==="start");
-  el("endAlcoholWrap").classList.toggle("hidden", mode==="start");
+// 初期値（保存復元）
+(function init() {
+  apiUrlEl.value = localStorage.getItem('ofa_api_url') || '';
+  $('driver').value = localStorage.getItem('ofa_driver') || '';
+  $('vehicleNo').value = localStorage.getItem('ofa_vehicleNo') || '';
+  $('phone').value = localStorage.getItem('ofa_phone') || '';
 
-  // 帰着は meterEnd を必須に
-  el("meterEnd").required = (mode==="end");
-}
+  const now = new Date();
+  dailyDate.value = toISODate(now);
+  monthlyYm.value = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
 
-async function toDataUrl(file){
-  if(!file) return "";
-  return await new Promise((resolve, reject)=>{
-    const reader = new FileReader();
-    reader.onload = ()=> resolve(String(reader.result));
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
+  setMode('start');
+})();
+
+apiUrlEl.addEventListener('change', () => {
+  localStorage.setItem('ofa_api_url', apiUrlEl.value.trim());
+});
+
+['driver','vehicleNo','phone'].forEach(id=>{
+  $(id).addEventListener('change', ()=>{
+    localStorage.setItem('ofa_'+id, $(id).value.trim());
   });
+});
+
+modeStartBtn.addEventListener('click', ()=>setMode('start'));
+modeEndBtn.addEventListener('click', ()=>setMode('end'));
+
+function setMode(m){
+  mode = m;
+  modeStartBtn.classList.toggle('active', mode==='start');
+  modeEndBtn.classList.toggle('active', mode==='end');
+
+  // 出発/帰着で入力必須にしたい項目（必要なら調整）
+  $('meterStartWrap').style.display = (mode==='start') ? 'block' : 'none';
+  $('meterEndWrap').style.display   = (mode==='end') ? 'block' : 'none';
 }
 
-function toastOk(msg){
-  const t = el("toast");
-  t.className = "toast ok";
-  t.textContent = "✅ " + msg;
-}
-function toastBad(msg){
-  const t = el("toast");
-  t.className = "toast bad";
-  t.textContent = "❌ " + msg;
-}
+btnTest.addEventListener('click', async ()=>{
+  const api = apiUrlEl.value.trim();
+  if(!api){ return setToast('API URL を入れてください', 'ng'); }
+  localStorage.setItem('ofa_api_url', api);
 
-async function ping(){
-  el("pingStatus").className = "status bad";
-  el("pingStatus").textContent = "確認中…";
-  el("pingMsg").textContent = "";
+  setStatus('gray','接続中…','pingを送っています');
 
   try{
-    const res = await fetch(API_URL + "?ping=1", { method:"GET" });
+    const res = await fetch(`${api}?ping=1`, { method:'GET' });
     const json = await res.json();
     if(json && json.ok){
-      el("pingStatus").className = "status ok";
-      el("pingStatus").textContent = "接続OK（到達）";
-      el("pingMsg").textContent = "接続できました。送信テストOKです。";
+      setStatus('green','接続OK','送信テストOKです');
+      setToast('接続できました。', 'ok');
     }else{
-      el("pingStatus").className = "status bad";
-      el("pingStatus").textContent = "接続NG";
-      el("pingMsg").textContent = "URL/デプロイ設定を確認";
+      setStatus('red','接続NG','URL/デプロイ設定を確認');
+      setToast('接続できませんでした（URL/デプロイ）', 'ng');
     }
   }catch(e){
-    el("pingStatus").className = "status bad";
-    el("pingStatus").textContent = "接続NG";
-    el("pingMsg").textContent = "通信に失敗しました（URL/デプロイ設定を確認）";
+    setStatus('red','接続NG','通信に失敗（URL/デプロイ設定を確認）');
+    setToast('接続できません（通信エラー）', 'ng');
   }
-}
+});
 
-async function requestPdfDaily(){
-  const d = el("dailyDate").value;
-  if(!d) return toastBad("日付を選んでください");
+btnDailyPdf.addEventListener('click', async ()=>{
+  const api = apiUrlEl.value.trim();
+  if(!api) return setToast('API URL が未設定です', 'ng');
+
+  const date = dailyDate.value;
+  const driver = $('driver').value.trim();
+  if(!date) return setToast('日付を選んでください', 'ng');
+
   try{
-    const res = await fetch(`${API_URL}?report=daily&date=${encodeURIComponent(d)}`);
+    setToast('日報PDFを生成中…', '');
+    const url = `${api}?action=dailyPdf&date=${encodeURIComponent(date)}&driver=${encodeURIComponent(driver)}`;
+    const res = await fetch(url);
     const json = await res.json();
     if(json.ok && json.pdfUrl){
-      el("pdfLink").innerHTML = `📄 日報PDF：<a href="${json.pdfUrl}" target="_blank" rel="noopener">開く</a>`;
-      toastOk("日報PDFを作成しました");
+      window.open(json.pdfUrl, '_blank');
+      setToast('日報PDFを開きました', 'ok');
     }else{
-      toastBad(json.error || "PDF作成に失敗");
+      setToast('PDF生成に失敗しました', 'ng');
     }
   }catch(e){
-    toastBad("PDF作成で通信エラー");
+    setToast('PDF生成に失敗（通信）', 'ng');
   }
-}
+});
 
-async function requestPdfMonthly(){
-  const m = el("monthlyMonth").value;
-  if(!m) return toastBad("月を選んでください");
+btnMonthlyPdf.addEventListener('click', async ()=>{
+  const api = apiUrlEl.value.trim();
+  if(!api) return setToast('API URL が未設定です', 'ng');
+
+  const ym = monthlyYm.value;
+  const driver = $('driver').value.trim();
+
+  if(!ym) return setToast('年月を選んでください', 'ng');
+
   try{
-    const res = await fetch(`${API_URL}?report=monthly&month=${encodeURIComponent(m)}`);
+    setToast('月報PDFを生成中…', '');
+    const url = `${api}?action=monthlyPdf&ym=${encodeURIComponent(ym)}&driver=${encodeURIComponent(driver)}`;
+    const res = await fetch(url);
     const json = await res.json();
     if(json.ok && json.pdfUrl){
-      el("pdfLink").innerHTML = `📄 月報PDF：<a href="${json.pdfUrl}" target="_blank" rel="noopener">開く</a>`;
-      toastOk("月報PDFを作成しました");
+      window.open(json.pdfUrl, '_blank');
+      setToast('月報PDFを開きました', 'ok');
     }else{
-      toastBad(json.error || "PDF作成に失敗");
+      setToast('PDF生成に失敗しました', 'ng');
     }
   }catch(e){
-    toastBad("PDF作成で通信エラー");
+    setToast('PDF生成に失敗（通信）', 'ng');
   }
-}
+});
 
-async function submitForm(ev){
-  ev.preventDefault();
-  el("submitBtn").disabled = true;
+btnSubmit.addEventListener('click', async ()=>{
+  const api = apiUrlEl.value.trim();
+  if(!api){ return setToast('API URL を入れてください', 'ng'); }
+
+  // 必須
+  const driver = $('driver').value.trim();
+  const vehicleNo = $('vehicleNo').value.trim();
+  if(!driver) return setToast('氏名は必須です', 'ng');
+  if(!vehicleNo) return setToast('車両番号は必須です', 'ng');
+
+  // 送信データ（フル）
+  const payload = {
+    mode,
+    tenkoType: (mode==='start') ? '出発' : '帰着',
+    date: toISODate(new Date()),
+    time: toTime(new Date()),
+    datetime: new Date().toISOString(),
+
+    driver,
+    vehicleNo,
+    phone: $('phone').value.trim(),
+    area: $('area').value.trim(),
+    route: $('route').value.trim(),
+
+    alcoholResult: $('alcoholResult').value,
+    alcoholValue: $('alcoholValue').value.trim(),
+    temperature: $('temperature').value.trim(),
+    sleepHours: $('sleepHours').value.trim(),
+    condition: $('condition').value,
+    fatigueLevel: $('fatigueLevel').value,
+    medication: $('medication').value,
+    notesHealth: $('notesHealth').value.trim(),
+
+    inspectionResult: $('inspectionResult').value,
+    inspectionDetail: $('inspectionDetail').value.trim(),
+
+    meterStart: $('meterStart').value.trim(),
+    meterEnd: $('meterEnd').value.trim(),
+
+    checks: {
+      tires: $('c_tires').checked,
+      lights: $('c_lights').checked,
+      brake: $('c_brake').checked,
+      wiper: $('c_wiper').checked,
+      oil: $('c_oil').checked,
+      coolant: $('c_coolant').checked,
+      fuel: $('c_fuel').checked,
+      battery: $('c_battery').checked,
+      damage: $('c_damage').checked,
+      loadSecure: $('c_loadSecure').checked,
+      other: $('c_other').checked,
+    },
+
+    memo: $('memo').value.trim(),
+    photos: {}
+  };
+
+  // モード別で「最低限」チェック（好みで変えられる）
+  if(mode==='start' && payload.meterStart === ''){
+    // 出発は任意にしてもいいが、運用で必須ならここを必須に
+  }
+  if(mode==='end' && payload.meterEnd === ''){
+    // 帰着メーター必須運用なら必須に
+    // return setToast('帰着メーターは必須です', 'ng');
+  }
 
   try{
-    const payload = {
-      type: mode==="start" ? "出発" : "帰着",
-      driver: el("driver").value.trim(),
-      vehicle: el("vehicle").value.trim(),
-      alcohol: el("alcohol").value,
-      condition: el("condition").value,
-      temp: el("temp").value.trim(),
-      sleep: el("sleep").value.trim(),
-      inspection: el("inspection").value,
-      inspectionDetail: el("inspectionDetail").value.trim(),
-      meterStart: mode==="start" ? el("meterStart").value.trim() : "",
-      meterEnd: mode==="end" ? el("meterEnd").value.trim() : "",
-      memo: el("memo").value.trim(),
-      inspectionPhotoDataUrl: await toDataUrl(el("inspectionPhoto").files[0]),
-      startAlcoholPhotoDataUrl: await toDataUrl(el("startAlcoholPhoto").files[0]),
-      endAlcoholPhotoDataUrl: mode==="end" ? await toDataUrl(el("endAlcoholPhoto").files[0]) : ""
-    };
+    setToast('画像を準備中…', '');
+    // 画像（圧縮してdataURL化）
+    const exterior = await fileToDataUrlSafe($('photoExterior').files[0]);
+    const alcohol  = await fileToDataUrlSafe($('photoAlcohol').files[0]);
+    const meter    = await fileToDataUrlSafe($('photoMeter').files[0]);
+    const other    = await fileToDataUrlSafe($('photoOther').files[0]);
 
-    // 必須チェック（最低限）
-    if(!payload.driver || !payload.vehicle){
-      toastBad("氏名・車両番号は必須です");
-      el("submitBtn").disabled = false;
-      return;
-    }
-    if(mode==="end" && !payload.meterEnd){
-      toastBad("帰着点呼は帰着メーターが必須です");
-      el("submitBtn").disabled = false;
-      return;
-    }
+    if(exterior) payload.photos.exterior = exterior;
+    if(alcohol)  payload.photos.alcohol  = alcohol;
+    if(meter)    payload.photos.meter    = meter;
+    if(other)    payload.photos.other    = other;
 
-    const res = await fetch(API_URL, {
-      method:"POST",
-      headers:{ "Content-Type":"application/json" },
-      body: JSON.stringify(payload)
+    setToast('送信中…', '');
+    setStatus('gray','送信中…','ログに書き込みしています');
+
+    const res = await fetch(api, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify(payload),
     });
 
     const json = await res.json();
     if(json && json.ok){
-      toastOk("送信しました");
-      // 送信後、入力は残す（現場で便利）
+      setStatus('green','送信OK','記録しました');
+      setToast('✅ 送信しました', 'ok');
+      // 入力を少し残したいならここは消さない
     }else{
-      toastBad(json.error || "送信に失敗しました（GASの権限/デプロイ/URLを確認）");
+      setStatus('red','送信NG','GAS側のエラー/権限を確認');
+      setToast(`送信に失敗：${json && json.error ? json.error : 'unknown'}`, 'ng');
     }
-
   }catch(e){
-    toastBad("送信に失敗しました（通信/画像変換エラー）");
-  }finally{
-    el("submitBtn").disabled = false;
+    setStatus('red','送信NG','通信/画像変換エラー');
+    setToast(`送信に失敗（通信/画像変換）：${String(e)}`, 'ng');
   }
+});
+
+/* ===== utilities ===== */
+
+function setStatus(color, main, sub){
+  statusDot.classList.remove('gray','green','red');
+  statusDot.classList.add(color);
+  statusMain.textContent = main;
+  statusSub.textContent = sub;
 }
 
-// init
-function init(){
-  el("apiUrl").textContent = API_URL;
+function setToast(msg, type){
+  toast.textContent = msg || '';
+  toast.classList.remove('ok','ng');
+  if(type==='ok') toast.classList.add('ok');
+  if(type==='ng') toast.classList.add('ng');
+}
 
-  el("pingBtn").addEventListener("click", ping);
+function toISODate(d){
+  const y = d.getFullYear();
+  const m = String(d.getMonth()+1).padStart(2,'0');
+  const day = String(d.getDate()).padStart(2,'0');
+  return `${y}-${m}-${day}`;
+}
 
-  el("tabStart").addEventListener("click", ()=>setMode("start"));
-  el("tabEnd").addEventListener("click", ()=>setMode("end"));
+function toTime(d){
+  const hh = String(d.getHours()).padStart(2,'0');
+  const mm = String(d.getMinutes()).padStart(2,'0');
+  const ss = String(d.getSeconds()).padStart(2,'0');
+  return `${hh}:${mm}:${ss}`;
+}
 
-  el("modeBtn").addEventListener("click", ()=>{
-    setMode(mode==="start" ? "end" : "start");
+/**
+ * iPhoneのHEICが混じるとCanvas変換で落ちることがあるので、
+ *  - heic/heif は弾いてメッセージ（JPEGで選んで）
+ *  - それ以外は最大1280px、JPEG 0.78で圧縮
+ */
+async function fileToDataUrlSafe(file){
+  if(!file) return '';
+
+  const name = (file.name || '').toLowerCase();
+  const type = (file.type || '').toLowerCase();
+
+  if(type.includes('heic') || type.includes('heif') || name.endsWith('.heic') || name.endsWith('.heif')){
+    // ここは“確実に”案内を出す
+    setToast('HEIC画像は変換に失敗する場合があります。写真を「JPEG」で選択してください。', 'ng');
+    return '';
+  }
+
+  // 読み込み
+  const dataUrl = await readAsDataURL(file);
+
+  // 画像なら圧縮、非画像なら無視
+  if(!dataUrl.startsWith('data:image/')) return '';
+
+  // 圧縮
+  const compressed = await compressImageDataUrl(dataUrl, 1280, 0.78);
+  return compressed;
+}
+
+function readAsDataURL(file){
+  return new Promise((resolve, reject)=>{
+    const fr = new FileReader();
+    fr.onload = ()=> resolve(fr.result);
+    fr.onerror = ()=> reject(fr.error || new Error('FileReader error'));
+    fr.readAsDataURL(file);
   });
-
-  el("dailyPdfBtn").addEventListener("click", requestPdfDaily);
-  el("monthlyPdfBtn").addEventListener("click", requestPdfMonthly);
-
-  el("form").addEventListener("submit", submitForm);
-
-  // 初期値（今日）
-  const now = new Date();
-  const yyyy = now.getFullYear();
-  const mm = String(now.getMonth()+1).padStart(2,"0");
-  const dd = String(now.getDate()).padStart(2,"0");
-  el("dailyDate").value = `${yyyy}-${mm}-${dd}`;
-  el("monthlyMonth").value = `${yyyy}-${mm}`;
-
-  setMode("start");
 }
-init();
+
+function compressImageDataUrl(dataUrl, maxSize, quality){
+  return new Promise((resolve, reject)=>{
+    const img = new Image();
+    img.onload = ()=>{
+      try{
+        let w = img.width;
+        let h = img.height;
+
+        if(w > h && w > maxSize){
+          h = Math.round(h * (maxSize / w));
+          w = maxSize;
+        } else if(h >= w && h > maxSize){
+          w = Math.round(w * (maxSize / h));
+          h = maxSize;
+        }
+
+        const canvas = document.createElement('canvas');
+        canvas.width = w;
+        canvas.height = h;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, w, h);
+
+        // JPEGで統一（容量削減）
+        const out = canvas.toDataURL('image/jpeg', quality);
+        resolve(out);
+      }catch(e){
+        reject(e);
+      }
+    };
+    img.onerror = ()=> reject(new Error('Image decode error'));
+    img.src = dataUrl;
+  });
+}
