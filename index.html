@@ -1,288 +1,139 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>OFA 点呼・点検</title>
   <style>
-    :root{--b:#1e6fff;--bg:#f4f7fb;--card:#fff;--txt:#111;--muted:#666;--danger:#e53935;--ok:#2e7d32;}
-    *{box-sizing:border-box;font-family:system-ui,-apple-system,"Noto Sans JP",sans-serif;}
-    body{margin:0;background:var(--bg);color:var(--txt);}
-    header{padding:18px 16px 10px;max-width:860px;margin:0 auto;}
-    h1{margin:0;font-size:22px;display:flex;align-items:center;gap:8px}
-    .sub{margin-top:6px;color:var(--muted);font-size:13px}
-    .wrap{max-width:860px;margin:0 auto;padding:10px 16px 40px;}
-    .card{background:var(--card);border-radius:14px;box-shadow:0 6px 16px rgba(0,0,0,.06);padding:14px;}
-    .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
-    .row > *{flex:1}
-    .btn{border:0;border-radius:12px;padding:12px 14px;background:var(--b);color:#fff;font-weight:700;cursor:pointer}
-    .btn.ghost{background:#fff;color:var(--b);border:1px solid rgba(30,111,255,.35)}
-    .btn.small{padding:10px 12px;font-size:14px}
-    .seg{display:flex;gap:10px;background:#eef4ff;padding:10px;border-radius:14px}
-    .seg button{flex:1}
-    label{display:block;font-weight:700;margin:12px 0 6px}
-    input,select,textarea{width:100%;padding:12px 12px;border-radius:12px;border:1px solid #d9e2f2;background:#fff;font-size:16px}
-    textarea{min-height:90px}
-    .req{color:#d32f2f;margin-left:4px}
-    .hint{color:var(--muted);font-size:12px;margin-top:6px}
-    .status{margin-top:10px;font-weight:800}
-    .status.ng{color:var(--danger)}
-    .status.ok{color:var(--ok)}
-    .hr{height:1px;background:#e7eefc;margin:14px 0}
-    .hide{display:none !important}
-    .pill{display:inline-block;background:#eef4ff;color:#1e6fff;border:1px solid rgba(30,111,255,.25);padding:6px 10px;border-radius:999px;font-size:12px;font-weight:800}
-    .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12px;word-break:break-all;background:#f7f9ff;border:1px dashed #cfe0ff;padding:10px;border-radius:12px}
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto;
+      background: #f4f6f8;
+      margin: 0;
+      padding: 16px;
+    }
+    h1 {
+      font-size: 20px;
+      margin-bottom: 8px;
+    }
+    .card {
+      background: #fff;
+      border-radius: 10px;
+      padding: 16px;
+      margin-bottom: 16px;
+    }
+    label {
+      display: block;
+      margin-top: 12px;
+      font-weight: 600;
+    }
+    input, select, textarea, button {
+      width: 100%;
+      padding: 10px;
+      margin-top: 4px;
+      font-size: 16px;
+    }
+    button {
+      background: #1a73e8;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      margin-top: 16px;
+    }
+    .ok { color: green; }
+    .ng { color: red; }
   </style>
 </head>
 <body>
-<header>
-  <h1>🚚 OFA 点呼・点検</h1>
-  <div class="sub">出発点呼 / 帰着点呼を分けて入力（スマホ最適）</div>
-</header>
 
-<div class="wrap">
-  <div class="card">
-    <div class="row">
-      <button class="btn ghost small" id="modeStartBtn">出発点呼モード</button>
-      <button class="btn ghost small" id="pingBtn">接続テスト</button>
-    </div>
+<h1>🚚 OFA 点呼・点検</h1>
 
-    <div class="hr"></div>
+<div class="card">
+  <button onclick="testConnection()">接続テスト</button>
+  <div id="status"></div>
+</div>
 
-    <label>GAS Webアプリ URL（/exec）</label>
-    <div class="mono" id="gasUrlView"></div>
-    <div class="status ng" id="connStatus">未テスト</div>
+<div class="card">
+  <form id="form">
+    <label>点呼種別</label>
+    <select name="type">
+      <option value="出発">出発点呼</option>
+      <option value="帰着">帰着点呼</option>
+    </select>
 
-    <div class="hr"></div>
+    <label>氏名</label>
+    <input name="driver" required>
 
-    <div class="seg">
-      <button class="btn small" id="segStart">出発点呼</button>
-      <button class="btn small ghost" id="segEnd">帰着点呼</button>
-    </div>
+    <label>車両番号</label>
+    <input name="vehicle" required>
 
-    <form id="form" autocomplete="off">
-      <input type="hidden" id="type" value="start" />
+    <label>アルコールチェック</label>
+    <select name="alcohol">
+      <option value="問題なし">問題なし</option>
+      <option value="異常あり">異常あり</option>
+    </select>
 
-      <label>氏名<span class="req">*</span></label>
-      <input id="driver" required placeholder="例：山田 太郎" />
+    <label>体調</label>
+    <select name="condition">
+      <option value="良好">良好</option>
+      <option value="不良">不良</option>
+    </select>
 
-      <label>車両番号<span class="req">*</span></label>
-      <input id="vehicle" required placeholder="例：鹿児島 480 あ 12-34" />
+    <label>体温（任意）</label>
+    <input name="temp">
 
-      <label>アルコールチェック<span class="req">*</span></label>
-      <select id="alcohol" required>
-        <option value="問題なし" selected>問題なし</option>
-        <option value="未実施">未実施</option>
-        <option value="反応あり">反応あり</option>
-      </select>
+    <label>睡眠時間（任意）</label>
+    <input name="sleep">
 
-      <label>体調<span class="req">*</span></label>
-      <select id="condition" required>
-        <option value="良好" selected>良好</option>
-        <option value="普通">普通</option>
-        <option value="不調">不調</option>
-      </select>
+    <label>メーター（出発/帰着）</label>
+    <input name="meter">
 
-      <div id="startOnly">
-        <label>体温（任意）</label>
-        <input id="temp" inputmode="decimal" placeholder="例：36.5" />
+    <label>備考</label>
+    <textarea name="memo"></textarea>
 
-        <label>睡眠時間（任意）</label>
-        <input id="sleep" inputmode="decimal" placeholder="例：7" />
-
-        <label>日常点検（異常有無）<span class="req">*</span></label>
-        <select id="inspection" required>
-          <option value="異常なし" selected>異常なし</option>
-          <option value="異常あり">異常あり</option>
-        </select>
-
-        <label>異常内容（異常ありの場合）</label>
-        <input id="inspectionDetail" placeholder="例：左前輪 空気圧低下 / ブレーキ鳴き など" />
-
-        <label>メーター（出発）</label>
-        <input id="meterStart" inputmode="numeric" placeholder="例：12345" />
-
-        <label>点検写真（メーター/外観/警告灯など）</label>
-        <input id="inspectionPhoto" type="file" accept="image/*" />
-
-        <label>アルコール検知器写真（任意）</label>
-        <input id="startAlcoholPhoto" type="file" accept="image/*" />
-
-        <div class="hint">※写真は送信時に自動で圧縮して送ります（通信量軽減）</div>
-      </div>
-
-      <div id="endOnly" class="hide">
-        <label>メーター（帰着）<span class="req">*</span></label>
-        <input id="meterEnd" inputmode="numeric" placeholder="例：23456" />
-
-        <label>アルコール検知器写真（帰着・任意）</label>
-        <input id="endAlcoholPhoto" type="file" accept="image/*" />
-
-        <div class="hint">※帰着点呼は「帰着メーター」を必須にしています（運用に合わせて変更可）</div>
-      </div>
-
-      <label>備考</label>
-      <textarea id="memo" placeholder="連絡事項など"></textarea>
-
-      <div style="margin-top:14px">
-        <button class="btn" type="submit" id="sendBtn">送信</button>
-      </div>
-      <div class="status" id="sendStatus"></div>
-    </form>
-  </div>
+    <button type="submit">送信</button>
+    <div id="result"></div>
+  </form>
 </div>
 
 <script>
-  // ★ここだけあなたの最新 /exec を固定
-  const GAS_URL = "https://script.google.com/macros/s/AKfycbzPoeumcfRJb5LSoFRRxJRCebE2xwiRtzZy4ceQijaQxeeH6cGyXBayWMvoq74RdBwo7A/exec";
+const GAS_URL =
+  "https://script.google.com/macros/s/AKfycbzoEn9NU_ejtAwjwYz4K5ahrVo5Usl_4KH22BvUV8-YFgsxAa8BAMOBZ3U2IudVSHsyvw/exec";
 
-  const $ = (id)=>document.getElementById(id);
-
-  $("gasUrlView").textContent = GAS_URL;
-
-  function setMode(type){
-    $("type").value = type;
-    const isStart = type === "start";
-
-    $("segStart").classList.toggle("ghost", !isStart);
-    $("segEnd").classList.toggle("ghost", isStart);
-
-    $("startOnly").classList.toggle("hide", !isStart);
-    $("endOnly").classList.toggle("hide", isStart);
-
-    // 必須切替（帰着だけ meterEnd 必須）
-    $("meterEnd").required = !isStart;
-
-    // 出発時の必須項目
-    $("inspection").required = isStart;
-
-    // ボタン文言
-    $("sendBtn").textContent = isStart ? "出発点呼を送信" : "帰着点呼を送信";
-  }
-
-  $("segStart").addEventListener("click", ()=>setMode("start"));
-  $("segEnd").addEventListener("click", ()=>setMode("end"));
-  $("modeStartBtn").addEventListener("click", ()=>setMode("start"));
-  setMode("start");
-
-  async function ping(){
-    $("connStatus").textContent = "テスト中...";
-    $("connStatus").className = "status";
-    try{
-      const res = await fetch(GAS_URL + "?ping=1", { method:"GET" });
-      const txt = await res.text();
-      if(!res.ok) throw new Error("HTTP " + res.status + " " + txt);
-      $("connStatus").textContent = "✅ 接続OK";
-      $("connStatus").className = "status ok";
-      return true;
-    }catch(e){
-      $("connStatus").textContent = "❌ 接続NG（URL/デプロイ設定を確認）";
-      $("connStatus").className = "status ng";
-      console.error(e);
-      return false;
-    }
-  }
-  $("pingBtn").addEventListener("click", ping);
-
-  function fileToDataUrl(file, maxW=1280, quality=0.8){
-    return new Promise((resolve,reject)=>{
-      if(!file) return resolve("");
-      const fr = new FileReader();
-      fr.onerror = reject;
-      fr.onload = ()=>{
-        const img = new Image();
-        img.onload = ()=>{
-          const scale = Math.min(1, maxW / img.width);
-          const w = Math.round(img.width * scale);
-          const h = Math.round(img.height * scale);
-          const cvs = document.createElement("canvas");
-          cvs.width = w; cvs.height = h;
-          const ctx = cvs.getContext("2d");
-          ctx.drawImage(img, 0, 0, w, h);
-          const dataUrl = cvs.toDataURL("image/jpeg", quality);
-          resolve(dataUrl);
-        };
-        img.onerror = reject;
-        img.src = fr.result;
-      };
-      fr.readAsDataURL(file);
+function testConnection() {
+  fetch(GAS_URL)
+    .then(r => r.text())
+    .then(() => {
+      document.getElementById("status").innerHTML =
+        "<span class='ok'>✔ 接続OK</span>";
+    })
+    .catch(() => {
+      document.getElementById("status").innerHTML =
+        "<span class='ng'>✖ 接続NG</span>";
     });
-  }
+}
 
-  $("form").addEventListener("submit", async (ev)=>{
-    ev.preventDefault();
-    $("sendStatus").textContent = "";
+document.getElementById("form").addEventListener("submit", e => {
+  e.preventDefault();
 
-    // まず接続テスト（NGなら送信しない）
-    const ok = await ping();
-    if(!ok){
-      $("sendStatus").textContent = "❌ 送信できません（接続NG）";
-      $("sendStatus").className = "status ng";
-      return;
-    }
+  const data = Object.fromEntries(new FormData(e.target).entries());
 
-    const type = $("type").value;
-
-    // 写真を dataURL にして送る
-    const inspectionPhoto = await fileToDataUrl($("inspectionPhoto").files[0]);
-    const startAlcoholPhoto = await fileToDataUrl($("startAlcoholPhoto").files[0]);
-    const endAlcoholPhoto = await fileToDataUrl($("endAlcoholPhoto").files[0]);
-
-    const payload = {
-      type,                           // start / end
-      driver: $("driver").value.trim(),
-      vehicle: $("vehicle").value.trim(),
-      alcohol: $("alcohol").value,
-      condition: $("condition").value,
-      temp: $("temp").value.trim(),
-      sleep: $("sleep").value.trim(),
-      inspection: $("inspection").value,
-      inspectionDetail: $("inspectionDetail").value.trim(),
-      meterStart: $("meterStart").value.trim(),
-      meterEnd: $("meterEnd").value.trim(),
-      memo: $("memo").value.trim(),
-      photos: {
-        inspectionPhoto,
-        startAlcoholPhoto,
-        endAlcoholPhoto
-      }
-    };
-
-    $("sendBtn").disabled = true;
-    $("sendStatus").textContent = "送信中...";
-    $("sendStatus").className = "status";
-
-    try{
-      const res = await fetch(GAS_URL, {
-        method:"POST",
-        headers:{ "Content-Type":"application/json" },
-        body: JSON.stringify(payload)
-      });
-      const txt = await res.text();
-      if(!res.ok) throw new Error("HTTP " + res.status + " " + txt);
-
-      const data = (()=>{ try{return JSON.parse(txt)}catch{return {ok:true, raw:txt}} })();
-      if(!data.ok) throw new Error(data.error || "unknown error");
-
-      $("sendStatus").textContent = "✅ 送信しました";
-      $("sendStatus").className = "status ok";
-
-      // 帰着/出発で入力は残してOK（氏名・車番は残す）
-      // 写真inputはクリアされないブラウザもあるので軽くリロードしない
-      $("inspectionPhoto").value = "";
-      $("startAlcoholPhoto").value = "";
-      $("endAlcoholPhoto").value = "";
-      if(type==="end"){
-        $("meterEnd").value = "";
-      }
-    }catch(e){
-      console.error(e);
-      $("sendStatus").textContent = "❌ 送信に失敗しました（GASの権限/デプロイ/URLを確認）";
-      $("sendStatus").className = "status ng";
-    }finally{
-      $("sendBtn").disabled = false;
-    }
+  fetch(GAS_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data)
+  })
+  .then(r => r.json())
+  .then(() => {
+    document.getElementById("result").innerHTML =
+      "<span class='ok'>✔ 送信完了</span>";
+    e.target.reset();
+  })
+  .catch(() => {
+    document.getElementById("result").innerHTML =
+      "<span class='ng'>✖ 送信失敗</span>";
   });
+});
 </script>
+
 </body>
 </html>
