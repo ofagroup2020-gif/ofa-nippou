@@ -2,326 +2,116 @@
 <html lang="ja">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>OFA 点呼・点検</title>
-  <style>
-    :root{
-      --bg:#f3f6fb; --card:#fff; --text:#111827; --muted:#6b7280;
-      --line:#e5e7eb; --blue:#1f6feb; --blue2:#1557c0; --danger:#d92d20; --ok:#16a34a;
-      --radius:16px;
-    }
-    *{box-sizing:border-box}
-    body{
-      margin:0; font-family:-apple-system,BlinkMacSystemFont,"Noto Sans JP","Segoe UI",Roboto,Helvetica,Arial,sans-serif;
-      background:var(--bg); color:var(--text);
-    }
-    .wrap{max-width:720px;margin:0 auto;padding:18px 14px 40px}
-    .title{display:flex;align-items:center;gap:10px;font-size:22px;font-weight:900;margin:8px 0 2px}
-    .sub{color:var(--muted);font-size:13px;margin:0 0 14px}
-    .card{
-      background:var(--card); border:1px solid var(--line); border-radius:var(--radius);
-      padding:14px; box-shadow:0 6px 18px rgba(16,24,40,.06);
-      margin:12px 0;
-    }
-    .row{display:flex;gap:10px;flex-wrap:wrap}
-    .btn{
-      appearance:none;border:0;border-radius:14px;padding:14px 14px;font-weight:800;
-      background:var(--blue);color:#fff;width:100%;cursor:pointer;
-    }
-    .btn:active{background:var(--blue2)}
-    .btn-ghost{
-      background:#eef2ff;color:#1e3a8a;border:1px solid #c7d2fe;
-    }
-    .tabs{display:flex;gap:10px}
-    .tab{flex:1}
-    .tab button{width:100%}
-    .tab .active{background:var(--blue);color:#fff;border:0}
-    .tab .inactive{background:#edf2f7;color:#111827;border:1px solid var(--line)}
-    .label{font-size:14px;font-weight:900;margin:14px 2px 6px}
-    .req{color:#ef4444;margin-left:4px}
-    input,select,textarea{
-      width:100%; padding:14px 12px; border-radius:14px; border:1px solid var(--line);
-      background:#fff; font-size:16px; outline:none;
-    }
-    textarea{min-height:110px;resize:vertical}
-    .note{color:var(--muted);font-size:12px;margin-top:6px}
-    .status{display:flex;align-items:center;gap:8px;font-weight:900}
-    .dot{width:10px;height:10px;border-radius:999px;background:#9ca3af}
-    .dot.ok{background:var(--ok)}
-    .dot.ng{background:var(--danger)}
-    .msg{
-      margin-top:10px; padding:10px 12px; border-radius:14px; font-weight:800;
-      border:1px solid var(--line); background:#f9fafb;
-    }
-    .msg.ok{border-color:#bbf7d0;background:#ecfdf5;color:#065f46}
-    .msg.ng{border-color:#fecaca;background:#fef2f2;color:#7f1d1d}
-    .small{font-size:12px;color:var(--muted);word-break:break-all}
-    .divider{height:1px;background:var(--line);margin:12px 0}
-  </style>
+  <link rel="stylesheet" href="./style.css" />
 </head>
-
 <body>
   <div class="wrap">
-    <div class="title">🚚 OFA 点呼・点検</div>
-    <p class="sub">出発点呼 / 帰着点呼を切り替えて入力（スマホ最適）</p>
+    <header class="head">
+      <div class="brand">🚚 <b>OFA</b> 点呼・点検</div>
+      <div class="sub">出発点呼 / 帰着点呼を切り替えて入力（スマホ最適）</div>
+    </header>
 
-    <div class="card">
-      <div class="row" style="gap:10px;align-items:center">
-        <button class="btn btn-ghost" id="btnMode" type="button">出発点呼モード</button>
-        <button class="btn" id="btnPing" type="button">接続テスト</button>
+    <section class="card">
+      <div class="pillrow">
+        <button id="modeBtn" class="pill">出発点呼モード</button>
+        <button id="pingBtn" class="btn">接続テスト</button>
       </div>
 
-      <div class="divider"></div>
-
-      <div class="status" id="connStatus">
-        <span class="dot" id="connDot"></span>
-        <span id="connText">未確認</span>
+      <div class="apiBox">
+        <div class="apiLabel">API URL</div>
+        <div id="apiUrl" class="apiUrl"></div>
+        <div id="pingStatus" class="status bad">未確認</div>
+        <div id="pingMsg" class="hint">まず「接続テスト」を押してください。</div>
       </div>
-      <div class="small" id="gasUrlView"></div>
 
-      <div class="msg" id="topMsg" style="display:none;"></div>
-    </div>
+      <div class="reportRow">
+        <button id="dailyPdfBtn" class="btn ghost">日報PDF</button>
+        <input id="dailyDate" type="date" class="input date" />
+        <button id="monthlyPdfBtn" class="btn ghost">月報PDF</button>
+        <input id="monthlyMonth" type="month" class="input month" />
+      </div>
+      <div id="pdfLink" class="pdfLink"></div>
+    </section>
 
-    <div class="card">
+    <section class="card">
       <div class="tabs">
-        <div class="tab">
-          <button id="tabStart" class="btn active" type="button">出発点呼</button>
-        </div>
-        <div class="tab">
-          <button id="tabEnd" class="btn inactive" type="button">帰着点呼</button>
-        </div>
+        <button id="tabStart" class="tab active">出発点呼</button>
+        <button id="tabEnd" class="tab">帰着点呼</button>
       </div>
 
-      <form id="form">
-        <div class="label">氏名<span class="req">*</span></div>
-        <input id="driver" name="driver" autocomplete="name" placeholder="例：山田 太郎" required />
+      <form id="form" class="form">
+        <label class="lbl">氏名 <span class="req">*</span></label>
+        <input id="driver" class="input" placeholder="例：山田 太郎" required />
 
-        <div class="label">車両番号<span class="req">*</span></div>
-        <input id="vehicle" name="vehicle" placeholder="例：鹿児島 480 あ 12-34" required />
+        <label class="lbl">車両番号 <span class="req">*</span></label>
+        <input id="vehicle" class="input" placeholder="例：鹿児島 480 あ 12-34" required />
 
-        <div class="label">アルコールチェック<span class="req">*</span></div>
-        <select id="alcohol" name="alcohol" required>
-          <option value="問題なし" selected>問題なし</option>
-          <option value="要再測定">要再測定</option>
-          <option value="検知あり">検知あり</option>
+        <label class="lbl">アルコールチェック <span class="req">*</span></label>
+        <select id="alcohol" class="input" required>
+          <option>問題なし</option>
+          <option>反応あり</option>
         </select>
 
-        <div class="label">体調<span class="req">*</span></div>
-        <select id="condition" name="condition" required>
-          <option value="良好" selected>良好</option>
-          <option value="普通">普通</option>
-          <option value="不調">不調</option>
+        <label class="lbl">体調 <span class="req">*</span></label>
+        <select id="condition" class="input" required>
+          <option>良好</option>
+          <option>普通</option>
+          <option>不調</option>
         </select>
 
-        <div id="startOnly">
-          <div class="label">体温（任意）</div>
-          <input id="temp" name="temp" inputmode="decimal" placeholder="例：36.5" />
-
-          <div class="label">睡眠時間（任意）</div>
-          <input id="sleep" name="sleep" inputmode="decimal" placeholder="例：6.5" />
-
-          <div class="label">日常点検（異常有無）<span class="req">*</span></div>
-          <select id="inspection" name="inspection" required>
-            <option value="異常なし" selected>異常なし</option>
-            <option value="異常あり">異常あり</option>
-          </select>
-
-          <div class="label">異常内容（異常ありの場合）</div>
-          <input id="inspectionDetail" name="inspectionDetail" placeholder="例：左前輪 空気圧低下 / ブレーキ鳴き など" />
-
-          <div class="label">メーター（出発）</div>
-          <input id="meterStart" name="meterStart" inputmode="numeric" placeholder="例：12345" />
-
-          <div class="label">点検写真（メーター/外観/警告灯など）</div>
-          <input id="inspectionPhoto" name="inspectionPhoto" type="file" accept="image/*" />
-
-          <div class="label">アルコール検知器写真（任意）</div>
-          <input id="startAlcoholPhoto" name="startAlcoholPhoto" type="file" accept="image/*" />
-
-          <div class="note">※写真は送信時に自動圧縮して送ります（通信量軽減）</div>
+        <div class="grid2">
+          <div>
+            <label class="lbl">体温（任意）</label>
+            <input id="temp" class="input" inputmode="decimal" placeholder="例：36.5" />
+          </div>
+          <div>
+            <label class="lbl">睡眠時間（任意）</label>
+            <input id="sleep" class="input" inputmode="decimal" placeholder="例：7" />
+          </div>
         </div>
 
-        <div id="endOnly" style="display:none;">
-          <div class="label">メーター（帰着）<span class="req">*</span></div>
-          <input id="meterEnd" name="meterEnd" inputmode="numeric" placeholder="例：23456" />
+        <label class="lbl">日常点検（異常有無） <span class="req">*</span></label>
+        <select id="inspection" class="input" required>
+          <option>異常なし</option>
+          <option>異常あり</option>
+        </select>
 
-          <div class="label">アルコール検知器写真（帰着・任意）</div>
-          <input id="endAlcoholPhoto" name="endAlcoholPhoto" type="file" accept="image/*" />
+        <label class="lbl">異常内容（異常ありの場合）</label>
+        <input id="inspectionDetail" class="input" placeholder="例：左前輪 空気圧低下 / ブレーキ鳴き など" />
 
+        <div id="meterStartWrap">
+          <label class="lbl">メーター（出発）</label>
+          <input id="meterStart" class="input" inputmode="numeric" placeholder="例：12345" />
+        </div>
+
+        <div id="meterEndWrap" class="hidden">
+          <label class="lbl">メーター（帰着） <span class="req">*</span></label>
+          <input id="meterEnd" class="input" inputmode="numeric" placeholder="例：23456" />
           <div class="note">※帰着点呼は「帰着メーター」を必須にしています（運用に合わせて変更可）</div>
         </div>
 
-        <div class="label">備考</div>
-        <textarea id="memo" name="memo" placeholder="連絡事項など"></textarea>
+        <label class="lbl">点検写真（メーター/外観/警告灯など）</label>
+        <input id="inspectionPhoto" type="file" accept="image/*" class="file" />
 
-        <div style="margin-top:14px">
-          <button class="btn" id="btnSend" type="submit">送信</button>
+        <label class="lbl">アルコール検知器写真（出発）</label>
+        <input id="startAlcoholPhoto" type="file" accept="image/*" class="file" />
+
+        <div id="endAlcoholWrap" class="hidden">
+          <label class="lbl">アルコール検知器写真（帰着・任意）</label>
+          <input id="endAlcoholPhoto" type="file" accept="image/*" class="file" />
         </div>
 
-        <div class="msg" id="sendMsg" style="display:none;"></div>
+        <label class="lbl">備考</label>
+        <textarea id="memo" class="input area" placeholder="連絡事項など"></textarea>
+
+        <button id="submitBtn" type="submit" class="btn primary">送信</button>
+        <div id="toast" class="toast"></div>
       </form>
-    </div>
+    </section>
   </div>
 
-<script>
-/**
- * ★ここだけが重要（GAS WebアプリURL）
- * あなたが最新で出したURLに固定してあります
- */
-const GAS_URL = "https://script.google.com/macros/s/AKfycbzoEn9NU_ejtAwjwYz4K5ahrVo5Usl_4KH22BvUV8-YFgsxAa8BAMOBZ3U2IudVSHsyvw/exec";
-
-/** 送信方式：CORS回避のため no-cors + text/plain でPOST */
-const FETCH_OPT_BASE = {
-  method: "POST",
-  mode: "no-cors",
-  headers: { "Content-Type": "text/plain;charset=utf-8" },
-};
-
-let mode = "start"; // start / end
-
-const el = (id)=>document.getElementById(id);
-el("gasUrlView").textContent = GAS_URL;
-
-function setMode(next){
-  mode = next;
-  const isStart = (mode === "start");
-  el("btnMode").textContent = isStart ? "出発点呼モード" : "帰着点呼モード";
-
-  el("tabStart").className = "btn " + (isStart ? "active" : "inactive");
-  el("tabEnd").className   = "btn " + (!isStart ? "active" : "inactive");
-
-  el("startOnly").style.display = isStart ? "" : "none";
-  el("endOnly").style.display   = isStart ? "none" : "";
-
-  // 帰着は meterEnd 必須
-  el("meterEnd").required = !isStart;
-
-  // 表示メッセージを消す
-  el("sendMsg").style.display = "none";
-}
-
-el("tabStart").addEventListener("click", ()=>setMode("start"));
-el("tabEnd").addEventListener("click", ()=>setMode("end"));
-el("btnMode").addEventListener("click", ()=>setMode(mode==="start"?"end":"start"));
-
-function setConn(ok, text){
-  const dot = el("connDot");
-  dot.classList.remove("ok","ng");
-  dot.classList.add(ok ? "ok" : "ng");
-  el("connText").textContent = text;
-}
-
-function showTopMsg(type, text){
-  const box = el("topMsg");
-  box.className = "msg " + (type === "ok" ? "ok" : "ng");
-  box.textContent = text;
-  box.style.display = "";
-}
-
-async function ping(){
-  // no-corsだとレスポンス本文は読めないが、到達可否の目安にはなる
-  // GETで /exec?ping=1 を叩く
-  try{
-    await fetch(GAS_URL + "?ping=1&_=" + Date.now(), { method:"GET", mode:"no-cors" });
-    setConn(true, "接続OK（到達）");
-    showTopMsg("ok","接続できました。送信テストOKです。");
-  }catch(e){
-    setConn(false, "接続NG");
-    showTopMsg("ng","接続できません。GASのURL/デプロイ設定を確認してください。");
-  }
-}
-
-el("btnPing").addEventListener("click", ping);
-
-// 画像を小さくして base64 にする（スマホ向け軽量）
-function fileToDataUrlCompressed(file, maxW=1280, quality=0.75){
-  return new Promise((resolve,reject)=>{
-    if(!file) return resolve("");
-    const reader = new FileReader();
-    reader.onload = ()=>{
-      const img = new Image();
-      img.onload = ()=>{
-        const ratio = Math.min(1, maxW / img.width);
-        const w = Math.round(img.width * ratio);
-        const h = Math.round(img.height * ratio);
-        const canvas = document.createElement("canvas");
-        canvas.width = w; canvas.height = h;
-        const ctx = canvas.getContext("2d");
-        ctx.drawImage(img, 0, 0, w, h);
-        const dataUrl = canvas.toDataURL("image/jpeg", quality);
-        resolve(dataUrl);
-      };
-      img.onerror = ()=>reject(new Error("image load failed"));
-      img.src = reader.result;
-    };
-    reader.onerror = ()=>reject(new Error("file read failed"));
-    reader.readAsDataURL(file);
-  });
-}
-
-function showSendMsg(type, text){
-  const box = el("sendMsg");
-  box.className = "msg " + (type === "ok" ? "ok" : "ng");
-  box.textContent = text;
-  box.style.display = "";
-}
-
-el("form").addEventListener("submit", async (ev)=>{
-  ev.preventDefault();
-
-  // 必須チェック（ブラウザの標準）
-  if(!el("form").reportValidity()) return;
-
-  el("btnSend").disabled = true;
-  el("btnSend").textContent = "送信中…";
-
-  try{
-    const payload = {
-      type: mode, // start / end
-      driver: el("driver").value.trim(),
-      vehicle: el("vehicle").value.trim(),
-      alcohol: el("alcohol").value,
-      condition: el("condition").value,
-      temp: el("temp").value.trim(),
-      sleep: el("sleep").value.trim(),
-      inspection: el("inspection") ? el("inspection").value : "",
-      inspectionDetail: el("inspectionDetail") ? el("inspectionDetail").value.trim() : "",
-      meterStart: el("meterStart") ? el("meterStart").value.trim() : "",
-      meterEnd: el("meterEnd") ? el("meterEnd").value.trim() : "",
-      memo: el("memo").value.trim(),
-      // 写真（base64）
-      inspectionPhoto: "",
-      startAlcoholPhoto: "",
-      endAlcoholPhoto: "",
-    };
-
-    // 写真圧縮
-    payload.inspectionPhoto = await fileToDataUrlCompressed(el("inspectionPhoto")?.files?.[0]);
-    payload.startAlcoholPhoto = await fileToDataUrlCompressed(el("startAlcoholPhoto")?.files?.[0]);
-    payload.endAlcoholPhoto = await fileToDataUrlCompressed(el("endAlcoholPhoto")?.files?.[0]);
-
-    // 送信（no-cors）
-    await fetch(GAS_URL, {
-      ...FETCH_OPT_BASE,
-      body: JSON.stringify(payload),
-    });
-
-    // no-corsは成功/失敗の本文を読めない → 到達した前提でUIだけ成功表示
-    showSendMsg("ok","✅ 送信しました");
-    // 入力保持したいのでフォームはリセットしない（必要なら下を有効化）
-    // el("form").reset();
-
-  }catch(e){
-    showSendMsg("ng","❌ 送信に失敗しました（通信/URL/権限を確認）");
-  }finally{
-    el("btnSend").disabled = false;
-    el("btnSend").textContent = "送信";
-  }
-});
-
-// 初期表示
-setMode("start");
-setConn(false,"未確認");
-</script>
+  <script src="./app.js"></script>
 </body>
 </html>
