@@ -1,584 +1,797 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>OFA GROUP Web点呼・日報フォーム</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>OFA GROUP Web点呼・日報フォーム（Drive保存版）</title>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700;900&display=swap" rel="stylesheet">
 
-<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700;900&display=swap" rel="stylesheet">
-
-<!-- 月次PDF用 -->
-<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.2/dist/jspdf.plugin.autotable.min.js"></script>
-
-<style>
-:root{--g:#17B978;--r:#E74C3C;--b:#3498DB;--y:#F9CA24;}
-*{box-sizing:border-box}
-body{
-  margin:0;font-family:'Noto Sans JP',sans-serif;
-  background:linear-gradient(180deg,#ff9f43,#ff6b6b,#9b59b6,#3498db,#2ecc71);
-  background-attachment:fixed;
-}
-.container{
-  max-width:760px;margin:18px auto 28px;background:rgba(255,255,255,0.96);
-  border-radius:18px;box-shadow:0 10px 30px rgba(0,0,0,.25);overflow:hidden;
-}
-header{
-  background:linear-gradient(135deg,#ff7675,#f9ca24,#55efc4,#74b9ff,#a29bfe);
-  color:#fff;text-align:center;padding:18px 14px;
-}
-header .t{font-size:22px;font-weight:900;margin:0}
-header .s{font-size:12px;margin:6px 0 0;opacity:.95}
-
-.tab{display:flex;border-bottom:1px solid #e3e3e3;background:#f7f7f7}
-.tab button{
-  flex:1;padding:10px 8px;border:none;background:none;font-weight:800;cursor:pointer;
-  border-bottom:3px solid transparent;
-}
-.tab button.active{background:#fff;color:var(--g);border-bottom-color:var(--g);}
-
-.content{padding:14px 14px 18px}
-label{display:block;font-size:13px;font-weight:800;margin-top:12px}
-input,select,textarea{
-  width:100%;padding:10px;margin-top:6px;border:1px solid #d6d6d6;border-radius:10px;font-size:14px;
-  background:#fbfffa;
-}
-textarea{resize:vertical}
-
-.note{
-  font-size:12px;background:#f8f9f9;border-left:4px solid var(--g);
-  padding:10px;border-radius:10px;margin-bottom:12px;line-height:1.6
-}
-.row2{display:flex;gap:10px}
-.row2 > div{flex:1}
-.btn{
-  width:100%;margin-top:16px;padding:14px;border:none;border-radius:999px;
-  background:linear-gradient(135deg,#ff7675,#e74c3c);color:#fff;font-size:16px;font-weight:900;cursor:pointer;
-  box-shadow:0 4px 0 #c0392b;
-}
-.btn:active{transform:translateY(1px);box-shadow:none}
-.btn2{
-  width:100%;margin-top:10px;padding:12px;border:none;border-radius:999px;
-  background:#f0f0f0;color:#333;font-size:14px;font-weight:900;cursor:pointer;
-}
-.small{font-size:11px;color:#555;margin-top:6px}
-.hr{height:1px;background:#ececec;margin:14px 0}
-
-.history-item{
-  border:1px solid #ddd;border-radius:12px;padding:10px;margin-bottom:8px;background:#fff;
-  box-shadow:0 2px 8px rgba(0,0,0,.06)
-}
-.history-item b{font-size:14px}
-.sub{font-size:12px;color:#555;margin-top:4px;line-height:1.5}
-.badge{
-  display:inline-block;font-size:11px;padding:2px 8px;border-radius:999px;background:#ebf5fb;color:#2980b9;margin-left:6px
-}
-.warn{color:#a00;font-weight:900}
-
-.pdf-photo{max-width:240px;border:1px solid #ccc;border-radius:10px}
-</style>
+  <style>
+    :root{
+      --ofa-green:#17B978;
+      --ofa-red:#E74C3C;
+      --ofa-blue:#3498DB;
+      --ofa-yellow:#F9CA24;
+      --text-main:#2C3E50;
+      --border:#E0E0E0;
+    }
+    *{ box-sizing:border-box; }
+    body{
+      margin:0;
+      font-family:'Noto Sans JP',sans-serif;
+      background:linear-gradient(180deg,#ff9f43,#ff6b6b,#9b59b6,#3498db,#2ecc71);
+      background-attachment:fixed;
+      color:var(--text-main);
+      line-height:1.6;
+    }
+    .container{
+      max-width:760px;
+      margin:20px auto 40px;
+      background:rgba(255,255,255,0.95);
+      border-radius:20px;
+      box-shadow:0 10px 30px rgba(0,0,0,.25);
+      overflow:hidden;
+      backdrop-filter:blur(8px);
+    }
+    .header{
+      background:linear-gradient(135deg,#ff7675,#f9ca24,#55efc4,#74b9ff,#a29bfe);
+      background-size:300% 300%;
+      animation: headerRainbow 12s ease infinite;
+      color:#fff;
+      padding:20px 16px 16px;
+      text-align:center;
+      position:relative;
+    }
+    @keyframes headerRainbow{
+      0%{background-position:0% 50%;}
+      50%{background-position:100% 50%;}
+      100%{background-position:0% 50%;}
+    }
+    .header-top{
+      display:flex;justify-content:center;align-items:center;gap:12px;margin-bottom:6px;
+    }
+    .header-logo-square{
+      width:72px;height:72px;border-radius:16px;background:#fff;
+      display:flex;align-items:center;justify-content:center;
+      box-shadow:0 0 0 3px rgba(255,255,255,.7), 0 8px 18px rgba(0,0,0,.35);
+    }
+    .header-logo-square span{font-weight:900;font-size:30px;letter-spacing:1px;}
+    .logo-o{color:#E74C3C;} .logo-f{color:#F1C40F;} .logo-a{color:#3498DB;}
+    .header-brand-text{font-size:18px;font-weight:800;letter-spacing:2px;text-shadow:0 1px 3px rgba(0,0,0,.25);}
+    .header-title{font-size:20px;font-weight:900;margin-top:4px;text-shadow:0 1px 3px rgba(0,0,0,.3);}
+    .header-badges{
+      margin-top:8px;display:flex;justify-content:center;flex-wrap:wrap;gap:6px;font-size:11px;
+    }
+    .header-badge{
+      padding:4px 10px;border-radius:999px;
+      background:rgba(255,255,255,.35);
+      border:1px solid rgba(255,255,255,.8);
+      backdrop-filter:blur(4px);
+    }
+    .tab-bar{display:flex;background:#fdfef9;border-bottom:1px solid #ecf0f1;}
+    .tab-btn{
+      flex:1;padding:10px 4px;border:none;background:none;font-weight:800;font-size:14px;cursor:pointer;
+      display:flex;align-items:center;justify-content:center;gap:4px;border-bottom:3px solid transparent;
+    }
+    .tab-btn span.icon{font-size:16px;}
+    .tab-btn.active{border-bottom-color:var(--ofa-green);color:var(--ofa-green);background:#fff;}
+    .content{padding:16px;}
+    .section-title{
+      margin:16px 0 10px;padding:8px 10px;background:#FDFBF5;border-radius:8px;
+      font-weight:800;font-size:14px;color:#2d98da;position:relative;overflow:hidden;
+    }
+    .section-title::before{
+      content:"";position:absolute;left:0;top:0;bottom:0;width:6px;
+      background:linear-gradient(180deg,#ff7675,#f9ca24,#55efc4,#74b9ff,#a29bfe);
+    }
+    label{display:block;font-weight:800;font-size:13px;margin-top:12px;}
+    .required-mark{color:var(--ofa-red);margin-left:4px;}
+    input[type="text"],input[type="tel"],input[type="email"],input[type="date"],input[type="time"],input[type="number"],select,textarea{
+      width:100%;padding:10px;margin-top:4px;border:1px solid var(--border);border-radius:12px;
+      font-size:14px;background:#fbfffa;
+    }
+    textarea{resize:vertical;}
+    .field-hint{font-size:11px;color:#777;margin-top:2px;}
+    .small-note{font-size:12px;color:#555;background:#f7fbff;border:1px solid #e6f2ff;border-radius:10px;padding:10px;margin-top:10px;}
+    .small-note b{color:#1f6fb2;}
+    .radio-card-group{margin-top:8px;display:flex;gap:10px;flex-wrap:wrap;}
+    .radio-card{
+      flex:1 1 120px;border:1px solid var(--border);border-radius:999px;padding:6px 10px;
+      display:flex;align-items:center;gap:6px;font-size:13px;background:#fff;box-shadow:0 1px 0 rgba(0,0,0,.03);
+    }
+    .radio-card input{margin:0;}
+    .primary-btn{
+      width:100%;padding:14px;margin-top:20px;border:none;border-radius:999px;
+      background:linear-gradient(135deg,#ff7675,#e74c3c);
+      color:#fff;font-size:16px;font-weight:900;cursor:pointer;box-shadow:0 4px 0 #c0392b;
+    }
+    .primary-btn:active{transform:translateY(1px);box-shadow:none;}
+    .primary-btn[disabled]{opacity:.55;cursor:not-allowed;box-shadow:none;transform:none;}
+    .sub-btn{
+      padding:8px 12px;border-radius:999px;border:none;font-size:12px;font-weight:900;cursor:pointer;
+      display:inline-flex;align-items:center;gap:4px;margin:4px 6px 4px 0;
+    }
+    .sub-btn.gray{background:#f2f2f2;color:#555;}
+    .sub-btn.blue{background:#eaf5ff;color:#2471a3;}
+    .sub-btn.green{background:#e8fff3;color:#1e8449;}
+    .sub-btn.danger{background:#fdecea;color:var(--ofa-red);}
+    .message{margin-top:12px;font-size:13px;padding:10px 12px;border-radius:10px;display:none;}
+    .message.success{display:block;background:#d4edda;color:#155724;}
+    .message.error{display:block;background:#f8d7da;color:#721c24;}
+    .message.info{display:block;background:#e8f4fd;color:#1b4f72;}
+    .history-note{font-size:11px;color:#666;margin-bottom:4px;}
+    .history-filter{
+      margin:8px 0 10px;padding:10px;background:#f8f9f9;border-radius:12px;font-size:12px;border:1px solid #eee;
+    }
+    .history-filter-row{display:flex;align-items:center;gap:6px;margin-top:6px;}
+    .history-filter-row input[type="date"]{flex:1;padding:8px 10px;font-size:12px;}
+    #historyList{margin-top:10px;}
+    .history-item{
+      padding:10px 12px;border-radius:14px;border:1px solid #ddd;background:#fff;margin-bottom:8px;cursor:pointer;
+      position:relative;box-shadow:0 2px 6px rgba(0,0,0,.08);
+      display:flex;gap:8px;align-items:flex-start;
+    }
+    .history-item::after{
+      content:"PDF";
+      position:absolute;right:10px;top:8px;font-size:10px;padding:2px 6px;border-radius:999px;
+      background:#ebf5fb;color:#2980b9;
+    }
+    .history-check{margin-top:4px;}
+    .history-item-main{flex:1;}
+    .history-item-title{font-size:14px;font-weight:900;}
+    .history-item-sub{font-size:11px;color:#555;margin-top:2px;}
+    .history-item-status{font-size:11px;margin-top:2px;color:#27ae60;}
+    #pdfOutput{margin-top:10px;}
+    .pdf-wrap{font-family:'Noto Sans JP',sans-serif;}
+    .pdf-doc{
+      border:1px solid #ccc;padding:16px 14px;margin-bottom:12px;background:#fff;border-radius:10px;
+    }
+    .pdf-header{text-align:center;border-bottom:3px solid var(--ofa-green);padding-bottom:6px;margin-bottom:10px;}
+    .pdf-header-title{font-size:16px;font-weight:900;color:var(--ofa-blue);}
+    .pdf-header-sub{font-size:11px;color:#555;}
+    .pdf-section-box{margin-top:10px;}
+    .pdf-section-title{
+      background:#f8f9f9;padding:6px 8px;border-left:4px solid var(--ofa-yellow);
+      font-size:12px;font-weight:900;color:var(--ofa-blue);margin-bottom:4px;
+    }
+    .pdf-row{display:flex;font-size:12px;padding:3px 0;border-bottom:1px dotted #eee;}
+    .pdf-row-label{width:38%;font-weight:900;}
+    .pdf-row-value{width:62%;}
+    .pdf-status{
+      margin:4px 0 6px;padding:6px 8px;font-size:11px;border-radius:6px;background:#d4edda;color:#155724;text-align:center;font-weight:800;
+    }
+    .pdf-status.incomplete{background:#fff3cd;color:#856404;}
+    .month-table-wrap{overflow:auto;border:1px solid #e5e5e5;border-radius:10px;}
+    table.month-table{width:100%;border-collapse:collapse;font-size:11px;min-width:760px;}
+    .month-table th,.month-table td{border:1px solid #e5e5e5;padding:6px 6px;white-space:nowrap;}
+    .month-table th{background:#1f5136;color:#fff;font-weight:900;}
+    .month-table td{background:#fff;}
+    .month-table .center{text-align:center;}
+    .pill{
+      display:inline-block;padding:2px 8px;border-radius:999px;font-size:10px;font-weight:900;
+      border:1px solid #ddd;background:#f7f7f7;color:#555;
+    }
+    .pill.ok{background:#e8fff3;border-color:#baf2d1;color:#1e8449;}
+    .pill.warn{background:#fff3cd;border-color:#ffeeba;color:#856404;}
+    .a-link{color:#1f6fb2;text-decoration:underline;}
+    .guide{margin-top:12px;border:1px solid #e7e7e7;border-radius:14px;background:#fff;overflow:hidden;}
+    .guide .guide-head{
+      display:flex;align-items:center;justify-content:space-between;gap:10px;
+      padding:12px 14px;background:#f7fbff;font-weight:900;cursor:pointer;
+    }
+    .guide .guide-body{padding:12px 14px;display:none;font-size:13px;}
+    .guide.open .guide-body{display:block;}
+    .guide ul{margin:8px 0 0 18px;}
+    .guide li{margin:6px 0;}
+    body.printing{background:#fff !important;}
+    @media print{
+      body{background:#fff !important;}
+      .container{box-shadow:none;border-radius:0;margin:0;max-width:none;}
+      .header,.tab-bar,.content .form-area,.content .history-filter,.content .history-note,.content .top-actions{display:none !important;}
+      #historyList{display:none !important;}
+      #pdfOutput{margin:0 !important;}
+      #pdfOutput .pdf-doc{border:none;margin:0;padding:10px 6px;}
+      a{color:#000;text-decoration:none;}
+    }
+  </style>
 </head>
 
 <body>
 <div class="container">
+  <header class="header">
+    <div class="header-top">
+      <div class="header-logo-square">
+        <span class="logo-o">O</span><span class="logo-f">F</span><span class="logo-a">A</span>
+      </div>
+      <div class="header-brand-text">OFA GROUP</div>
+    </div>
+    <div class="header-title">Web点呼・日報フォーム（Drive保存版）</div>
+    <div class="header-badges">
+      <div class="header-badge">ドライバー入力 → 証跡保存</div>
+      <div class="header-badge">写真はDriveへ保存（60日で整理）</div>
+      <div class="header-badge">日次・月次PDF出力</div>
+    </div>
+  </header>
 
-<header>
-  <p class="t">OFA GROUP Web点呼・日報</p>
-  <p class="s">確認者・車両番号・アルコール写真（圧縮）・日次/月次PDF・Drive保存対応</p>
-</header>
-
-<div class="tab">
-  <button id="tabForm" class="active">📝 点呼入力</button>
-  <button id="tabHistory">📄 履歴・出力</button>
-</div>
-
-<!-- 入力 -->
-<div class="content" id="formArea">
-  <div class="note">
-    <b>【使い方】</b><br>
-    ① 朝「出発点呼」を入力 → 保存<br>
-    ② 帰宅後「帰着点呼」を入力 → 同日・同ドライバー・同会社・同車両の記録に追記<br>
-    ③ 履歴から <b>日次PDF / 月次PDF</b> を出力できます<br>
-    ④ アルコール写真は証跡として保存（自動圧縮）<br>
-    <span class="warn">※LINEアプリ内ブラウザではPDF保存が動かないことがあります。Safari/Chromeで開いて出力してください。</span>
+  <div class="tab-bar">
+    <button class="tab-btn active" data-tab="form"><span class="icon">📝</span>点呼・日報入力</button>
+    <button class="tab-btn" data-tab="history"><span class="icon">📄</span>履歴・検索・PDF</button>
   </div>
 
-  <form id="tenkoForm" autocomplete="off">
-    <label>点呼区分</label>
-    <select id="mode">
-      <option value="start">出発点呼</option>
-      <option value="end">帰着点呼</option>
-    </select>
+  <div class="content">
+    <div id="tab_form" class="form-area">
+      <div class="guide" id="guideBox">
+        <div class="guide-head" id="guideToggle">
+          <div>📌 使い方（タップで開く）</div>
+          <div class="pill">ガイド</div>
+        </div>
+        <div class="guide-body">
+          <b>① 出発点呼</b> → 体調・アルコール値・車番・確認者を入力し保存。<br/>
+          <b>② 帰着点呼</b> → 同じ日付・同じドライバーで帰着を入力し保存（自動で出発記録に合体）。<br/>
+          <b>③ 履歴</b> → 期間で絞り込み、<b>日次PDF</b>（1件） or <b>月次PDF</b>（表示中まとめ）を出力。<br/>
+          <b>④ 写真</b> → アルコール検知器の画面写真をアップ（自動圧縮→Drive保存）。<br/><br/>
+          <ul>
+            <li>LINE内ブラウザで印刷が不安定な時は「Safari/Chromeで開く」を推奨。</li>
+            <li>写真は端末に保存しません（Drive URLだけ履歴に残します）。</li>
+            <li>Drive内の写真は<b>60日経過で自動削除（ゴミ箱へ）</b>されます。</li>
+          </ul>
+        </div>
+      </div>
 
-    <div class="row2">
-      <div>
-        <label>日付</label>
-        <input type="date" id="date" required>
+      <div class="small-note" style="margin-top:12px;">
+        <b>Google Drive保存：</b>GAS（Webアプリ）URLをこのHTML内に設定すれば動きます。<br/>
+        ※ 履歴は<b>この端末・このブラウザ</b>に保存されます（写真はDriveへ）。
       </div>
-      <div>
-        <label>点呼時刻</label>
-        <input type="time" id="time" required>
-      </div>
+
+      <form id="tenkoForm" autocomplete="off">
+        <div class="section-title">0. モード選択</div>
+        <label>点呼モード <span class="required-mark">*</span></label>
+        <div class="radio-card-group">
+          <label class="radio-card"><input type="radio" name="mode" value="出発点呼" checked>出発点呼</label>
+          <label class="radio-card"><input type="radio" name="mode" value="帰着点呼">帰着点呼</label>
+        </div>
+
+        <div class="section-title">1. 基本情報</div>
+        <label for="date">日付 <span class="required-mark">*</span></label>
+        <input id="date" type="date" required>
+
+        <label for="driverName">ドライバー名 <span class="required-mark">*</span></label>
+        <input id="driverName" type="text" required>
+
+        <label for="company">所属会社 <span class="required-mark">*</span></label>
+        <input id="company" type="text" required>
+
+        <label for="vehicleNo">車両番号（ナンバー） <span class="required-mark">*</span></label>
+        <input id="vehicleNo" type="text" placeholder="例：鹿児島 500 あ 1234" required>
+
+        <label for="checkerName">確認者（点呼実施者） <span class="required-mark">*</span></label>
+        <input id="checkerName" type="text" placeholder="例：森下 / 担当者名" required>
+
+        <label for="tel">電話番号 <span class="required-mark">*</span></label>
+        <input id="tel" type="tel" required>
+
+        <label for="email">メールアドレス（任意）</label>
+        <input id="email" type="email">
+
+        <label for="client">案件（荷主）</label>
+        <input id="client" type="text">
+
+        <label for="area">エリア（都道府県）</label>
+        <input id="area" type="text" placeholder="例: 鹿児島県 / 熊本県など">
+
+        <div id="section_departure">
+          <div class="section-title">2. 出発前チェック</div>
+
+          <label for="startPlace">出発場所（自宅、もしくは事務所）</label>
+          <input id="startPlace" type="text">
+
+          <label for="workTime">出勤時間</label>
+          <input id="workTime" type="time">
+
+          <label for="startTime">出発時間 <span class="required-mark">*</span></label>
+          <input id="startTime" type="time" required>
+
+          <label for="condition">体調 <span class="required-mark">*</span></label>
+          <select id="condition" required>
+            <option value="">選択してください</option>
+            <option value="良好">良好</option>
+            <option value="普通">普通</option>
+            <option value="不調">不調</option>
+          </select>
+
+          <label for="sleep">睡眠時間（時間）</label>
+          <input id="sleep" type="number" step="0.5" placeholder="例: 6.5">
+
+          <label>飲酒（24h以内） <span class="required-mark">*</span></label>
+          <div class="radio-card-group">
+            <label class="radio-card"><input type="radio" name="drink" value="なし" checked>なし</label>
+            <label class="radio-card"><input type="radio" name="drink" value="あり">あり</label>
+          </div>
+
+          <label>服薬（運転に影響する薬）</label>
+          <div class="radio-card-group">
+            <label class="radio-card"><input type="radio" name="medicine" value="なし" checked>なし</label>
+            <label class="radio-card"><input type="radio" name="medicine" value="あり">あり</label>
+          </div>
+
+          <label for="temp">体温 (℃) <span class="required-mark">*</span></label>
+          <input id="temp" type="number" step="0.1" required>
+
+          <label for="alcoholValue">アルコール検査値 (mg/L) <span class="required-mark">*</span></label>
+          <input id="alcoholValue" type="text" required placeholder="例: 0.00">
+
+          <label for="startAlcoholPhoto">アルコール検査 写真（出発） <span class="required-mark">*</span></label>
+          <input id="startAlcoholPhoto" type="file" accept="image/*" required>
+          <div class="field-hint">※自動で圧縮してGoogle Driveへ保存します。</div>
+
+          <label for="startMeter">出発前メーター (km) <span class="required-mark">*</span></label>
+          <input id="startMeter" type="number" required>
+        </div>
+
+        <div id="section_return" style="display:none;">
+          <div class="section-title">2. 帰着記録</div>
+
+          <label for="returnPlace">帰着場所 <span class="required-mark">*</span></label>
+          <input id="returnPlace" type="text" required>
+
+          <label for="returnTime">帰着時間（自宅もしくは事務所） <span class="required-mark">*</span></label>
+          <input id="returnTime" type="time" required>
+
+          <label for="returnAlcoholValue">アルコール検査値（帰着）(mg/L) <span class="required-mark">*</span></label>
+          <input id="returnAlcoholValue" type="text" required placeholder="例: 0.00">
+
+          <label for="endAlcoholPhoto">アルコール検査 写真（帰着） <span class="required-mark">*</span></label>
+          <input id="endAlcoholPhoto" type="file" accept="image/*" required>
+          <div class="field-hint">※自動で圧縮してGoogle Driveへ保存します。</div>
+
+          <label for="returnMeter">帰着メーター (km) <span class="required-mark">*</span></label>
+          <input id="returnMeter" type="number" required>
+        </div>
+
+        <button id="saveBtn" type="submit" class="primary-btn">この記録を保存（写真はDriveへ）</button>
+      </form>
+
+      <div id="message" class="message"></div>
     </div>
 
-    <label>ドライバー名</label>
-    <input type="text" id="driver" required>
+    <div id="tab_history" style="display:none;">
+      <div class="section-title" style="margin-top:0;">保存された点呼履歴</div>
+      <div class="history-note">※この端末・このブラウザにだけ履歴が保存されます（写真はDrive URLを保存）</div>
 
-    <label>所属会社</label>
-    <input type="text" id="company" required>
+      <div class="history-filter">
+        <div><b>期間で絞り込み</b></div>
+        <div class="history-filter-row">
+          <input id="historyFrom" type="date">
+          <span>〜</span>
+          <input id="historyTo" type="date">
+        </div>
+        <div style="margin-top:8px;">
+          <button type="button" class="sub-btn gray" id="filterApplyBtn">この期間で絞り込み</button>
+          <button type="button" class="sub-btn gray" id="filterClearBtn">絞り込み解除</button>
+          <button type="button" class="sub-btn blue" id="setThisMonthBtn">今月</button>
+        </div>
+      </div>
 
-    <div class="row2">
-      <div>
-        <label>車両番号（ナンバー）</label>
-        <input type="text" id="vehicleNo" placeholder="例：鹿児島 480 あ 12-34" required>
+      <div id="historyList"></div>
+
+      <div style="margin-top:10px;">
+        <button type="button" class="sub-btn green" id="pdfPrintBtn" style="display:none;">表示中PDFを印刷 / 保存</button>
+        <button type="button" class="sub-btn gray" id="pdfBackBtn" style="display:none;">一覧に戻る</button>
+        <button type="button" class="sub-btn blue" id="monthPdfBtn">表示中を月次PDF（一覧）</button>
       </div>
-      <div>
-        <label>確認者（点呼実施者）</label>
-        <input type="text" id="checker" placeholder="例：山下" required>
-      </div>
+
+      <div id="pdfOutput"></div>
     </div>
-
-    <label>アルコール値 (mg/L)</label>
-    <input type="text" id="alcoholValue" placeholder="例：0.00">
-
-    <label>アルコール検査写真（証跡・自動圧縮）</label>
-    <input type="file" id="alcoholPhoto" accept="image/*" capture="environment">
-    <div class="small">※保存容量節約のため画像は自動で圧縮されます。長期保存はDrive保存がおすすめ。</div>
-
-    <button class="btn" type="submit">この点呼を保存</button>
-  </form>
-</div>
-
-<!-- 履歴・出力 -->
-<div class="content" id="historyArea" style="display:none">
-  <div class="note">
-    <b>📤 出力</b><br>
-    ・<b>日次PDF</b>：指定日の記録（写真入り）<br>
-    ・<b>月次PDF</b>：1ヶ月分の一覧（写真は「あり/なし」）<br>
-    ・<b>Google Driveへ保存</b>：PDF/画像/JSONをDrive＋スプレッドシートへ記録<br>
-    <span class="warn">※LINE内ブラウザは非推奨</span>
   </div>
-
-  <label>日次PDF（日付）</label>
-  <input type="date" id="dailyDate">
-  <button class="btn2" id="dailyPdfBtn" type="button">日次PDF出力（写真あり）</button>
-
-  <label>月次PDF（年月）</label>
-  <input type="month" id="monthlyMonth">
-  <button class="btn2" id="monthlyPdfBtn" type="button">月次PDF出力（一覧）</button>
-
-  <div class="hr"></div>
-
-  <label>Google Drive保存（GAS WebApp URL）</label>
-  <input type="text" id="gasUrl" placeholder="ここにGASのWebアプリURLを貼る（後述）">
-  <div class="row2">
-    <div>
-      <label>Drive保存（日付）</label>
-      <input type="date" id="driveDate">
-    </div>
-    <div style="display:flex;align-items:flex-end">
-      <button class="btn2" id="driveSaveBtn" type="button" style="margin-top:0">この日の記録をDriveへ保存</button>
-    </div>
-  </div>
-  <div class="small">
-    ※GAS URLを設定すると、指定日の記録をDriveへ保存できます（PDF＋画像＋JSON＋スプレッドシート追記）<br>
-    ※URL未設定の場合はローカル保存のみ
-  </div>
-
-  <div class="hr"></div>
-  <div id="historyList"></div>
-
-  <button class="btn2" id="purgeBtn" type="button">60日超の古い写真を削除（記録は残す）</button>
-  <button class="btn2" id="wipeBtn" type="button" style="background:#fdecea;color:#a00">全履歴を削除（この端末）</button>
-</div>
-
 </div>
 
 <script>
-/* =========================
-   設定
-========================= */
-const KEY = 'ofa_tenko_records_v2';
+/**
+ * ★ここだけあなたが貼り替える（GASのWebアプリURL /exec）
+ */
+const GAS_URL = "PASTE_YOUR_GAS_WEBAPP_URL_HERE";
 
-/* =========================
-   共通関数
-========================= */
-const getList = () => JSON.parse(localStorage.getItem(KEY) || '[]');
-const setList = (d) => localStorage.setItem(KEY, JSON.stringify(d));
+const LOCAL_KEY = "ofaGroupRecords_v2_drive";
+const IMG_MAX_SIZE = 1280;
+const IMG_QUALITY  = 0.72;
 
-function todayISO(){ return new Date().toISOString().slice(0,10); }
-function thisMonthISO(){ return new Date().toISOString().slice(0,7); }
-function isLineInApp(){ return navigator.userAgent.toLowerCase().includes('line'); }
+const form = document.getElementById("tenkoForm");
+const messageBox = document.getElementById("message");
+const saveBtn = document.getElementById("saveBtn");
 
-function daysBetween(aISO, bISO){
-  const a = new Date(aISO + 'T00:00:00');
-  const b = new Date(bISO + 'T00:00:00');
-  return Math.floor((b - a) / (1000*60*60*24));
-}
+const modeRadios = document.querySelectorAll('input[name="mode"]');
+const sectionDeparture = document.getElementById("section_departure");
+const sectionReturn = document.getElementById("section_return");
 
-/* 画像圧縮：900px / quality 0.7 */
-async function fileToCompressedDataURL(file, maxW=900, quality=0.7){
-  if(!file) return '';
-  if(!file.type.startsWith('image/')) return '';
+const historyList = document.getElementById("historyList");
+const pdfOutput = document.getElementById("pdfOutput");
+const pdfPrintBtn = document.getElementById("pdfPrintBtn");
+const pdfBackBtn = document.getElementById("pdfBackBtn");
+const monthPdfBtn = document.getElementById("monthPdfBtn");
+const historyFrom = document.getElementById("historyFrom");
+const historyTo = document.getElementById("historyTo");
 
-  const dataURL = await new Promise((resolve, reject)=>{
-    const r = new FileReader();
-    r.onload = ()=>resolve(r.result);
-    r.onerror = reject;
-    r.readAsDataURL(file);
-  });
+let currentFilter = {from:null,to:null};
 
-  const img = await new Promise((resolve, reject)=>{
-    const i = new Image();
-    i.onload = ()=>resolve(i);
-    i.onerror = reject;
-    i.src = dataURL;
-  });
+document.getElementById("date").value = new Date().toISOString().slice(0,10);
 
-  const scale = Math.min(1, maxW / img.width);
-  const w = Math.max(1, Math.round(img.width * scale));
-  const h = Math.max(1, Math.round(img.height * scale));
-
-  const canvas = document.createElement('canvas');
-  canvas.width = w; canvas.height = h;
-  const ctx = canvas.getContext('2d');
-  ctx.fillStyle = '#fff';
-  ctx.fillRect(0,0,w,h);
-  ctx.drawImage(img,0,0,w,h);
-
-  return canvas.toDataURL('image/jpeg', quality);
-}
-
-/* =========================
-   60日超：古い写真だけ削除
-========================= */
-function purgeOldPhotos(days=60){
-  const list = getList();
-  const now = todayISO();
-  let changed = false;
-
-  for(const rec of list){
-    const age = daysBetween(rec.date, now);
-    if(age > days){
-      if(rec.start?.photo){ rec.start.photo=''; changed=true; }
-      if(rec.end?.photo){ rec.end.photo=''; changed=true; }
-    }
-  }
-  if(changed) setList(list);
-  return changed;
-}
-
-/* =========================
-   タブ
-========================= */
-tabForm.onclick = ()=>{
-  tabForm.classList.add('active'); tabHistory.classList.remove('active');
-  formArea.style.display='block'; historyArea.style.display='none';
-};
-tabHistory.onclick = ()=>{
-  tabHistory.classList.add('active'); tabForm.classList.remove('active');
-  historyArea.style.display='block'; formArea.style.display='none';
-  renderHistory();
-};
-
-/* =========================
-   保存ロジック
-   1日 = 1レコード（driver/company/vehicleNo単位）
-   その中に start/end を格納
-========================= */
-tenkoForm.addEventListener('submit', async (e)=>{
-  e.preventDefault();
-
-  // まず自動削除（60日超の写真だけ）を軽く回す：容量トラブルを減らす
-  purgeOldPhotos(60);
-
-  const modeVal = mode.value; // start/end
-  const list = getList();
-
-  const photoFile = alcoholPhoto.files?.[0] || null;
-  const photoData = await fileToCompressedDataURL(photoFile, 900, 0.7);
-
-  const part = {
-    at: Date.now(),
-    mode: modeVal,
-    time: time.value,
-    alcohol: alcoholValue.value || '',
-    checker: checker.value || '',
-    photo: photoData || '' // 空なら保存しないのと同義
-  };
-
-  const baseKey = {
-    date: date.value,
-    driver: driver.value.trim(),
-    company: company.value.trim(),
-    vehicleNo: vehicleNo.value.trim()
-  };
-
-  const idx = list.findIndex(r =>
-    r.date===baseKey.date &&
-    r.driver===baseKey.driver &&
-    r.company===baseKey.company &&
-    r.vehicleNo===baseKey.vehicleNo
-  );
-
-  if(idx>-1){
-    list[idx][modeVal] = part;
-    // ついでに最新の確認者を保持（閲覧用）
-    list[idx].lastChecker = part.checker || list[idx].lastChecker || '';
-  }else{
-    list.push({
-      ...baseKey,
-      start: modeVal==='start'?part:undefined,
-      end: modeVal==='end'?part:undefined,
-      lastChecker: part.checker || ''
-    });
-  }
-
-  // 並び：新しい日付が上
-  list.sort((a,b)=> (b.date||'').localeCompare(a.date||'') || (String(b.driver||'').localeCompare(String(a.driver||''))) );
-
-  try{
-    setList(list);
-    alert('保存しました（この端末のブラウザに保存）');
-  }catch(err){
-    // localStorage容量不足のとき
-    alert('保存容量が不足しました。\n「60日超の古い写真削除」またはDrive保存を使ってください。');
-    console.error(err);
-  }
-
-  tenkoForm.reset();
-  date.value = todayISO();
-  dailyDate.value = date.value;
-  driveDate.value = date.value;
-  monthlyMonth.value = thisMonthISO();
+// ガイド
+document.getElementById("guideToggle").addEventListener("click",()=>{
+  document.getElementById("guideBox").classList.toggle("open");
 });
 
-/* =========================
-   履歴表示
-========================= */
-function renderHistory(){
-  // 履歴に入るたびに自動で古い写真を消して容量を守る（記録は残す）
-  purgeOldPhotos(60);
-
-  const list = getList();
-  historyList.innerHTML = '';
-
-  if(!list.length){
-    historyList.innerHTML = '<div class="small">記録がありません。</div>';
-    return;
-  }
-
-  for(const r of list){
-    const hasPhoto = !!(r.start?.photo || r.end?.photo);
-    const st = r.start?.time || '-';
-    const en = r.end?.time || '-';
-
-    const div = document.createElement('div');
-    div.className = 'history-item';
-    div.innerHTML = `
-      <b>${r.date}</b>
-      <span class="badge">${hasPhoto ? '写真あり' : '写真なし'}</span><br>
-      <div class="sub">
-        ${r.driver} / ${r.company}<br>
-        車両：${r.vehicleNo || '-'} / 確認者：${(r.lastChecker||r.start?.checker||r.end?.checker||'-')}<br>
-        出発：${st}　帰着：${en}
-      </div>
-    `;
-    historyList.appendChild(div);
-  }
-}
-
-/* =========================
-   PDF（日次）
-   - 写真入り
-========================= */
-dailyPdfBtn.onclick = ()=>{
-  if(isLineInApp()){
-    alert('LINEアプリ内ブラウザではPDF保存が動かない場合があります。\n右上「…」→「Safari/Chromeで開く」で出力してください。');
-    return;
-  }
-  const day = dailyDate.value;
-  const list = getList().filter(r=>r.date===day);
-  if(!list.length){ alert('その日の記録がありません'); return; }
-
-  const w = window.open('', '_blank');
-  if(!w){ alert('ポップアップがブロックされています。Safari/Chromeでお試しください。'); return; }
-
-  const html = `
-<!DOCTYPE html><html lang="ja"><head><meta charset="UTF-8">
-<title>OFA 点呼（日次）</title>
-<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700;900&display=swap" rel="stylesheet">
-<style>
-body{font-family:'Noto Sans JP',sans-serif;margin:18px}
-h1{margin:0 0 8px;font-size:18px}
-.card{border:1px solid #ccc;border-radius:12px;padding:12px;margin:12px 0}
-.small{font-size:11px;color:#555}
-img{max-width:260px;border:1px solid #ccc;border-radius:10px;margin-top:6px}
-hr{border:none;border-top:1px solid #eee;margin:12px 0}
-</style></head><body>
-<h1>OFA GROUP 点呼（日次） - ${day}</h1>
-<div class="small">出力日時：${new Date().toLocaleString('ja-JP')}</div>
-${list.map(r=>{
-  const start = r.start || {};
-  const end = r.end || {};
-  return `
-  <div class="card">
-    <div><b>${r.driver}</b> / ${r.company}</div>
-    <div class="small">車両：${r.vehicleNo || '-'} / 確認者：${(start.checker||end.checker||r.lastChecker||'-')}</div>
-    <hr>
-    <div><b>出発</b>：${start.time||'-'}　アルコール：${start.alcohol||''}　確認者：${start.checker||'-'}</div>
-    ${start.photo ? `<img src="${start.photo}">` : `<div class="small">出発写真：なし</div>`}
-    <hr>
-    <div><b>帰着</b>：${end.time||'-'}　アルコール：${end.alcohol||''}　確認者：${end.checker||'-'}</div>
-    ${end.photo ? `<img src="${end.photo}">` : `<div class="small">帰着写真：なし</div>`}
-  </div>`;
-}).join('')}
-<script>window.print();</script>
-</body></html>`;
-  w.document.open();
-  w.document.write(html);
-  w.document.close();
-};
-
-/* =========================
-   PDF（月次：一覧）
-   - 写真は「あり/なし」
-========================= */
-monthlyPdfBtn.onclick = ()=>{
-  if(isLineInApp()){
-    alert('LINEアプリ内ブラウザではPDF保存が動かない場合があります。\nSafari/Chromeで開いて出力してください。');
-    return;
-  }
-  const ym = monthlyMonth.value; // YYYY-MM
-  const list = getList().filter(r => (r.date||'').startsWith(ym));
-  if(!list.length){ alert('その月の記録がありません'); return; }
-
-  const rows = list
-    .slice()
-    .sort((a,b)=> (a.date||'').localeCompare(b.date||'') || (String(a.driver||'').localeCompare(String(b.driver||''))))
-    .map(r => {
-      const hasPhoto = (r.start?.photo || r.end?.photo) ? 'あり' : 'なし';
-      return [
-        r.date || '',
-        r.driver || '',
-        r.company || '',
-        r.vehicleNo || '',
-        r.start?.time || '',
-        r.start?.checker || '',
-        r.end?.time || '',
-        r.end?.checker || '',
-        hasPhoto
-      ];
-    });
-
-  const { jsPDF } = window.jspdf;
-  const doc = new jsPDF({orientation:'landscape', unit:'mm', format:'a4'});
-
-  doc.setFontSize(14);
-  doc.text(`OFA GROUP 点呼一覧（${ym}）`, 14, 12);
-  doc.setFontSize(10);
-  doc.text(`出力日時: ${new Date().toLocaleString('ja-JP')}`, 14, 18);
-
-  doc.autoTable({
-    startY: 22,
-    head: [[ '日付','運転者','所属','車両番号','出発','出発確認者','帰着','帰着確認者','写真' ]],
-    body: rows,
-    styles: { fontSize: 8, cellPadding: 2, overflow: 'linebreak' },
-    headStyles: { fillColor: [23,185,120] },
-    columnStyles: {
-      0:{cellWidth:22},
-      1:{cellWidth:26},
-      2:{cellWidth:26},
-      3:{cellWidth:32},
-      4:{cellWidth:18},
-      5:{cellWidth:22},
-      6:{cellWidth:18},
-      7:{cellWidth:22},
-      8:{cellWidth:14}
+// タブ
+document.querySelectorAll(".tab-btn").forEach(btn=>{
+  btn.addEventListener("click",()=>{
+    document.querySelectorAll(".tab-btn").forEach(b=>b.classList.remove("active"));
+    btn.classList.add("active");
+    const tab = btn.dataset.tab;
+    document.getElementById("tab_form").style.display = tab==="form" ? "block" : "none";
+    document.getElementById("tab_history").style.display = tab==="history" ? "block" : "none";
+    if(tab==="history"){
+      resetPdfView();
+      renderHistory();
     }
   });
+});
 
-  doc.save(`点呼一覧_${ym}.pdf`);
-};
-
-/* =========================
-   Drive保存（GASへ送信）
-   - 指定日の記録をまとめて送る
-   - GAS側でDrive保存＋スプレッドシート追記
-========================= */
-async function postToGas(url, payload){
-  const res = await fetch(url, {
-    method:'POST',
-    headers:{'Content-Type':'application/json'},
-    body: JSON.stringify(payload)
+// required切替
+const departureRequiredIds = ["startTime","condition","temp","alcoholValue","startMeter","startAlcoholPhoto"];
+const returnRequiredIds = ["returnPlace","returnTime","returnMeter","returnAlcoholValue","endAlcoholPhoto"];
+function setRequired(ids, flag){
+  ids.forEach(id=>{
+    const el = document.getElementById(id);
+    if(el) el.required = flag;
   });
-  if(!res.ok){
-    const text = await res.text().catch(()=> '');
-    throw new Error('GAS送信失敗: ' + res.status + ' ' + text);
-  }
-  return await res.json().catch(()=> ({}));
+}
+function updateModeView(){
+  const mode = document.querySelector('input[name="mode"]:checked')?.value || "出発点呼";
+  const isDeparture = (mode==="出発点呼");
+  sectionDeparture.style.display = isDeparture ? "block" : "none";
+  sectionReturn.style.display    = isDeparture ? "none"  : "block";
+  setRequired(departureRequiredIds, isDeparture);
+  setRequired(returnRequiredIds, !isDeparture);
+}
+modeRadios.forEach(r=>r.addEventListener("change",updateModeView));
+updateModeView();
+
+function getRecords(){
+  const raw = localStorage.getItem(LOCAL_KEY);
+  return raw ? JSON.parse(raw) : [];
+}
+function setRecords(list){
+  localStorage.setItem(LOCAL_KEY, JSON.stringify(list));
+}
+function showMessage(text, type="success"){
+  messageBox.textContent = text;
+  messageBox.className = "message " + (type==="error" ? "error" : type==="info" ? "info" : "success");
+}
+function applyFilter(list){
+  return list.filter(r=>{
+    if(currentFilter.from && r.date < currentFilter.from) return false;
+    if(currentFilter.to && r.date > currentFilter.to) return false;
+    return true;
+  });
 }
 
-driveSaveBtn.onclick = async ()=>{
-  const url = (gasUrl.value || '').trim();
-  if(!url){ alert('GASのWebアプリURLを入力してください'); return; }
-  if(isLineInApp()){
-    alert('LINE内ブラウザではDrive保存が失敗することがあります。Safari/Chrome推奨です。');
+// フィルタボタン
+document.getElementById("filterApplyBtn").addEventListener("click",()=>{
+  currentFilter.from = historyFrom.value || null;
+  currentFilter.to   = historyTo.value   || null;
+  resetPdfView();
+  renderHistory();
+});
+document.getElementById("filterClearBtn").addEventListener("click",()=>{
+  historyFrom.value = "";
+  historyTo.value = "";
+  currentFilter = {from:null,to:null};
+  resetPdfView();
+  renderHistory();
+});
+document.getElementById("setThisMonthBtn").addEventListener("click",()=>{
+  const now = new Date();
+  const y = now.getFullYear();
+  const m = String(now.getMonth()+1).padStart(2,"0");
+  historyFrom.value = `${y}-${m}-01`;
+  historyTo.value = new Date(y, now.getMonth()+1, 0).toISOString().slice(0,10);
+  currentFilter.from = historyFrom.value;
+  currentFilter.to = historyTo.value;
+  resetPdfView();
+  renderHistory();
+});
+
+// 画像圧縮
+function fileToCompressedDataURL(file, maxSize=IMG_MAX_SIZE, quality=IMG_QUALITY){
+  return new Promise((resolve, reject)=>{
+    if(!file) return resolve(null);
+    const reader = new FileReader();
+    reader.onload = ()=>{
+      const img = new Image();
+      img.onload = ()=>{
+        const w = img.width, h = img.height;
+        let nw=w, nh=h;
+        const longSide = Math.max(w,h);
+        if(longSide > maxSize){
+          const scale = maxSize / longSide;
+          nw = Math.round(w * scale);
+          nh = Math.round(h * scale);
+        }
+        const canvas = document.createElement("canvas");
+        canvas.width = nw; canvas.height = nh;
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(img, 0, 0, nw, nh);
+        resolve(canvas.toDataURL("image/jpeg", quality));
+      };
+      img.onerror = ()=>reject(new Error("画像の読み込みに失敗"));
+      img.src = reader.result;
+    };
+    reader.onerror = ()=>reject(new Error("ファイル読み込みに失敗"));
+    reader.readAsDataURL(file);
+  });
+}
+
+// GASへ送信
+async function uploadAlcoholPhotosToDrive(payload){
+  if(!GAS_URL || GAS_URL.includes("PASTE_YOUR_GAS_WEBAPP_URL_HERE")){
+    throw new Error("GAS_URL 未設定です（HTML内のGAS_URLに /exec を貼ってください）");
   }
+  const res = await fetch(GAS_URL, {
+    method:"POST",
+    headers:{ "Content-Type":"application/json" },
+    body: JSON.stringify(payload),
+    mode:"cors"
+  });
+  const data = await res.json().catch(()=>null);
+  if(!data || !data.ok) throw new Error(data?.error || "Drive保存に失敗");
+  return data.urls || {};
+}
 
-  const day = driveDate.value;
-  const dayList = getList().filter(r=>r.date===day);
-  if(!dayList.length){ alert('その日の記録がありません'); return; }
+// 保存
+form.addEventListener("submit", async (e)=>{
+  e.preventDefault();
+  const mode = document.querySelector('input[name="mode"]:checked').value;
 
-  // payload（画像はBase64のまま送る）
-  const payload = {
-    app: 'OFA_TENKO',
-    version: 'v2',
-    date: day,
-    createdAt: new Date().toISOString(),
-    records: dayList
-  };
+  saveBtn.disabled = true;
+  showMessage("保存中…（写真を圧縮→Driveへ保存）", "info");
 
   try{
-    driveSaveBtn.disabled = true;
-    driveSaveBtn.textContent = 'Driveへ保存中...';
-    const out = await postToGas(url, payload);
-    alert('Drive保存しました。\n' + (out?.message || 'OK'));
+    const base = {
+      id: Date.now(),
+      date: document.getElementById("date").value,
+      driverName: document.getElementById("driverName").value.trim(),
+      company: document.getElementById("company").value.trim(),
+      vehicleNo: document.getElementById("vehicleNo").value.trim(),
+      checkerName: document.getElementById("checkerName").value.trim(),
+      tel: document.getElementById("tel").value.trim(),
+      email: document.getElementById("email").value.trim(),
+      client: document.getElementById("client").value.trim(),
+      area: document.getElementById("area").value.trim(),
+      modeLast: mode,
+      submitTime: new Date().toLocaleTimeString("ja-JP"),
+    };
+
+    let records = getRecords();
+
+    if(mode === "出発点呼"){
+      const startFile = document.getElementById("startAlcoholPhoto").files?.[0] || null;
+      const startDataUrl = await fileToCompressedDataURL(startFile);
+
+      const uploaded = await uploadAlcoholPhotosToDrive({
+        date: base.date, driver: base.driverName, vehicle: base.vehicleNo,
+        startAlcoholPhoto: startDataUrl
+      });
+
+      const rec = {
+        ...base,
+        startTime: document.getElementById("startTime").value,
+        condition: document.getElementById("condition").value,
+        temp: document.getElementById("temp").value,
+        alcoholValue: document.getElementById("alcoholValue").value.trim(),
+        startAlcoholPhotoUrl: uploaded.startAlcoholPhotoUrl || "",
+        startMeter: document.getElementById("startMeter").value,
+      };
+
+      records.push(rec);
+      records.sort((a,b)=>b.id-a.id);
+      setRecords(records);
+      showMessage("✅ 出発点呼を保存しました（写真はDriveへ保存済み）", "success");
+
+    }else{
+      const endFile = document.getElementById("endAlcoholPhoto").files?.[0] || null;
+      const endDataUrl = await fileToCompressedDataURL(endFile);
+
+      const uploaded = await uploadAlcoholPhotosToDrive({
+        date: base.date, driver: base.driverName, vehicle: base.vehicleNo,
+        endAlcoholPhoto: endDataUrl
+      });
+
+      const depIndex = records.findIndex(r =>
+        r.date === base.date &&
+        r.driverName === base.driverName &&
+        r.company === base.company &&
+        r.vehicleNo === base.vehicleNo &&
+        !r.returnTime
+      );
+
+      const retPart = {
+        returnPlace: document.getElementById("returnPlace").value.trim(),
+        returnTime: document.getElementById("returnTime").value,
+        returnAlcoholValue: document.getElementById("returnAlcoholValue").value.trim(),
+        endAlcoholPhotoUrl: uploaded.endAlcoholPhotoUrl || "",
+        returnMeter: document.getElementById("returnMeter").value,
+      };
+
+      if(depIndex !== -1){
+        records[depIndex] = { ...records[depIndex], ...retPart, modeLast:"出発・帰着" };
+        setRecords(records);
+        showMessage("✅ 出発記録に帰着点呼を追加しました（写真はDriveへ保存済み）", "success");
+      }else{
+        records.push({ ...base, ...retPart });
+        records.sort((a,b)=>b.id-a.id);
+        setRecords(records);
+        showMessage("✅ 帰着点呼を保存しました（写真はDriveへ保存済み）", "success");
+      }
+    }
+
+    form.reset();
+    document.getElementById("date").value = new Date().toISOString().slice(0,10);
+    updateModeView();
+
   }catch(err){
-    console.error(err);
-    alert('Drive保存に失敗しました。\nGAS URL・公開設定・通信環境を確認してください。');
+    showMessage("❌ " + (err?.message || String(err)), "error");
   }finally{
-    driveSaveBtn.disabled = false;
-    driveSaveBtn.textContent = 'この日の記録をDriveへ保存';
+    saveBtn.disabled = false;
   }
-};
+});
 
-/* =========================
-   ボタン：古い写真削除 / 全削除
-========================= */
-purgeBtn.onclick = ()=>{
-  const changed = purgeOldPhotos(60);
-  alert(changed ? '60日超の古い写真を削除しました（記録は残しています）。' : '削除対象の写真はありません。');
-  renderHistory();
-};
-
-wipeBtn.onclick = ()=>{
-  if(confirm('この端末の保存履歴をすべて削除しますか？')){
-    localStorage.removeItem(KEY);
-    renderHistory();
+// 履歴
+function renderHistory(){
+  const all = getRecords();
+  const list = applyFilter(all);
+  historyList.innerHTML = "";
+  if(list.length === 0){
+    historyList.innerHTML = '<p style="text-align:center;color:#777;padding:12px;">記録がありません。</p>';
+    return;
   }
-};
+  list.forEach(rec=>{
+    const statusLabel = rec.returnTime ? "出発・帰着 記録済み" : (rec.startTime ? "出発点呼のみ" : "帰着点呼のみ");
+    const div = document.createElement("div");
+    div.className = "history-item";
+    div.innerHTML = `
+      <div class="history-item-main">
+        <div class="history-item-title">${rec.date} / ${statusLabel}</div>
+        <div class="history-item-sub">${rec.driverName || "-"} / ${rec.company || "-"} / ${rec.vehicleNo || "-"}</div>
+        <div class="history-item-status">確認者: ${rec.checkerName || "-"} / 最終: ${rec.modeLast || "-"}</div>
+      </div>`;
+    div.addEventListener("click",()=>showRecordPdf(rec));
+    historyList.appendChild(div);
+  });
+}
+function resetPdfView(){
+  pdfOutput.innerHTML = "";
+  pdfPrintBtn.style.display = "none";
+  pdfBackBtn.style.display = "none";
+  historyList.style.display = "block";
+}
+pdfBackBtn.addEventListener("click", resetPdfView);
 
-/* =========================
-   初期値
-========================= */
-date.value = todayISO();
-dailyDate.value = todayISO();
-driveDate.value = todayISO();
-monthlyMonth.value = thisMonthISO();
+function buildSinglePdfHtml(rec){
+  const startPhotoLink = rec.startAlcoholPhotoUrl ? `<a class="a-link" href="${rec.startAlcoholPhotoUrl}" target="_blank" rel="noopener">写真を開く</a>` : "-";
+  const endPhotoLink = rec.endAlcoholPhotoUrl ? `<a class="a-link" href="${rec.endAlcoholPhotoUrl}" target="_blank" rel="noopener">写真を開く</a>` : "-";
+  const completed = !!rec.returnTime;
 
-// 起動時にも自動で古い写真削除（容量保護）
-purgeOldPhotos(60);
+  return `
+    <div class="pdf-wrap">
+      <div class="pdf-doc">
+        <div class="pdf-header">
+          <div class="pdf-header-title">OFA GROUP Web点呼（Drive保存版）</div>
+          <div class="pdf-header-sub">${rec.date || "-"} / ${rec.driverName || "-"} / ${rec.company || "-"}</div>
+        </div>
+        <div class="pdf-status ${completed ? "" : "incomplete"}">
+          ${completed ? "出発・帰着ともに記録済み" : (rec.startTime ? "出発点呼のみ" : "帰着点呼のみ")}
+        </div>
+
+        <div class="pdf-section-box">
+          <div class="pdf-section-title">基本情報</div>
+          <div class="pdf-row"><div class="pdf-row-label">車両番号</div><div class="pdf-row-value">${rec.vehicleNo || "-"}</div></div>
+          <div class="pdf-row"><div class="pdf-row-label">確認者</div><div class="pdf-row-value">${rec.checkerName || "-"}</div></div>
+        </div>
+
+        ${rec.startTime ? `
+        <div class="pdf-section-box">
+          <div class="pdf-section-title">出発</div>
+          <div class="pdf-row"><div class="pdf-row-label">出発時間</div><div class="pdf-row-value">${rec.startTime || "-"}</div></div>
+          <div class="pdf-row"><div class="pdf-row-label">体温</div><div class="pdf-row-value">${rec.temp || "-"}℃</div></div>
+          <div class="pdf-row"><div class="pdf-row-label">アルコール値</div><div class="pdf-row-value">${rec.alcoholValue || "-"} mg/L</div></div>
+          <div class="pdf-row"><div class="pdf-row-label">写真</div><div class="pdf-row-value">${startPhotoLink}</div></div>
+        </div>` : ""}
+
+        ${rec.returnTime ? `
+        <div class="pdf-section-box">
+          <div class="pdf-section-title">帰着</div>
+          <div class="pdf-row"><div class="pdf-row-label">帰着時間</div><div class="pdf-row-value">${rec.returnTime || "-"}</div></div>
+          <div class="pdf-row"><div class="pdf-row-label">アルコール値</div><div class="pdf-row-value">${rec.returnAlcoholValue || "-"} mg/L</div></div>
+          <div class="pdf-row"><div class="pdf-row-label">写真</div><div class="pdf-row-value">${endPhotoLink}</div></div>
+        </div>` : ""}
+
+      </div>
+    </div>
+  `;
+}
+function showRecordPdf(rec){
+  pdfOutput.innerHTML = buildSinglePdfHtml(rec);
+  pdfPrintBtn.style.display = "inline-flex";
+  pdfBackBtn.style.display = "inline-flex";
+  historyList.style.display = "none";
+}
+pdfPrintBtn.addEventListener("click", ()=>{
+  document.body.classList.add("printing");
+  setTimeout(()=>{
+    window.print();
+    setTimeout(()=>document.body.classList.remove("printing"), 300);
+  }, 200);
+});
+
+function buildMonthPdfHtml(list){
+  const sorted = [...list].sort((a,b)=> (a.date>b.date?1:a.date<b.date?-1:0));
+  const fromTo = (currentFilter.from || "—") + " 〜 " + (currentFilter.to || "—");
+  const pill = (v)=>{
+    if(v===undefined || v===null || v==="") return `<span class="pill warn">未</span>`;
+    const s = String(v).trim();
+    if(s==="0" || s==="0.0" || s==="0.00") return `<span class="pill ok">0.00</span>`;
+    return `<span class="pill">${s}</span>`;
+  };
+
+  let html = `
+    <div class="pdf-wrap">
+      <div class="pdf-doc">
+        <div class="pdf-header">
+          <div class="pdf-header-title">アルコールチェック 月次一覧（表示中）</div>
+          <div class="pdf-header-sub">期間：${fromTo} / 出力：${new Date().toLocaleString("ja-JP")}</div>
+        </div>
+        <div class="month-table-wrap">
+          <table class="month-table">
+            <thead>
+              <tr>
+                <th>日付</th><th>運転者</th><th>車両番号</th>
+                <th class="center">(出発)時刻</th><th class="center">(出発)値</th><th class="center">(出発)写真</th>
+                <th class="center">(帰着)時刻</th><th class="center">(帰着)値</th><th class="center">(帰着)写真</th>
+                <th>確認者</th><th>所属</th>
+              </tr>
+            </thead>
+            <tbody>
+  `;
+  sorted.forEach(r=>{
+    const startLink = r.startAlcoholPhotoUrl ? `<a class="a-link" href="${r.startAlcoholPhotoUrl}" target="_blank" rel="noopener">開く</a>` : "-";
+    const endLink = r.endAlcoholPhotoUrl ? `<a class="a-link" href="${r.endAlcoholPhotoUrl}" target="_blank" rel="noopener">開く</a>` : "-";
+    html += `
+      <tr>
+        <td>${r.date||"-"}</td><td>${r.driverName||"-"}</td><td>${r.vehicleNo||"-"}</td>
+        <td class="center">${r.startTime||"-"}</td><td class="center">${pill(r.alcoholValue)}</td><td class="center">${startLink}</td>
+        <td class="center">${r.returnTime||"-"}</td><td class="center">${pill(r.returnAlcoholValue)}</td><td class="center">${endLink}</td>
+        <td>${r.checkerName||"-"}</td><td>${r.company||"-"}</td>
+      </tr>`;
+  });
+
+  html += `
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  `;
+  return html;
+}
+monthPdfBtn.addEventListener("click", ()=>{
+  const list = applyFilter(getRecords());
+  if(!list.length){ alert("表示中の記録がありません"); return; }
+  pdfOutput.innerHTML = buildMonthPdfHtml(list);
+  pdfPrintBtn.style.display = "inline-flex";
+  pdfBackBtn.style.display = "inline-flex";
+  historyList.style.display = "none";
+});
+
+renderHistory();
 </script>
 </body>
 </html>
