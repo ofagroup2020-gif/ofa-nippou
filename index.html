@@ -1,23 +1,40 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-  <title>OFA 点呼＋点検</title>
-  <meta http-equiv="refresh" content="0; url=https://script.google.com/macros/s/AKfycbyBCMRmtzpjkfbO0slQMEbm-xV3UShKC7cb0sKHjazRyshy38v1u-zHgLKmhFiJlDcZJg/exec">
+  <title>OFA｜Web点呼・点検（Googleログイン）</title>
+
+  <!-- 即時転送（最優先） -->
+  <meta http-equiv="refresh" content="0; url=https://script.google.com/macros/s/AKfycbzlmxyYmEL7Kb6jzr903woXuMuEdck8q_jjHgPyA3q4RzNAKh1QqHs9WNSroBNXcwAPzA/exec" />
+
   <style>
-    body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Noto Sans JP",sans-serif;background:#f3fff9}
-    .wrap{max-width:720px;margin:0 auto;padding:40px 16px;text-align:center}
-    a{display:inline-block;margin-top:16px;padding:14px 18px;border-radius:999px;background:#2b7cff;color:#fff;text-decoration:none;font-weight:900}
+    body{font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Noto Sans JP",sans-serif;margin:0;padding:24px;background:#0ea56a;color:#fff}
+    .card{max-width:760px;margin:0 auto;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.22);border-radius:18px;padding:18px}
+    a{color:#fff;font-weight:800}
+    .btn{display:inline-block;margin-top:12px;background:#fff;color:#0ea56a;text-decoration:none;padding:12px 14px;border-radius:999px;font-weight:900}
+    .muted{opacity:.9;font-size:12px;margin-top:8px}
   </style>
 </head>
 <body>
-  <div class="wrap">
-    <h2>OFA 点呼＋点検</h2>
-    <p>自動でログイン画面へ移動します。</p>
-    <a href="https://script.google.com/macros/s/AKfycbyBCMRmtzpjkfbO0slQMEbm-xV3UShKC7cb0sKHjazRyshy38v1u-zHgLKmhFiJlDcZJg/exec">
-      開く（ログイン）
+  <div class="card">
+    <h1 style="margin:0 0 10px;">OFA｜Web点呼・点検</h1>
+    <div>Googleログインの本番ページへ移動します。</div>
+
+    <a class="btn" href="https://script.google.com/macros/s/AKfycbzlmxyYmEL7Kb6jzr903woXuMuEdck8q_jjHgPyA3q4RzNAKh1QqHs9WNSroBNXcwAPzA/exec">
+      クリックして開く
     </a>
+
+    <div class="muted">
+      うまく飛ばない場合は、上のボタンを押してください。<br/>
+      URL：<br/>
+      https://script.google.com/macros/s/AKfycbzlmxyYmEL7Kb6jzr903woXuMuEdck8q_jjHgPyA3q4RzNAKh1QqHs9WNSroBNXcwAPzA/exec
+    </div>
   </div>
+
+  <script>
+    // JS転送（meta refreshが効かない端末対策）
+    location.replace("https://script.google.com/macros/s/AKfycbzlmxyYmEL7Kb6jzr903woXuMuEdck8q_jjHgPyA3q4RzNAKh1QqHs9WNSroBNXcwAPzA/exec");
+  </script>
 </body>
 </html>
