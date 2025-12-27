@@ -46,7 +46,6 @@
       width:220px; height:220px;
       background: rgba(255,255,255,.18);
       border-radius: 50%;
-      filter: blur(0px);
       transform: rotate(10deg);
     }
     .brand{
@@ -337,7 +336,6 @@
       font-weight: 900;
     }
 
-    /* print */
     @media print{
       body{background:#fff;padding:0}
       .hero,.tabs,.btnRow,.note,.status,.chips{display:none!important}
@@ -564,9 +562,9 @@
 
 <script>
 /** ===============================
- *  設定：GAS WebApp /exec URL
+ *  設定：GAS WebApp /exec URL（本番）
  *  =============================== */
-const GAS_URL = "https://script.google.com/macros/s/AKfycbxrXp3oJKcDJhBlkd9ew7AEOCPNuug_QEraydpfElEXzrZGEUlx2luvYxIB8c4AECWuLg/exec";
+const GAS_URL = "https://script.google.com/macros/s/AKfycby-SNPWTc3DpJvlr2mxR0IbtMvWEURcAwk24mWbr-JV1cWJOhZREiLcoSA8FJJCl07WjQ/exec";
 
 /** ローカル保存キー */
 const LS_KEY = "OFA_TENKO_RECORDS_V1";
@@ -621,10 +619,8 @@ function bindPills(containerId){
   const root = $(containerId);
   root.querySelectorAll(".pill").forEach(p=>{
     p.addEventListener("click", ()=>{
-      const name = p.dataset.name;
       root.querySelectorAll(".pill").forEach(x=>x.classList.remove("active"));
       p.classList.add("active");
-      // check radio
       p.querySelector("input").checked = true;
     });
   });
@@ -714,7 +710,6 @@ function clearRecords(){
  *  GASへ送信
  *  =============================== */
 async function postToGAS(payload){
-  // CORSを素直に使う（Apps Script WebAppは通常OK）
   const res = await fetch(GAS_URL, {
     method: "POST",
     headers: {"Content-Type":"text/plain;charset=utf-8"},
@@ -754,8 +749,7 @@ $("saveBtn").addEventListener("click", async ()=>{
   try{
     setStatus("保存中…（写真を圧縮→Driveへ保存）", "");
 
-    // values
-    const date = $("date").value.trim();                 // yyyy/mm/dd
+    const date = $("date").value.trim();
     const driver = $("driver").value.trim();
     const company = $("company").value.trim();
     const vehicle = $("vehicle").value.trim();
@@ -772,7 +766,6 @@ $("saveBtn").addEventListener("click", async ()=>{
     const meterEnd = $("meterEnd").value;
     const memo = $("memo").value.trim();
 
-    // required
     must(date, "日付");
     must(driver, "ドライバー名");
     must(company, "所属会社");
@@ -787,43 +780,24 @@ $("saveBtn").addEventListener("click", async ()=>{
     const fStart = $("photoStart").files && $("photoStart").files[0];
     must(fStart, "アルコール検査写真（出発）");
 
-    // compress images to base64
     const startB64 = await fileToCompressedBase64(fStart, 1280, 0.72);
     const fEnd = $("photoEnd").files && $("photoEnd").files[0];
     const endB64 = fEnd ? await fileToCompressedBase64(fEnd, 1280, 0.72) : "";
 
     const payload = {
-      date,
-      driver,
-      company,
-      vehicle,
-      checker,
-      condition,
-      startTime,
-      endTime,
-      sleepHours,
-      temp,
-      drink,
-      med,
-      alcohol,
-      meterStart,
-      meterEnd,
-      memo,
-      startAlcoholPhoto: startB64, // base64 dataURL
-      endAlcoholPhoto: endB64,     // base64 dataURL (optional)
-      client: {
-        ua: navigator.userAgent,
-        ts: new Date().toISOString()
-      }
+      date, driver, company, vehicle, checker, condition,
+      startTime, endTime, sleepHours, temp, drink, med,
+      alcohol, meterStart, meterEnd, memo,
+      startAlcoholPhoto: startB64,
+      endAlcoholPhoto: endB64,
+      client: { ua: navigator.userAgent, ts: new Date().toISOString() }
     };
 
-    // send
     const out = await postToGAS(payload);
     if(!out || out.ok !== true){
       throw new Error(out && out.error ? out.error : "GAS保存に失敗しました");
     }
 
-    // out.urls: { startAlcoholPhotoUrl, endAlcoholPhotoUrl }
     const rec = {
       id: "TENKO_" + Date.now(),
       createdAt: new Date().toISOString(),
@@ -837,13 +811,11 @@ $("saveBtn").addEventListener("click", async ()=>{
 
     setStatus("✅ 保存完了（Driveへ保存→履歴に記録しました）", "ok");
 
-    // form reset (keep some)
     $("memo").value = "";
     $("photoStart").value = "";
     $("photoEnd").value = "";
     $("prevStart").style.display = "none";
     $("prevEnd").style.display = "none";
-    // move to history tab
     document.querySelector('.tab[data-tab="history"]').click();
 
   }catch(e){
@@ -882,10 +854,9 @@ $("resetBtn").addEventListener("click", ()=>{
 });
 
 /** ===============================
- *  履歴表示・フィルタ
+ *  履歴表示
  *  =============================== */
 function parseYMD(s){
-  // yyyy/mm/dd -> yyyy-mm-dd
   if(!s) return "";
   return s.replaceAll("/","-");
 }
@@ -898,9 +869,7 @@ function inRange(dateYMD, from, to){
 function containsQ(rec, q){
   if(!q) return true;
   const t = (q || "").toLowerCase();
-  const hay = [
-    rec.driver, rec.vehicle, rec.company, rec.checker, rec.memo
-  ].join(" ").toLowerCase();
+  const hay = [rec.driver, rec.vehicle, rec.company, rec.checker, rec.memo].join(" ").toLowerCase();
   return hay.includes(t);
 }
 
@@ -929,8 +898,8 @@ function renderList(){
     const dist = (r.meterEnd && r.meterStart) ? (Number(r.meterEnd)-Number(r.meterStart)) : "";
     const distTxt = (dist!=="" && !Number.isNaN(dist)) ? `${dist}km` : "—";
 
-    const startUrl = r.driveUrls && (r.driveUrls.startAlcoholPhotoUrl || r.driveUrls.start || "");
-    const endUrl = r.driveUrls && (r.driveUrls.endAlcoholPhotoUrl || r.driveUrls.end || "");
+    const startUrl = r.driveUrls && (r.driveUrls.startAlcoholPhotoUrl || "");
+    const endUrl = r.driveUrls && (r.driveUrls.endAlcoholPhotoUrl || "");
 
     div.innerHTML = `
       <div class="itemHead">
@@ -987,20 +956,13 @@ $("thisMonthBtn").addEventListener("click", ()=>{
   renderList();
 });
 
-$("printBtn").addEventListener("click", ()=>{
-  // 画面表示中を印刷→PDF
-  window.print();
-});
-
+$("printBtn").addEventListener("click", ()=>window.print());
 $("monthPdfBtn").addEventListener("click", ()=>{
-  // “月次PDF（一覧）”は印刷でOK。見出しを付けたい場合は簡易アラートで案内。
-  alert("この画面の「表示中」をそのまま印刷（PDF保存）してください。必要なら、今後『月次PDFの体裁固定版』も作れます。");
+  alert("この画面の「表示中」をそのまま印刷（PDF保存）してください。");
   window.print();
 });
 
-/** ===============================
- *  初期値セット
- *  =============================== */
+/** 初期値 */
 function init(){
   $("date").value = todayJST();
   $("startTime").value = nowTimeHHMM();
