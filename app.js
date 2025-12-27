@@ -1,335 +1,310 @@
-/* OFA 点呼・点検（フル版） */
-
 const $ = (id) => document.getElementById(id);
 
-const apiUrlEl = $('apiUrl');
-const btnTest = $('btnTest');
-const statusDot = $('statusDot');
-const statusMain = $('statusMain');
-const statusSub = $('statusSub');
+const state = {
+  mode: "start", // start | end
+};
 
-const modeStartBtn = $('modeStart');
-const modeEndBtn = $('modeEnd');
+function setStatus(kind, title, sub) {
+  const dot = $("dot");
+  const t = $("statusTitle");
+  const s = $("statusSub");
+  t.textContent = title;
+  s.textContent = sub;
 
-const btnSubmit = $('btnSubmit');
-const toast = $('toast');
-
-const btnDailyPdf = $('btnDailyPdf');
-const btnMonthlyPdf = $('btnMonthlyPdf');
-const dailyDate = $('dailyDate');
-const monthlyYm = $('monthlyYm');
-
-let mode = 'start'; // start/end
-
-// 初期値（保存復元）
-(function init() {
-  apiUrlEl.value = localStorage.getItem('ofa_api_url') || '';
-  $('driver').value = localStorage.getItem('ofa_driver') || '';
-  $('vehicleNo').value = localStorage.getItem('ofa_vehicleNo') || '';
-  $('phone').value = localStorage.getItem('ofa_phone') || '';
-
-  const now = new Date();
-  dailyDate.value = toISODate(now);
-  monthlyYm.value = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
-
-  setMode('start');
-})();
-
-apiUrlEl.addEventListener('change', () => {
-  localStorage.setItem('ofa_api_url', apiUrlEl.value.trim());
-});
-
-['driver','vehicleNo','phone'].forEach(id=>{
-  $(id).addEventListener('change', ()=>{
-    localStorage.setItem('ofa_'+id, $(id).value.trim());
-  });
-});
-
-modeStartBtn.addEventListener('click', ()=>setMode('start'));
-modeEndBtn.addEventListener('click', ()=>setMode('end'));
-
-function setMode(m){
-  mode = m;
-  modeStartBtn.classList.toggle('active', mode==='start');
-  modeEndBtn.classList.toggle('active', mode==='end');
-
-  // 出発/帰着で入力必須にしたい項目（必要なら調整）
-  $('meterStartWrap').style.display = (mode==='start') ? 'block' : 'none';
-  $('meterEndWrap').style.display   = (mode==='end') ? 'block' : 'none';
+  if (kind === "ok") dot.style.background = "#16b36a";
+  else if (kind === "ng") dot.style.background = "#e14b4b";
+  else dot.style.background = "#9aa7b5";
 }
 
-btnTest.addEventListener('click', async ()=>{
-  const api = apiUrlEl.value.trim();
-  if(!api){ return setToast('API URL を入れてください', 'ng'); }
-  localStorage.setItem('ofa_api_url', api);
+function toast(kind, msg) {
+  const box = $("toast");
+  box.className = "toast " + (kind === "ok" ? "ok" : "ng");
+  box.textContent = msg;
+  box.style.display = "block";
+  setTimeout(() => (box.style.display = "none"), 4200);
+}
 
-  setStatus('gray','接続中…','pingを送っています');
+function getApiUrl() {
+  return ($("apiUrl").value || "").trim();
+}
+function saveApiUrl(v) {
+  localStorage.setItem("ofa_tenko_api", v);
+}
+function loadApiUrl() {
+  const v = localStorage.getItem("ofa_tenko_api") || "";
+  $("apiUrl").value = v;
+}
 
-  try{
-    const res = await fetch(`${api}?ping=1`, { method:'GET' });
-    const json = await res.json();
-    if(json && json.ok){
-      setStatus('green','接続OK','送信テストOKです');
-      setToast('接続できました。', 'ok');
-    }else{
-      setStatus('red','接続NG','URL/デプロイ設定を確認');
-      setToast('接続できませんでした（URL/デプロイ）', 'ng');
-    }
-  }catch(e){
-    setStatus('red','接続NG','通信に失敗（URL/デプロイ設定を確認）');
-    setToast('接続できません（通信エラー）', 'ng');
+function setMode(mode) {
+  state.mode = mode;
+  $("modeStart").classList.toggle("active", mode === "start");
+  $("modeEnd").classList.toggle("active", mode === "end");
+
+  // 必須項目を切替（法令テンプレ）
+  // 出発：メーター（出発）必須、帰着：メーター（帰着）必須
+  $("meterStartWrap").style.display = mode === "start" ? "block" : "none";
+  $("meterEndWrap").style.display = mode === "end" ? "block" : "none";
+}
+
+function todayLocalDateStr() {
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const dd = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${dd}`;
+}
+
+function thisMonthStr() {
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  return `${y}-${m}`;
+}
+
+// 画像：HEICなどはブラウザ側で JPEG に変換して dataURL を作る（できる範囲で）
+async function fileToDataUrlSmart(file) {
+  if (!file) return "";
+
+  // 一部環境でHEICはそのまま読めない→FileReaderが失敗する場合あり
+  // 可能なら画像として読み込み→canvas→jpeg化
+  const readAsDataURL = (f) =>
+    new Promise((resolve, reject) => {
+      const r = new FileReader();
+      r.onload = () => resolve(r.result);
+      r.onerror = () => reject(new Error("FileReader error"));
+      r.readAsDataURL(f);
+    });
+
+  // まず素直にdataURL化
+  try {
+    const raw = await readAsDataURL(file);
+    // jpeg/png/webp等はこれでOK
+    if (typeof raw === "string" && raw.startsWith("data:image/")) return raw;
+  } catch (e) {
+    // fallthrough
   }
-});
 
-btnDailyPdf.addEventListener('click', async ()=>{
-  const api = apiUrlEl.value.trim();
-  if(!api) return setToast('API URL が未設定です', 'ng');
+  // 画像として読み込んでcanvasでjpeg化
+  const blobUrl = URL.createObjectURL(file);
+  try {
+    const img = await new Promise((resolve, reject) => {
+      const i = new Image();
+      i.onload = () => resolve(i);
+      i.onerror = () => reject(new Error("image decode error"));
+      i.src = blobUrl;
+    });
 
-  const date = dailyDate.value;
-  const driver = $('driver').value.trim();
-  if(!date) return setToast('日付を選んでください', 'ng');
+    const maxW = 1600; // 軽量化（通信量削減）
+    const scale = Math.min(1, maxW / img.width);
+    const w = Math.round(img.width * scale);
+    const h = Math.round(img.height * scale);
 
-  try{
-    setToast('日報PDFを生成中…', '');
-    const url = `${api}?action=dailyPdf&date=${encodeURIComponent(date)}&driver=${encodeURIComponent(driver)}`;
-    const res = await fetch(url);
-    const json = await res.json();
-    if(json.ok && json.pdfUrl){
-      window.open(json.pdfUrl, '_blank');
-      setToast('日報PDFを開きました', 'ok');
-    }else{
-      setToast('PDF生成に失敗しました', 'ng');
-    }
-  }catch(e){
-    setToast('PDF生成に失敗（通信）', 'ng');
+    const canvas = document.createElement("canvas");
+    canvas.width = w;
+    canvas.height = h;
+    const ctx = canvas.getContext("2d");
+    ctx.drawImage(img, 0, 0, w, h);
+
+    const jpegUrl = canvas.toDataURL("image/jpeg", 0.82);
+    return jpegUrl;
+  } finally {
+    URL.revokeObjectURL(blobUrl);
   }
-});
+}
 
-btnMonthlyPdf.addEventListener('click', async ()=>{
-  const api = apiUrlEl.value.trim();
-  if(!api) return setToast('API URL が未設定です', 'ng');
+function validate() {
+  const apiUrl = getApiUrl();
+  if (!apiUrl) return "API URL を入れてください";
 
-  const ym = monthlyYm.value;
-  const driver = $('driver').value.trim();
+  const driver = ($("driver").value || "").trim();
+  const vehicle = ($("vehicle").value || "").trim();
+  if (!driver) return "氏名は必須です";
+  if (!vehicle) return "車両番号は必須です";
 
-  if(!ym) return setToast('年月を選んでください', 'ng');
+  const alcohol = $("alcohol").value;
+  const condition = $("condition").value;
+  const inspection = $("inspection").value;
 
-  try{
-    setToast('月報PDFを生成中…', '');
-    const url = `${api}?action=monthlyPdf&ym=${encodeURIComponent(ym)}&driver=${encodeURIComponent(driver)}`;
-    const res = await fetch(url);
-    const json = await res.json();
-    if(json.ok && json.pdfUrl){
-      window.open(json.pdfUrl, '_blank');
-      setToast('月報PDFを開きました', 'ok');
-    }else{
-      setToast('PDF生成に失敗しました', 'ng');
-    }
-  }catch(e){
-    setToast('PDF生成に失敗（通信）', 'ng');
+  if (!alcohol) return "アルコールチェックを選択してください";
+  if (!condition) return "体調を選択してください";
+  if (!inspection) return "点検（異常有無）を選択してください";
+
+  // mode別必須
+  if (state.mode === "start") {
+    const ms = ($("meterStart").value || "").trim();
+    if (!ms) return "メーター（出発）は必須です";
+  } else {
+    const me = ($("meterEnd").value || "").trim();
+    if (!me) return "メーター（帰着）は必須です";
   }
-});
 
-btnSubmit.addEventListener('click', async ()=>{
-  const api = apiUrlEl.value.trim();
-  if(!api){ return setToast('API URL を入れてください', 'ng'); }
+  // 異常ありは内容推奨
+  if (inspection === "異常あり") {
+    const detail = ($("inspectionDetail").value || "").trim();
+    if (!detail) return "異常ありの場合は、異常内容を入力してください";
+  }
 
-  // 必須
-  const driver = $('driver').value.trim();
-  const vehicleNo = $('vehicleNo').value.trim();
-  if(!driver) return setToast('氏名は必須です', 'ng');
-  if(!vehicleNo) return setToast('車両番号は必須です', 'ng');
+  return "";
+}
 
-  // 送信データ（フル）
+async function ping() {
+  const apiUrl = getApiUrl();
+  if (!apiUrl) {
+    setStatus("ng", "接続NG", "API URL を入れてください");
+    return;
+  }
+  saveApiUrl(apiUrl);
+
+  setStatus("idle", "確認中…", apiUrl);
+
+  try {
+    const u = new URL(apiUrl);
+    u.searchParams.set("ping", "1");
+    const res = await fetch(u.toString(), { method: "GET" });
+    const json = await res.json();
+
+    if (json && json.ok) {
+      setStatus("ok", "接続OK", "接続できました。送信テストOKです。");
+    } else {
+      setStatus("ng", "接続NG", (json && json.error) ? json.error : "応答が不正です");
+    }
+  } catch (e) {
+    setStatus("ng", "接続NG", "通信に失敗しました（URL/デプロイ設定を確認）");
+  }
+}
+
+async function send() {
+  const err = validate();
+  if (err) {
+    toast("ng", err);
+    return;
+  }
+
+  const apiUrl = getApiUrl();
+  saveApiUrl(apiUrl);
+
   const payload = {
-    mode,
-    tenkoType: (mode==='start') ? '出発' : '帰着',
-    date: toISODate(new Date()),
-    time: toTime(new Date()),
-    datetime: new Date().toISOString(),
+    type: state.mode, // start | end
+    driver: ($("driver").value || "").trim(),
+    vehicle: ($("vehicle").value || "").trim(),
+    alcohol: $("alcohol").value,
+    condition: $("condition").value,
+    temp: ($("temp").value || "").trim(),
+    sleep: ($("sleep").value || "").trim(),
+    inspection: $("inspection").value,
+    inspectionDetail: ($("inspectionDetail").value || "").trim(),
 
-    driver,
-    vehicleNo,
-    phone: $('phone').value.trim(),
-    area: $('area').value.trim(),
-    route: $('route').value.trim(),
-
-    alcoholResult: $('alcoholResult').value,
-    alcoholValue: $('alcoholValue').value.trim(),
-    temperature: $('temperature').value.trim(),
-    sleepHours: $('sleepHours').value.trim(),
-    condition: $('condition').value,
-    fatigueLevel: $('fatigueLevel').value,
-    medication: $('medication').value,
-    notesHealth: $('notesHealth').value.trim(),
-
-    inspectionResult: $('inspectionResult').value,
-    inspectionDetail: $('inspectionDetail').value.trim(),
-
-    meterStart: $('meterStart').value.trim(),
-    meterEnd: $('meterEnd').value.trim(),
-
-    checks: {
-      tires: $('c_tires').checked,
-      lights: $('c_lights').checked,
-      brake: $('c_brake').checked,
-      wiper: $('c_wiper').checked,
-      oil: $('c_oil').checked,
-      coolant: $('c_coolant').checked,
-      fuel: $('c_fuel').checked,
-      battery: $('c_battery').checked,
-      damage: $('c_damage').checked,
-      loadSecure: $('c_loadSecure').checked,
-      other: $('c_other').checked,
+    chk: {
+      tire: $("chkTire").value,
+      brake: $("chkBrake").value,
+      light: $("chkLight").value,
+      fluid: $("chkFluid").value,
+      load: $("chkLoad").value,
+      warn: $("chkWarn").value
     },
 
-    memo: $('memo').value.trim(),
+    meterStart: ($("meterStart").value || "").trim(),
+    meterEnd: ($("meterEnd").value || "").trim(),
+    memo: ($("memo").value || "").trim(),
+
     photos: {}
   };
 
-  // モード別で「最低限」チェック（好みで変えられる）
-  if(mode==='start' && payload.meterStart === ''){
-    // 出発は任意にしてもいいが、運用で必須ならここを必須に
+  // 写真をdataURL化（HEICは自動変換を試す）
+  try {
+    payload.photos.inspect = await fileToDataUrlSmart($("photoInspect").files[0]);
+    payload.photos.alcohol = await fileToDataUrlSmart($("photoAlcohol").files[0]);
+    payload.photos.meter = await fileToDataUrlSmart($("photoMeter").files[0]);
+    payload.photos.other = await fileToDataUrlSmart($("photoOther").files[0]);
+  } catch (e) {
+    toast("ng", "写真の変換に失敗しました。JPEGで選択してください。");
+    return;
   }
-  if(mode==='end' && payload.meterEnd === ''){
-    // 帰着メーター必須運用なら必須に
-    // return setToast('帰着メーターは必須です', 'ng');
-  }
 
-  try{
-    setToast('画像を準備中…', '');
-    // 画像（圧縮してdataURL化）
-    const exterior = await fileToDataUrlSafe($('photoExterior').files[0]);
-    const alcohol  = await fileToDataUrlSafe($('photoAlcohol').files[0]);
-    const meter    = await fileToDataUrlSafe($('photoMeter').files[0]);
-    const other    = await fileToDataUrlSafe($('photoOther').files[0]);
+  $("btnSend").disabled = true;
+  $("btnSend").textContent = "送信中…";
 
-    if(exterior) payload.photos.exterior = exterior;
-    if(alcohol)  payload.photos.alcohol  = alcohol;
-    if(meter)    payload.photos.meter    = meter;
-    if(other)    payload.photos.other    = other;
-
-    setToast('送信中…', '');
-    setStatus('gray','送信中…','ログに書き込みしています');
-
-    const res = await fetch(api, {
-      method: 'POST',
-      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+  try {
+    const res = await fetch(apiUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
     });
-
     const json = await res.json();
-    if(json && json.ok){
-      setStatus('green','送信OK','記録しました');
-      setToast('✅ 送信しました', 'ok');
-      // 入力を少し残したいならここは消さない
-    }else{
-      setStatus('red','送信NG','GAS側のエラー/権限を確認');
-      setToast(`送信に失敗：${json && json.error ? json.error : 'unknown'}`, 'ng');
+
+    if (json && json.ok) {
+      toast("ok", "✅ 送信しました");
+      setStatus("ok", "接続OK", "最新送信：OK");
+    } else {
+      toast("ng", "送信に失敗しました：" + ((json && json.error) ? json.error : "不明"));
+      setStatus("ng", "送信NG", "GASの権限/デプロイ/URLを確認");
     }
-  }catch(e){
-    setStatus('red','送信NG','通信/画像変換エラー');
-    setToast(`送信に失敗（通信/画像変換）：${String(e)}`, 'ng');
+  } catch (e) {
+    toast("ng", "送信に失敗しました（通信エラー）");
+    setStatus("ng", "送信NG", "通信に失敗しました（URL/デプロイ設定を確認）");
+  } finally {
+    $("btnSend").disabled = false;
+    $("btnSend").textContent = "送信";
   }
-});
-
-/* ===== utilities ===== */
-
-function setStatus(color, main, sub){
-  statusDot.classList.remove('gray','green','red');
-  statusDot.classList.add(color);
-  statusMain.textContent = main;
-  statusSub.textContent = sub;
 }
 
-function setToast(msg, type){
-  toast.textContent = msg || '';
-  toast.classList.remove('ok','ng');
-  if(type==='ok') toast.classList.add('ok');
-  if(type==='ng') toast.classList.add('ng');
-}
+async function makePdf(kind) {
+  const apiUrl = getApiUrl();
+  if (!apiUrl) {
+    toast("ng", "API URL を入れてください");
+    return;
+  }
+  saveApiUrl(apiUrl);
 
-function toISODate(d){
-  const y = d.getFullYear();
-  const m = String(d.getMonth()+1).padStart(2,'0');
-  const day = String(d.getDate()).padStart(2,'0');
-  return `${y}-${m}-${day}`;
-}
-
-function toTime(d){
-  const hh = String(d.getHours()).padStart(2,'0');
-  const mm = String(d.getMinutes()).padStart(2,'0');
-  const ss = String(d.getSeconds()).padStart(2,'0');
-  return `${hh}:${mm}:${ss}`;
-}
-
-/**
- * iPhoneのHEICが混じるとCanvas変換で落ちることがあるので、
- *  - heic/heif は弾いてメッセージ（JPEGで選んで）
- *  - それ以外は最大1280px、JPEG 0.78で圧縮
- */
-async function fileToDataUrlSafe(file){
-  if(!file) return '';
-
-  const name = (file.name || '').toLowerCase();
-  const type = (file.type || '').toLowerCase();
-
-  if(type.includes('heic') || type.includes('heif') || name.endsWith('.heic') || name.endsWith('.heif')){
-    // ここは“確実に”案内を出す
-    setToast('HEIC画像は変換に失敗する場合があります。写真を「JPEG」で選択してください。', 'ng');
-    return '';
+  const driver = ($("driver").value || "").trim();
+  if (!driver) {
+    toast("ng", "PDFは氏名が必要です（氏名を入力してください）");
+    return;
   }
 
-  // 読み込み
-  const dataUrl = await readAsDataURL(file);
+  let dateStr = "";
+  if (kind === "daily") {
+    dateStr = $("dailyDate").value || todayLocalDateStr();
+  } else {
+    dateStr = $("monthlyYm").value || thisMonthStr();
+  }
 
-  // 画像なら圧縮、非画像なら無視
-  if(!dataUrl.startsWith('data:image/')) return '';
+  const body = { action: kind === "daily" ? "pdf_daily" : "pdf_monthly", driver, date: dateStr };
 
-  // 圧縮
-  const compressed = await compressImageDataUrl(dataUrl, 1280, 0.78);
-  return compressed;
+  try {
+    const res = await fetch(apiUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    const json = await res.json();
+    if (json && json.ok && json.url) {
+      window.open(json.url, "_blank");
+      toast("ok", "PDFを作成しました（新しいタブで開きます）");
+    } else {
+      toast("ng", "PDF作成に失敗：" + ((json && json.error) ? json.error : "不明"));
+    }
+  } catch (e) {
+    toast("ng", "PDF作成：通信エラー");
+  }
 }
 
-function readAsDataURL(file){
-  return new Promise((resolve, reject)=>{
-    const fr = new FileReader();
-    fr.onload = ()=> resolve(fr.result);
-    fr.onerror = ()=> reject(fr.error || new Error('FileReader error'));
-    fr.readAsDataURL(file);
-  });
+function init() {
+  loadApiUrl();
+
+  $("dailyDate").value = todayLocalDateStr();
+  $("monthlyYm").value = thisMonthStr();
+
+  $("apiUrl").addEventListener("change", () => saveApiUrl(getApiUrl()));
+  $("btnPing").addEventListener("click", ping);
+
+  $("modeStart").addEventListener("click", () => setMode("start"));
+  $("modeEnd").addEventListener("click", () => setMode("end"));
+  setMode("start");
+
+  $("btnSend").addEventListener("click", send);
+  $("btnDailyPdf").addEventListener("click", () => makePdf("daily"));
+  $("btnMonthlyPdf").addEventListener("click", () => makePdf("monthly"));
 }
 
-function compressImageDataUrl(dataUrl, maxSize, quality){
-  return new Promise((resolve, reject)=>{
-    const img = new Image();
-    img.onload = ()=>{
-      try{
-        let w = img.width;
-        let h = img.height;
-
-        if(w > h && w > maxSize){
-          h = Math.round(h * (maxSize / w));
-          w = maxSize;
-        } else if(h >= w && h > maxSize){
-          w = Math.round(w * (maxSize / h));
-          h = maxSize;
-        }
-
-        const canvas = document.createElement('canvas');
-        canvas.width = w;
-        canvas.height = h;
-        const ctx = canvas.getContext('2d');
-        ctx.drawImage(img, 0, 0, w, h);
-
-        // JPEGで統一（容量削減）
-        const out = canvas.toDataURL('image/jpeg', quality);
-        resolve(out);
-      }catch(e){
-        reject(e);
-      }
-    };
-    img.onerror = ()=> reject(new Error('Image decode error'));
-    img.src = dataUrl;
-  });
-}
+document.addEventListener("DOMContentLoaded", init);
