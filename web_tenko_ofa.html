@@ -386,8 +386,7 @@
 
 <script>
 /**
- * ★GAS WebアプリURL（/exec まで含めてOK）
- * ここは差し替え済み
+ * ★ここは埋め込み済み（/exec まで含む）
  */
 const GAS_URL = "https://script.google.com/macros/s/AKfycbwq4_CAQOoUS7-H_cKcW1jNMAh1DKji71kp4voKXCfXygbf3MwlbjTDpYx3irxMVk2QBw/exec";
 
@@ -530,24 +529,37 @@ function fileToCompressedDataURL(file, maxSize=IMG_MAX_SIZE, quality=IMG_QUALITY
   });
 }
 
-// GASへ送信（※iPhoneでLoad failedになりやすいCORSのプリフライトを回避するため text/plain で送る）
+/**
+ * GASへ送信（iPhone/SafariのCORS事前要求を避けるため text/plain でPOST）
+ */
 async function uploadAlcoholPhotosToDrive(payload){
   if(!GAS_URL || !GAS_URL.includes("/exec")){
-    throw new Error("GAS_URL 未設定です（HTML内のGAS_URLに /exec を貼ってください）");
+    throw new Error("GAS_URL 未設定です（/exec まで含めたURLが必要）");
   }
 
-  const res = await fetch(GAS_URL, {
-    method:"POST",
-    headers:{ "Content-Type":"text/plain;charset=utf-8" },
-    body: JSON.stringify(payload)
-  });
+  const controller = new AbortController();
+  const timer = setTimeout(()=>controller.abort(), 25000);
 
-  const text = await res.text();
-  let data = null;
-  try{ data = JSON.parse(text); }catch(e){}
+  try{
+    const res = await fetch(GAS_URL, {
+      method:"POST",
+      // ★ここ重要：application/json にしない（iPhoneでLoad failedになりやすい）
+      headers:{ "Content-Type":"text/plain;charset=utf-8" },
+      body: JSON.stringify(payload),
+      signal: controller.signal
+    });
 
-  if(!data || !data.ok) throw new Error(data?.error || "Drive保存に失敗（GAS応答が不正/空）");
-  return data.urls || {};
+    const text = await res.text();
+    let data = null;
+    try{ data = JSON.parse(text); }catch(e){}
+
+    if(!data || !data.ok){
+      throw new Error(data?.error || ("Drive保存に失敗: " + (text?.slice(0,200) || "no response")));
+    }
+    return data.urls || {};
+  }finally{
+    clearTimeout(timer);
+  }
 }
 
 // 保存
