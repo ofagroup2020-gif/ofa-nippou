@@ -1,138 +1,143 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8" />
-  <title>OFA 点呼・点検システム</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <style>
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI",
-        "Hiragino Kaku Gothic ProN", Meiryo, sans-serif;
-      background: #f5f5f5;
-      margin: 0;
-      padding: 16px;
-    }
-    h1 {
-      font-size: 20px;
-      margin-bottom: 12px;
-    }
-    .box {
-      background: #fff;
-      padding: 16px;
-      border-radius: 8px;
-      margin-bottom: 16px;
-    }
-    label {
-      display: block;
-      margin-top: 12px;
-      font-weight: bold;
-    }
-    input, select, textarea, button {
-      width: 100%;
-      padding: 10px;
-      margin-top: 6px;
-      font-size: 16px;
-      box-sizing: border-box;
-    }
-    button {
-      margin-top: 20px;
-      background: #1976d2;
-      color: #fff;
-      border: none;
-      border-radius: 6px;
-    }
-    button:disabled {
-      background: #aaa;
-    }
-    .note {
-      font-size: 13px;
-      color: #555;
-      margin-top: 8px;
-    }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OFA 点呼・点検</title>
+
+<style>
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;
+  background: #f4f6f8;
+  margin: 0;
+}
+.container {
+  max-width: 520px;
+  margin: 0 auto;
+  padding: 16px;
+}
+h1 {
+  font-size: 20px;
+  margin-bottom: 16px;
+}
+label {
+  display: block;
+  margin-top: 14px;
+  font-weight: 600;
+}
+select, input, textarea, button {
+  width: 100%;
+  margin-top: 6px;
+  padding: 12px;
+  font-size: 16px;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+}
+textarea {
+  min-height: 80px;
+}
+button {
+  margin-top: 20px;
+  background: #1a73e8;
+  color: #fff;
+  border: none;
+  font-size: 18px;
+}
+.hidden {
+  display: none;
+}
+.success {
+  margin-top: 12px;
+  color: green;
+  font-weight: bold;
+}
+</style>
 </head>
+
 <body>
+<div class="container">
+  <h1>🚚 OFA 点呼・点検</h1>
 
-<h1>🚚 OFA 点呼・点検</h1>
-
-<div class="box">
   <label>点呼種別</label>
-  <select id="tenkoType">
+  <select id="type" onchange="toggleFields()">
     <option value="出発点呼">出発点呼</option>
     <option value="帰着点呼">帰着点呼</option>
   </select>
 
   <label>氏名</label>
-  <input id="driver" placeholder="例：山田 太郎" />
+  <input id="name" placeholder="例：森下 洸">
 
   <label>車両番号</label>
-  <input id="vehicle" placeholder="例：鹿児島 480 あ 12-34" />
+  <input id="car" placeholder="例：鹿児島400 あ 12-34">
 
-  <label>アルコールチェック</label>
-  <select id="alcohol">
-    <option value="問題なし">問題なし</option>
-    <option value="異常あり">異常あり</option>
-  </select>
+  <!-- 出発点呼 -->
+  <div id="startFields">
+    <label>アルコールチェック</label>
+    <select id="alcoholStart">
+      <option>問題なし</option>
+      <option>検知あり</option>
+    </select>
 
-  <label>体調</label>
-  <select id="condition">
-    <option value="良好">良好</option>
-    <option value="不良">不良</option>
-  </select>
+    <label>体調</label>
+    <select id="condition">
+      <option>良好</option>
+      <option>やや不調</option>
+      <option>不調</option>
+    </select>
+  </div>
 
-  <label>日常点検（異常有無）</label>
-  <select id="inspection">
-    <option value="異常なし">異常なし</option>
-    <option value="異常あり">異常あり</option>
-  </select>
+  <!-- 帰着点呼 -->
+  <div id="endFields" class="hidden">
+    <label>業務終了時アルコール</label>
+    <select id="alcoholEnd">
+      <option>問題なし</option>
+      <option>検知あり</option>
+    </select>
+
+    <label>日常点検（異常有無）</label>
+    <select id="inspection">
+      <option>異常なし</option>
+      <option>異常あり</option>
+    </select>
+  </div>
 
   <label>備考</label>
-  <textarea id="memo" rows="3"></textarea>
+  <textarea id="memo"></textarea>
 
-  <button id="sendBtn" onclick="send()">送信</button>
-  <div class="note" id="status"></div>
+  <button onclick="submitForm()">送信</button>
+
+  <div id="result" class="success hidden">✅ 送信しました</div>
 </div>
 
 <script>
-  // ★★★ 必ずこのURL ★★★
-  const GAS_URL =
-    "https://script.google.com/macros/s/AKfycbzlmxyYmEL7Kb6jzr903woXuMuEdck8q_jjHgPyA3q4RzNAKh1QqHs9WNSroBNXcwAPzA/exec";
+const GAS_URL = "https://script.google.com/macros/s/AKfycbzlmxyYmEL7Kb6jzr903woXuMuEdck8q_jjHgPyA3q4RzNAKh1QqHs9WNSroBNXcwAPzA/exec";
 
-  function send() {
-    const btn = document.getElementById("sendBtn");
-    const status = document.getElementById("status");
-    btn.disabled = true;
-    status.textContent = "送信中…";
+function toggleFields() {
+  const type = document.getElementById("type").value;
+  document.getElementById("startFields").classList.toggle("hidden", type !== "出発点呼");
+  document.getElementById("endFields").classList.toggle("hidden", type !== "帰着点呼");
+}
 
-    const data = {
-      tenkoType: document.getElementById("tenkoType").value,
-      driver: document.getElementById("driver").value,
-      vehicle: document.getElementById("vehicle").value,
-      alcohol: document.getElementById("alcohol").value,
-      condition: document.getElementById("condition").value,
-      inspection: document.getElementById("inspection").value,
-      memo: document.getElementById("memo").value,
-      ua: navigator.userAgent
-    };
+function submitForm() {
+  const data = {
+    type: type.value,
+    name: name.value,
+    car: car.value,
+    alcoholStart: alcoholStart?.value || "",
+    condition: condition?.value || "",
+    alcoholEnd: alcoholEnd?.value || "",
+    inspection: inspection?.value || "",
+    memo: memo.value
+  };
 
-    fetch(GAS_URL, {
-      method: "POST",
-      mode: "no-cors",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify(data)
-    })
-      .then(() => {
-        status.textContent = "✅ 送信しました";
-        btn.disabled = false;
-      })
-      .catch(() => {
-        status.textContent = "❌ 送信に失敗しました";
-        btn.disabled = false;
-      });
-  }
+  fetch(GAS_URL, {
+    method: "POST",
+    body: JSON.stringify(data),
+    headers: { "Content-Type": "application/json" }
+  }).then(() => {
+    document.getElementById("result").classList.remove("hidden");
+  });
+}
 </script>
-
 </body>
 </html>
