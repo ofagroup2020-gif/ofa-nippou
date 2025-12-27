@@ -2,247 +2,236 @@
 <html lang="ja">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-  <title>OFA 点呼・点検</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>OFA 点呼・点検（点呼簿 / 日報 / 月報PDF）</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;600;700;900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="./style.css" />
 </head>
-
 <body>
   <div class="bg"></div>
 
-  <header class="top">
+  <header class="topbar">
     <div class="brand">
-      <div class="logo">🚚</div>
+      <div class="brand-badge">🚚</div>
       <div>
-        <div class="title">OFA 点呼・点検</div>
-        <div class="subtitle">出発点呼 / 帰着点呼 / 日常点検（スマホ最適）</div>
+        <div class="brand-title">OFA 点呼・点検</div>
+        <div class="brand-sub">出発点呼 / 帰着点呼 / 日常点検（スマホ最適）</div>
       </div>
     </div>
   </header>
 
   <main class="wrap">
-    <!-- API / ステータス -->
-    <section class="card">
+    <!-- 接続・PDF -->
+    <section class="card glass">
       <div class="card-head">
         <div class="card-title">接続設定</div>
-        <button class="btn ghost" id="btnTest">接続テスト</button>
+        <button class="btn outline" id="btnPing">接続テスト</button>
       </div>
 
-      <label class="field">
-        <span>API URL（/exec）</span>
-        <input id="apiUrl" type="url" placeholder="https://script.google.com/macros/s/XXXXX/exec" />
-        <small class="hint">※ここだけ正しければ動きます（保存されます）</small>
-      </label>
+      <label class="lbl">API URL（/exec）</label>
+      <input class="in" id="apiUrl" placeholder="https://script.google.com/macros/s/XXXX/exec" />
+
+      <div class="help">
+        ※ ここだけ正しければ動きます（端末に保存されます）<br/>
+        ※ 接続OKでも、写真がHEICだと「画像変換エラー」になりやすいので<strong>JPEGで選択</strong>してください（下で対策済み）
+      </div>
 
       <div class="status" id="statusBox">
-        <span class="dot gray" id="statusDot"></span>
-        <div class="status-text">
-          <div class="status-main" id="statusMain">未確認</div>
+        <div class="dot" id="dot"></div>
+        <div>
+          <div class="status-title" id="statusTitle">未確認</div>
           <div class="status-sub" id="statusSub">接続テストを押してください</div>
         </div>
       </div>
 
-      <div class="pdfRow">
+      <div class="grid2 mt16">
         <button class="btn soft" id="btnDailyPdf">日報PDF</button>
-        <input class="mini" id="dailyDate" type="date" />
+        <input class="in center" id="dailyDate" type="date"/>
       </div>
 
-      <div class="pdfRow">
+      <div class="grid2 mt10">
         <button class="btn soft" id="btnMonthlyPdf">月報PDF</button>
-        <input class="mini" id="monthlyYm" type="month" />
+        <input class="in center" id="monthlyYm" type="month"/>
       </div>
-      <small class="hint">PDFは「氏名」で絞り込みできます（下の氏名が使われます）</small>
+
+      <div class="help mt10">
+        PDFは「氏名」で絞り込みできます（下の氏名が使われます）
+      </div>
     </section>
 
-    <!-- モード -->
-    <section class="card">
+    <!-- モード切替 -->
+    <section class="card glass">
       <div class="seg">
         <button class="seg-btn active" id="modeStart">出発点呼</button>
         <button class="seg-btn" id="modeEnd">帰着点呼</button>
       </div>
 
-      <div class="grid">
-        <label class="field">
-          <span>氏名 <b class="req">*</b></span>
-          <input id="driver" type="text" placeholder="例：森下 洸" />
-        </label>
-
-        <label class="field">
-          <span>車両番号 <b class="req">*</b></span>
-          <input id="vehicleNo" type="text" placeholder="例：鹿児島 480 あ 12-34" />
-        </label>
-
-        <label class="field">
-          <span>電話（任意）</span>
-          <input id="phone" type="tel" placeholder="例：090-xxxx-xxxx" />
-        </label>
-
-        <label class="field">
-          <span>エリア（任意）</span>
-          <input id="area" type="text" placeholder="例：鹿児島市 / 世田谷区" />
-        </label>
-
-        <label class="field">
-          <span>ルート/コース（任意）</span>
-          <input id="route" type="text" placeholder="例：Aコース / 〇〇便" />
-        </label>
+      <!-- 基本情報 -->
+      <div class="grid2 mt16">
+        <div>
+          <label class="lbl req">氏名</label>
+          <input class="in" id="driver" placeholder="例：山田 太郎" autocomplete="name" />
+        </div>
+        <div>
+          <label class="lbl req">車両番号</label>
+          <input class="in" id="vehicle" placeholder="例：鹿児島 480 あ 12-34" />
+        </div>
       </div>
-    </section>
 
-    <!-- 点呼（体調など） -->
-    <section class="card">
-      <div class="card-title">点呼（健康・酒気帯び確認）</div>
+      <!-- 法令テンプレ（必須セット） -->
+      <div class="section-title mt18">点呼（法令テンプレ）</div>
 
-      <div class="grid">
-        <label class="field">
-          <span>アルコールチェック <b class="req">*</b></span>
-          <select id="alcoholResult">
+      <div class="grid2 mt10">
+        <div>
+          <label class="lbl req">アルコールチェック</label>
+          <select class="in" id="alcohol">
             <option value="問題なし" selected>問題なし</option>
-            <option value="注意（再検査）">注意（再検査）</option>
-            <option value="NG（運行不可）">NG（運行不可）</option>
+            <option value="検知あり">検知あり</option>
+            <option value="未実施">未実施</option>
           </select>
-        </label>
-
-        <label class="field">
-          <span>数値（任意）</span>
-          <input id="alcoholValue" type="text" inputmode="decimal" placeholder="例：0.00" />
-        </label>
-
-        <label class="field">
-          <span>体調 <b class="req">*</b></span>
-          <select id="condition">
+        </div>
+        <div>
+          <label class="lbl req">体調</label>
+          <select class="in" id="condition">
             <option value="良好" selected>良好</option>
-            <option value="普通">普通</option>
-            <option value="やや不調">やや不調</option>
-            <option value="不調（報告）">不調（報告）</option>
+            <option value="やや不良">やや不良</option>
+            <option value="不良">不良</option>
           </select>
-        </label>
-
-        <label class="field">
-          <span>疲労度（任意）</span>
-          <select id="fatigueLevel">
-            <option value="" selected>未入力</option>
-            <option value="低い">低い</option>
-            <option value="普通">普通</option>
-            <option value="高い">高い</option>
-          </select>
-        </label>
-
-        <label class="field">
-          <span>体温（任意）</span>
-          <input id="temperature" type="text" inputmode="decimal" placeholder="例：36.5" />
-        </label>
-
-        <label class="field">
-          <span>睡眠時間（任意）</span>
-          <input id="sleepHours" type="number" step="0.5" min="0" placeholder="例：7" />
-        </label>
-
-        <label class="field">
-          <span>服薬（任意）</span>
-          <select id="medication">
-            <option value="" selected>未入力</option>
-            <option value="なし">なし</option>
-            <option value="あり（業務に支障なし）">あり（業務に支障なし）</option>
-            <option value="あり（要相談）">あり（要相談）</option>
-          </select>
-        </label>
-
-        <label class="field wide">
-          <span>健康メモ（任意）</span>
-          <textarea id="notesHealth" placeholder="例：頭痛あり/花粉症/通院後 など"></textarea>
-        </label>
-      </div>
-    </section>
-
-    <!-- 点検（チェックリスト） -->
-    <section class="card">
-      <div class="card-title">日常点検（チェックリスト）</div>
-
-      <div class="checkGrid">
-        <label class="check"><input type="checkbox" id="c_tires" />タイヤ（空気圧/溝/損傷）</label>
-        <label class="check"><input type="checkbox" id="c_lights" />灯火類（ライト/ウィンカー/ブレーキ）</label>
-        <label class="check"><input type="checkbox" id="c_brake" />ブレーキ（踏みしろ/効き/異音）</label>
-        <label class="check"><input type="checkbox" id="c_wiper" />ワイパー/ウォッシャー</label>
-        <label class="check"><input type="checkbox" id="c_oil" />エンジンオイル（量/漏れ）</label>
-        <label class="check"><input type="checkbox" id="c_coolant" />冷却水（量/漏れ）</label>
-        <label class="check"><input type="checkbox" id="c_fuel" />燃料（残量/警告灯）</label>
-        <label class="check"><input type="checkbox" id="c_battery" />バッテリー（警告灯/始動）</label>
-        <label class="check"><input type="checkbox" id="c_damage" />外観（損傷/ガラス/ミラー）</label>
-        <label class="check"><input type="checkbox" id="c_loadSecure" />荷崩れ防止/積載固定</label>
-        <label class="check"><input type="checkbox" id="c_other" />その他（自由項目）</label>
+        </div>
       </div>
 
-      <div class="grid">
-        <label class="field">
-          <span>点検結果 <b class="req">*</b></span>
-          <select id="inspectionResult">
-            <option value="OK" selected>OK</option>
-            <option value="NG（異常あり）">NG（異常あり）</option>
+      <div class="grid3 mt10">
+        <div>
+          <label class="lbl">体温（任意）</label>
+          <input class="in" id="temp" inputmode="decimal" placeholder="例：36.5" />
+        </div>
+        <div>
+          <label class="lbl">睡眠時間（任意）</label>
+          <input class="in" id="sleep" inputmode="decimal" placeholder="例：7" />
+        </div>
+        <div>
+          <label class="lbl req">点検（異常有無）</label>
+          <select class="in" id="inspection">
+            <option value="異常なし" selected>異常なし</option>
+            <option value="異常あり">異常あり</option>
           </select>
-        </label>
-
-        <label class="field wide">
-          <span>異常内容（NGの場合）</span>
-          <textarea id="inspectionDetail" placeholder="例：左前輪 空気圧低下 / ブレーキ鳴き / 警告灯点灯 など"></textarea>
-        </label>
+        </div>
       </div>
-    </section>
 
-    <!-- メーター / 写真 -->
-    <section class="card">
-      <div class="card-title">メーター・写真（証跡）</div>
-
-      <div class="grid" id="meterBlock">
-        <label class="field" id="meterStartWrap">
-          <span>メーター（出発）</span>
-          <input id="meterStart" type="number" inputmode="numeric" placeholder="例：12345" />
-        </label>
-
-        <label class="field" id="meterEndWrap">
-          <span>メーター（帰着）</span>
-          <input id="meterEnd" type="number" inputmode="numeric" placeholder="例：23456" />
-        </label>
-
-        <label class="field">
-          <span>点検写真（メーター/外観/警告灯など）</span>
-          <input id="photoExterior" type="file" accept="image/*" />
-          <small class="hint">※iPhoneでHEICのときは変換できずエラーになる場合があります（その場合JPEGで選択）</small>
-        </label>
-
-        <label class="field">
-          <span>アルコール検知器写真</span>
-          <input id="photoAlcohol" type="file" accept="image/*" />
-        </label>
-
-        <label class="field">
-          <span>メーター写真</span>
-          <input id="photoMeter" type="file" accept="image/*" />
-        </label>
-
-        <label class="field">
-          <span>その他写真（任意）</span>
-          <input id="photoOther" type="file" accept="image/*" />
-        </label>
-
-        <label class="field wide">
-          <span>備考（任意）</span>
-          <textarea id="memo" placeholder="連絡事項/遅延/クレーム/車両異常の詳細など"></textarea>
-        </label>
+      <div class="mt10">
+        <label class="lbl">異常内容（異常ありの場合）</label>
+        <input class="in" id="inspectionDetail" placeholder="例：左前輪 空気圧低下 / ブレーキ鳴き など" />
       </div>
-    </section>
 
-    <section class="card">
-      <button class="btn main" id="btnSubmit">送信</button>
-      <div class="toast" id="toast" aria-live="polite"></div>
-    </section>
+      <!-- 点検（詳細：増量） -->
+      <div class="section-title mt18">日常点検（詳細）</div>
+      <div class="grid2 mt10">
+        <div>
+          <label class="lbl req">タイヤ（空気圧/摩耗）</label>
+          <select class="in" id="chkTire">
+            <option value="良好" selected>良好</option>
+            <option value="要注意">要注意</option>
+            <option value="不良">不良</option>
+          </select>
+        </div>
+        <div>
+          <label class="lbl req">ブレーキ</label>
+          <select class="in" id="chkBrake">
+            <option value="良好" selected>良好</option>
+            <option value="要注意">要注意</option>
+            <option value="不良">不良</option>
+          </select>
+        </div>
+      </div>
 
-    <footer class="foot">
-      <div class="footNote">© OFA Group / Tenko & Inspection</div>
-    </footer>
+      <div class="grid2 mt10">
+        <div>
+          <label class="lbl req">灯火類（前照灯/尾灯/ウィンカー）</label>
+          <select class="in" id="chkLight">
+            <option value="良好" selected>良好</option>
+            <option value="要注意">要注意</option>
+            <option value="不良">不良</option>
+          </select>
+        </div>
+        <div>
+          <label class="lbl req">オイル/冷却水/漏れ</label>
+          <select class="in" id="chkFluid">
+            <option value="良好" selected>良好</option>
+            <option value="要注意">要注意</option>
+            <option value="不良">不良</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="grid2 mt10">
+        <div>
+          <label class="lbl req">車内整理/積載状態</label>
+          <select class="in" id="chkLoad">
+            <option value="良好" selected>良好</option>
+            <option value="要注意">要注意</option>
+            <option value="不良">不良</option>
+          </select>
+        </div>
+        <div>
+          <label class="lbl req">警告灯（メーター）</label>
+          <select class="in" id="chkWarn">
+            <option value="点灯なし" selected>点灯なし</option>
+            <option value="点灯あり">点灯あり</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- メーター：出発/帰着で必須切替 -->
+      <div class="section-title mt18">メーター</div>
+      <div class="grid2 mt10">
+        <div id="meterStartWrap">
+          <label class="lbl req" id="meterStartLbl">メーター（出発）</label>
+          <input class="in" id="meterStart" inputmode="numeric" placeholder="例：12345" />
+        </div>
+        <div id="meterEndWrap">
+          <label class="lbl req" id="meterEndLbl">メーター（帰着）</label>
+          <input class="in" id="meterEnd" inputmode="numeric" placeholder="例：23456" />
+        </div>
+      </div>
+
+      <!-- 写真（HEIC対策：クライアント側でJPEG化して送る） -->
+      <div class="section-title mt18">写真（任意 / 推奨）</div>
+      <div class="grid2 mt10">
+        <div>
+          <label class="lbl">点検写真（外観/警告灯/メーター等）</label>
+          <input class="in file" id="photoInspect" type="file" accept="image/*" />
+          <div class="hint">※ iPhoneのHEICは自動変換を試します（失敗したらJPEGで選択）</div>
+        </div>
+        <div>
+          <label class="lbl">アルコール検知器写真</label>
+          <input class="in file" id="photoAlcohol" type="file" accept="image/*" />
+          <div class="hint">※ iPhoneのHEICは自動変換を試します</div>
+        </div>
+      </div>
+
+      <div class="grid2 mt10">
+        <div>
+          <label class="lbl">メーター写真</label>
+          <input class="in file" id="photoMeter" type="file" accept="image/*" />
+        </div>
+        <div>
+          <label class="lbl">その他写真</label>
+          <input class="in file" id="photoOther" type="file" accept="image/*" />
+        </div>
+      </div>
+
+      <div class="mt12">
+        <label class="lbl">備考（任意）</label>
+        <textarea class="ta" id="memo" rows="3" placeholder="連絡事項/遅延/クレーム/車両異常の詳細など"></textarea>
+      </div>
+
+      <button class="btn primary mt16" id="btnSend">送信</button>
+      <div class="toast" id="toast"></div>
+
+      <footer class="foot">© OFA Group / Tenko & Inspection</footer>
+    </section>
   </main>
 
   <script src="./app.js"></script>
