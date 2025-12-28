@@ -2,59 +2,36 @@
 <html lang="ja">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>OFA 点呼・点検</title>
   <style>
-    :root{--bg:#f6f7fb;--card:#fff;--text:#111;--muted:#555;}
-    body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Noto Sans JP",sans-serif;background:var(--bg);margin:0;color:var(--text)}
-    .wrap{max-width:520px;margin:0 auto;padding:18px}
-    .card{background:var(--card);border-radius:16px;padding:18px;box-shadow:0 6px 18px rgba(0,0,0,.08)}
-    h1{font-size:20px;margin:0 0 6px}
-    .sub{color:var(--muted);font-size:13px;margin-bottom:12px}
-    .rule{background:#f3fff5;border:1px solid #b8f0c2;border-radius:12px;padding:12px;font-size:14px}
-    .rule ul{margin:8px 0 0 18px}
-    .btn{display:block;width:100%;border:0;border-radius:14px;padding:16px 14px;font-size:16px;font-weight:800;margin-top:12px}
-    .primary{background:linear-gradient(90deg,#ff7a00,#ff2d9a);color:#fff}
-    .secondary{background:#eef2ff;color:#1f2a55}
-    .third{background:#e9f7ff;color:#0b4a6e}
-    .foot{color:#666;font-size:12px;margin-top:10px;line-height:1.6}
-    .mini{margin-top:10px;font-size:12px;color:#666}
-    .bar{display:flex;gap:10px;margin-top:10px}
-    .bar button{flex:1;background:#f1f1f1;border:0;border-radius:12px;padding:10px;font-weight:700}
+    body { font-family: system-ui, -apple-system, "Hiragino Sans", "Noto Sans JP", sans-serif; background:#f6f7fb; margin:0; }
+    .wrap { max-width: 520px; margin: 0 auto; padding: 18px; }
+    .card { background:#fff; border-radius:16px; box-shadow:0 8px 24px rgba(0,0,0,.08); padding:18px; }
+    h1 { font-size:20px; margin:0 0 8px; }
+    p { margin:8px 0; color:#444; line-height:1.5; }
+    .btn { width:100%; border:0; border-radius:14px; padding:16px 14px; font-size:16px; margin:10px 0; cursor:pointer; }
+    .primary { background: linear-gradient(90deg,#ff8a00,#ff2aa1); color:#fff; font-weight:700; }
+    .secondary { background:#eef1ff; color:#1b2a8a; font-weight:700; }
+    .muted { color:#666; font-size:13px; }
   </style>
 </head>
 <body>
   <div class="wrap">
     <div class="card">
       <h1>🚚 OFA 点呼・点検</h1>
-      <div class="sub">出発点呼 / 帰着点呼 / 運行前点検（スマホ最適）</div>
+      <p class="muted">出発点呼 / 帰着点呼 / 日報・月報（スマホ最適）</p>
 
-      <div class="rule">
-        ✅ 法令に基づく「点呼・点検」実施（毎日）
-        <ul>
-          <li>出発前に「出発点呼」</li>
-          <li>帰着後に「帰着点呼」</li>
-          <li>アルコール数値の入力は必須</li>
-          <li>入力は記録として保存され、日報・月報に反映</li>
-        </ul>
-        <div style="margin-top:8px;font-weight:900;">それでは点呼して、安全にいってらっしゃい！</div>
+      <p>✅ 法令に基づく「点呼・点検」実施（毎日）</p>
+
+      <div style="margin-top:14px;">
+        <!-- 3つ開く -->
+        <button class="btn primary" onclick="location.href='./departure.html'">出発点呼をする</button>
+        <button class="btn secondary" onclick="location.href='./arrival.html'">帰着点呼をする</button>
+        <button class="btn secondary" onclick="location.href='./reports.html'">日報 / 月報 を出力</button>
       </div>
 
-      <button class="btn primary" onclick="location.href='./departure.html'">出発点呼をする</button>
-      <button class="btn secondary" onclick="location.href='./arrival.html'">帰着点呼をする</button>
-      <button class="btn third" onclick="location.href='./reports.html'">日報 / 月報を出力</button>
-
-      <div class="foot">
-        ※ブックマーク推奨（このURLを使ってください）<br>
-        ※Safariの「プライベートモード」はOFFで。<br>
-        ※写真は任意（必要な場合だけ撮影）。
-      </div>
-
-      <div class="mini">接続確認（管理者用）</div>
-      <div class="bar">
-        <button onclick="location.href='./reports.html#ping'">接続テスト</button>
-        <button onclick="location.href='./reports.html#howto'">使い方</button>
-      </div>
+      <p class="muted">※動かない時：Safariの「プライベートモード」をOFFにして開き直してください。</p>
     </div>
   </div>
 </body>
