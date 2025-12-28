@@ -2,109 +2,148 @@
 <html lang="ja">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>帰着点呼 | OFA 点呼・点検</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>帰着点呼 | OFA</title>
   <style>
-    body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Noto Sans JP",sans-serif;background:#f6f7fb;margin:0;color:#111}
-    .wrap{max-width:720px;margin:0 auto;padding:16px}
-    .top{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
-    .top a{color:#0b4a6e;text-decoration:none;font-weight:800}
-    .card{background:#fff;border-radius:16px;padding:16px;box-shadow:0 6px 18px rgba(0,0,0,.08);margin-bottom:14px}
-    h1{font-size:18px;margin:0}
-    h2{font-size:16px;margin:0 0 10px}
-    .sub{color:#555;font-size:12px;margin-top:4px}
-    .grid{display:grid;gap:10px}
-    @media(min-width:700px){.grid{grid-template-columns:1fr 1fr}}
-    label{font-size:12px;color:#444;font-weight:800}
-    input,select,textarea{width:100%;box-sizing:border-box;border:1px solid #d6d9e0;border-radius:12px;padding:12px;font-size:16px;background:#fff}
-    textarea{min-height:90px}
-    .req{color:#e11d48;margin-left:4px}
-    .btn{width:100%;border:0;border-radius:14px;padding:16px 14px;font-size:16px;font-weight:900;margin-top:10px}
-    .primary{background:#eef2ff;color:#1f2a55}
-    .ghost{background:#f1f5f9;color:#0f172a}
-    .note{font-size:12px;color:#666;line-height:1.6}
-    .status{padding:10px 12px;border-radius:12px;background:#f1f5f9;color:#0f172a;font-size:13px;display:none}
-    .status.ok{background:#ecfdf5;color:#065f46}
-    .status.ng{background:#fff1f2;color:#9f1239}
-    .hr{height:1px;background:#eef0f4;margin:12px 0}
+    body { font-family: system-ui, -apple-system, "Hiragino Sans", "Noto Sans JP", sans-serif; background:#f6f7fb; margin:0; }
+    .wrap { max-width: 560px; margin: 0 auto; padding: 16px; }
+    .topbar { display:flex; align-items:center; gap:10px; padding:10px 4px; }
+    .back { text-decoration:none; color:#1b2a8a; font-weight:700; }
+    .card { background:#fff; border-radius:16px; box-shadow:0 8px 24px rgba(0,0,0,.08); padding:16px; }
+    h1 { font-size:18px; margin:0 0 6px; }
+    .muted { color:#666; font-size:13px; margin:0 0 12px; }
+    label { display:block; font-size:13px; color:#333; margin-top:12px; }
+    input, select, textarea { width:100%; padding:12px; border:1px solid #ddd; border-radius:12px; font-size:16px; box-sizing:border-box; }
+    textarea { min-height:80px; }
+    .row { display:grid; grid-template-columns: 1fr 1fr; gap:10px; }
+    .btn { width:100%; border:0; border-radius:14px; padding:14px; font-size:16px; margin-top:14px; cursor:pointer; font-weight:800; }
+    .primary { background: #eef1ff; color:#1b2a8a; }
+    .status { margin-top:10px; font-size:14px; white-space:pre-wrap; }
+    .ok { color:#0a7a2a; }
+    .ng { color:#c01919; }
   </style>
 </head>
 <body>
   <div class="wrap">
-    <div class="top">
-      <a href="./index.html">← 戻る</a>
-      <div style="font-weight:900;">OFA 点呼・点検</div>
-      <div style="width:44px"></div>
+    <div class="topbar">
+      <a class="back" href="./index.html">← 戻る</a>
+      <div style="font-weight:800;">OFA 点呼・点検</div>
     </div>
 
     <div class="card">
       <h1>帰着点呼</h1>
-      <div class="sub">※アルコール数値は必須／時刻は選択式／写真は任意</div>
+      <p class="muted">※アルコール数値は必須 / 時刻は選択式</p>
+
+      <form id="form">
+        <label>日付 *</label>
+        <input id="date" type="date" required />
+
+        <label>時刻（選択） *</label>
+        <select id="timeSelected" required>
+          <option value="">選択してください</option>
+        </select>
+
+        <label>氏名 *</label>
+        <input id="driverName" type="text" placeholder="例：森下洸" required />
+
+        <label>車両番号 *</label>
+        <input id="vehicleNo" type="text" placeholder="例：鹿児島 21-15" required />
+
+        <div class="row">
+          <div>
+            <label>アルコール数値 *</label>
+            <input id="alcoholValue" type="number" step="0.01" min="0" placeholder="例：0.00" required />
+          </div>
+          <div>
+            <label>判定（任意）</label>
+            <select id="alcoholStatus">
+              <option value="">未選択</option>
+              <option value="OK">OK</option>
+              <option value="NG">NG</option>
+            </select>
+          </div>
+        </div>
+
+        <label>備考（任意）</label>
+        <textarea id="remarks" placeholder="任意"></textarea>
+
+        <button class="btn primary" type="submit">データ送信</button>
+        <div id="status" class="status muted"></div>
+      </form>
     </div>
+  </div>
 
-    <div class="card">
-      <h2>基本情報（共通）</h2>
-      <div class="grid">
-        <div>
-          <label>日付<span class="req">*</span></label>
-          <input id="date" type="date">
-        </div>
-        <div>
-          <label>時刻（選択）<span class="req">*</span></label>
-          <select id="timeSelected"></select>
-        </div>
+  <script>
+    /************** ここだけ差し替えOK（新URL） **************/
+    const GAS_URL = "https://script.google.com/macros/s/AKfycbzCAAJB0yP8qj-6Mt0FO2wwbAfv9fOs7KdKD5zc7-I_C2vQQxSaf4z919e-RSCZH0s0lw/exec";
+    /**********************************************************/
 
-        <div>
-          <label>氏名<span class="req">*</span></label>
-          <input id="driverName" placeholder="例：森下洸">
-        </div>
-        <div>
-          <label>車両番号<span class="req">*</span></label>
-          <input id="vehicleNo" placeholder="例：鹿児島 21-15">
-        </div>
+    (function buildTimes(){
+      const sel = document.getElementById("timeSelected");
+      for (let h=0; h<24; h++){
+        for (let m=0; m<60; m+=5){
+          const hh = String(h).padStart(2,"0");
+          const mm = String(m).padStart(2,"0");
+          const v = `${hh}:${mm}`;
+          const opt = document.createElement("option");
+          opt.value = v; opt.textContent = v;
+          sel.appendChild(opt);
+        }
+      }
+    })();
 
-        <div>
-          <label>電話（自動入力）</label>
-          <input id="phone" placeholder="例：080..." inputmode="tel">
-        </div>
-        <div>
-          <label>メール（自動入力）</label>
-          <input id="email" placeholder="例：xxx@gmail.com" inputmode="email">
-        </div>
+    document.getElementById("date").valueAsDate = new Date();
 
-        <div>
-          <label>免許証番号（自動入力）</label>
-          <input id="licenseNo" placeholder="任意（初回入力→保存）">
-        </div>
-        <div>
-          <label>エリア（任意）</label>
-          <input id="area" placeholder="例：鹿児島市">
-        </div>
+    function setStatus(msg, ok){
+      const el = document.getElementById("status");
+      el.textContent = msg;
+      el.className = "status " + (ok ? "ok" : "ng");
+    }
 
-        <div>
-          <label>ルート/コース（任意）</label>
-          <input id="route" placeholder="例：Aコース / ○○便">
-        </div>
-        <div>
-          <label>メーター（帰着/任意）</label>
-          <input id="meterEnd" placeholder="例：127989" inputmode="numeric">
-        </div>
-      </div>
+    document.getElementById("form").addEventListener("submit", async (e) => {
+      e.preventDefault();
 
-      <button class="btn ghost" id="saveProfileBtn" type="button">この情報を保存（次回から自動入力）</button>
-      <div class="note">※保存すると「氏名/電話/メール/免許証番号」が次回から自動入力されます。</div>
-    </div>
+      const data = {
+        mode: "arrival",
+        date: document.getElementById("date").value,
+        timeSelected: document.getElementById("timeSelected").value,
+        driverName: document.getElementById("driverName").value.trim(),
+        vehicleNo: document.getElementById("vehicleNo").value.trim(),
+        alcoholValue: document.getElementById("alcoholValue").value,
+        alcoholStatus: document.getElementById("alcoholStatus").value,
+        remarks: document.getElementById("remarks").value.trim(),
+      };
 
-    <div class="card">
-      <h2>点呼（健康・酒気帯び確認）</h2>
-      <div class="grid">
-        <div>
-          <label>アルコール判定<span class="req">*</span></label>
-          <select id="alcoholStatus">
-            <option value="問題なし">問題なし</option>
-            <option value="要確認">要確認</option>
-            <option value="異常あり">異常あり</option>
-          </select>
-        </div>
-        <div>
-          <label>アル
+      const required = ["date","timeSelected","driverName","vehicleNo","alcoholValue","mode"];
+      for (const k of required){
+        if (!String(data[k] ?? "").trim()){
+          setStatus(`未入力があります：${k}`, false);
+          return;
+        }
+      }
+
+      setStatus("送信中...", true);
+
+      try {
+        const res = await fetch(GAS_URL, {
+          method: "POST",
+          headers: { "Content-Type": "text/plain;charset=utf-8" },
+          body: JSON.stringify(data),
+        });
+
+        const text = await res.text();
+        let json;
+        try { json = JSON.parse(text); } catch { json = { ok:false, message:text }; }
+
+        if (json.ok){
+          setStatus(`✅ 送信成功：recordId=${json.recordId || ""}\n${json.photoFolderUrl ? "写真フォルダ: " + json.photoFolderUrl : ""}`, true);
+        } else {
+          setStatus(`❌ 送信失敗：${json.message || "unknown"}`, false);
+        }
+      } catch (err){
+        setStatus(`❌ 通信エラー：${String(err)}`, false);
+      }
+    });
+  </script>
+</body>
+</html>
