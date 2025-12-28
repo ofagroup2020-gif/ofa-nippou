@@ -1,64 +1,140 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>OFA 点呼・点検（入口）</title>
+  <meta charset="UTF-8" />
+  <title>OFA 点呼・点検</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
   <style>
-    body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Hiragino Kaku Gothic ProN","Noto Sans JP",sans-serif;margin:0;background:#f6f7fb;color:#111}
-    .wrap{max-width:820px;margin:0 auto;padding:18px}
-    .card{background:#fff;border:1px solid #e6e8f0;border-radius:18px;padding:18px;margin:14px 0;box-shadow:0 6px 22px rgba(20,30,60,.06)}
-    h1{font-size:20px;margin:0 0 6px}
-    .sub{opacity:.75;font-size:13px;margin:0 0 14px}
-    .badge{display:inline-flex;gap:8px;align-items:center;background:#ecfff2;border:1px solid #bfe8c8;color:#1b6b2a;border-radius:999px;padding:8px 12px;font-weight:700;font-size:13px}
-    .btns{display:grid;grid-template-columns:1fr;gap:10px;margin-top:12px}
-    .btn{appearance:none;border:0;border-radius:14px;padding:14px 14px;font-weight:800;font-size:16px;cursor:pointer}
-    .primary{background:linear-gradient(90deg,#ff8a00,#ff3d7f);color:#fff}
-    .ghost{background:#f0f3ff;border:1px solid #d8defa;color:#1c2a7a}
-    .note{font-size:13px;line-height:1.6;opacity:.9}
-    .small{font-size:12px;opacity:.7}
-    .rule li{margin:6px 0}
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;
+      background: linear-gradient(180deg, #f3f4ff, #e8fff3);
+      margin: 0;
+      padding: 20px;
+    }
+
+    .card {
+      max-width: 420px;
+      margin: 0 auto;
+      background: #fff;
+      border-radius: 16px;
+      box-shadow: 0 10px 30px rgba(0,0,0,.08);
+      padding: 24px;
+    }
+
+    h1 {
+      text-align: center;
+      font-size: 20px;
+      margin-bottom: 8px;
+    }
+
+    .subtitle {
+      text-align: center;
+      font-size: 13px;
+      color: #666;
+      margin-bottom: 16px;
+    }
+
+    .rule {
+      background: #f5fff8;
+      border-radius: 10px;
+      padding: 14px;
+      font-size: 14px;
+      margin-bottom: 20px;
+    }
+
+    .rule li {
+      margin-bottom: 6px;
+    }
+
+    .btn {
+      width: 100%;
+      border: none;
+      border-radius: 12px;
+      padding: 16px;
+      font-size: 16px;
+      font-weight: bold;
+      margin-bottom: 12px;
+      cursor: pointer;
+    }
+
+    .btn-departure {
+      background: linear-gradient(90deg, #ff8a00, #ff3d7f);
+      color: #fff;
+    }
+
+    .btn-arrival {
+      background: #eef1ff;
+      color: #333;
+    }
+
+    .btn-report {
+      background: #e6f7ff;
+      color: #0077cc;
+    }
+
+    .note {
+      text-align: center;
+      font-size: 12px;
+      color: #777;
+      margin-top: 16px;
+    }
   </style>
 </head>
 <body>
-  <div class="wrap">
-    <div class="card">
-      <h1>🚚 OFA 点呼・点検</h1>
-      <p class="sub">出発点呼 / 帰着点呼 / 運行前点検（スマホ最適）</p>
 
-      <div class="badge">✅ 法令に基づく「点呼・点検」実施（毎日）</div>
+  <div class="card">
+    <h1>🚚 OFA 点呼・点検</h1>
+    <div class="subtitle">
+      出発点呼 / 帰着点呼 / 日報・月報（スマホ最適）
+    </div>
 
-      <div class="card" style="margin-top:14px">
-        <b>必ず守るルール（簡単）</b>
-        <ul class="rule">
-          <li>出発前に「出発点呼」</li>
-          <li>帰着後に「帰着点呼」</li>
-          <li>アルコール数値の入力は必須</li>
-          <li>入力は記録として保存され、日報・月報に反映されます</li>
-        </ul>
-        <p class="note"><b>それでは点呼して、安全にいってらっしゃい！</b></p>
-        <p class="small">※ブックマーク推奨（このURLは変更しません）</p>
-
-        <div class="btns">
-          <button class="btn primary" onclick="openApp('departure')">出発点呼をする</button>
-          <button class="btn ghost" onclick="openApp('arrival')">帰着点呼をする</button>
-          <button class="btn ghost" onclick="openApp('reports')">日報 / 月報 を出力</button>
-        </div>
+    <div class="rule">
+      <strong>必ず守るルール</strong>
+      <ul>
+        <li>出発前に「出発点呼」</li>
+        <li>帰着後に「帰着点呼」</li>
+        <li>アルコール数値の入力は必須</li>
+        <li>記録は日報・月報に反映されます</li>
+      </ul>
+      <div style="margin-top:8px;">
+        それでは点呼して、安全にいってらっしゃい！
       </div>
+    </div>
 
-      <p class="small">※動かない時：Safariの「プライベートモード」をOFFにして開き直してください。</p>
+    <button class="btn btn-departure" onclick="openDeparture()">
+      出発点呼をする
+    </button>
+
+    <button class="btn btn-arrival" onclick="openArrival()">
+      帰着点呼をする
+    </button>
+
+    <button class="btn btn-report" onclick="openReport()">
+      日報 / 月報を出力
+    </button>
+
+    <div class="note">
+      ※ブックマーク推奨（URLは変更しません）
     </div>
   </div>
 
-<script>
-  // ★ここだけ差し替え：あなたのGAS WebアプリURL（/exec）を入れる
-  const WEBAPP_URL = "https://script.google.com/macros/s/あなたのID/exec";
+  <script>
+    // ★★★ ここだけ自分のGAS URLに変更 ★★★
+    const GAS_URL = "https://script.google.com/macros/s/AKfycbxxxxxxxxxxxx/exec";
 
-  function openApp(mode){
-    const url = new URL(WEBAPP_URL);
-    url.searchParams.set("view", mode); // departure / arrival / reports
-    location.href = url.toString();
-  }
-</script>
+    function openDeparture() {
+      window.location.href = GAS_URL + "?mode=departure";
+    }
+
+    function openArrival() {
+      window.location.href = GAS_URL + "?mode=arrival";
+    }
+
+    function openReport() {
+      window.location.href = GAS_URL + "?mode=report";
+    }
+  </script>
+
 </body>
 </html>
