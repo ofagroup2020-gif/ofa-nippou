@@ -5,61 +5,42 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>OFA 点呼・点検</title>
   <style>
-    body{font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue",Arial; background:#f6f7fb; margin:0;}
-    .wrap{max-width:520px;margin:0 auto;padding:18px;}
-    .card{background:#fff;border-radius:18px;padding:18px;box-shadow:0 8px 24px rgba(0,0,0,.08);}
-    h1{margin:0 0 4px;font-size:22px;}
-    .sub{color:#666;margin:0 0 14px;font-size:13px;}
-    .badge{display:inline-block;background:#e8fff2;border:1px solid #b7f2cf;color:#1c7a3a;
-      padding:8px 10px;border-radius:999px;font-size:13px;margin:10px 0 12px;}
-    ul{margin:10px 0 14px;padding-left:20px;color:#222;}
-    li{margin:6px 0;}
-    .btn{width:100%;border:0;border-radius:14px;padding:16px 12px;font-size:16px;
-      font-weight:700;margin:10px 0;cursor:pointer;}
-    .btn-primary{background:linear-gradient(90deg,#ff8a00,#ff2d8a);color:#fff;}
-    .btn-ghost{background:#eef2ff;color:#2b4cff;}
-    .btn-gray{background:#f1f1f1;color:#111;}
-    .foot{color:#777;font-size:12px;margin-top:10px;line-height:1.5;}
-    .hint{margin-top:10px;color:#666;font-size:12px;}
-    .small{font-size:12px;color:#666}
+    body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Noto Sans JP",sans-serif;background:#f6f7fb;margin:0}
+    .wrap{max-width:520px;margin:0 auto;padding:18px}
+    .card{background:#fff;border-radius:16px;padding:18px;box-shadow:0 6px 18px rgba(0,0,0,.08)}
+    h1{font-size:20px;margin:0 0 6px}
+    .sub{color:#555;font-size:13px;margin-bottom:12px}
+    .rule{background:#f3fff5;border:1px solid #b8f0c2;border-radius:12px;padding:12px;font-size:14px}
+    .rule ul{margin:8px 0 0 18px}
+    .btn{display:block;width:100%;border:0;border-radius:14px;padding:16px 14px;font-size:16px;font-weight:700;margin-top:12px}
+    .primary{background:linear-gradient(90deg,#ff7a00,#ff2d9a);color:#fff}
+    .secondary{background:#eef2ff;color:#1f2a55}
+    .third{background:#e9f7ff;color:#0b4a6e}
+    .foot{color:#666;font-size:12px;margin-top:10px}
   </style>
 </head>
 <body>
   <div class="wrap">
     <div class="card">
       <h1>🚚 OFA 点呼・点検</h1>
-      <p class="sub">出発点呼 / 帰着点呼 / 運行前点検（スマホ最適）</p>
+      <div class="sub">出発点呼 / 帰着点呼 / 運行前点検（スマホ最適）</div>
 
-      <div class="badge">✅ 法令に基づく「点呼・点検」実施（毎日）</div>
-
-      <h3 style="margin:10px 0 6px;">必ず守るルール（簡単）</h3>
-      <ul>
-        <li>出発前に「出発点呼」</li>
-        <li>帰着後に「帰着点呼」</li>
-        <li><b>アルコール数値の入力は必須</b></li>
-        <li>入力は記録として保存され、日報・月報に反映されます</li>
-      </ul>
-
-      <p class="small">それでは点呼して、安全にいってらっしゃい！</p>
-      <p class="hint">※ブックマーク推奨（このURLは変更しません）</p>
-
-      <!-- ★ここだけあなたの /exec に差し替え -->
-      <script>
-        const WEBAPP_BASE = "https://script.google.com/macros/s/XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX/exec";
-        function openMode(mode){
-          // 3つを必ず開ける（別タブ）
-          window.open(WEBAPP_BASE + "?page=" + encodeURIComponent(mode), "_blank");
-        }
-      </script>
-
-      <button class="btn btn-primary" onclick="openMode('departure')">出発点呼をする</button>
-      <button class="btn btn-ghost" onclick="openMode('arrival')">帰着点呼をする</button>
-      <button class="btn btn-gray" onclick="openMode('report')">日報 / 月報 を出力</button>
-
-      <div class="foot">
-        動かない時：Safariの「プライベートモード」をOFFにして開き直してください。<br>
-        ※Googleログインが必要です（Drive保存・改ざん防止のため）
+      <div class="rule">
+        ✅ 法令に基づく「点呼・点検」実施（毎日）
+        <ul>
+          <li>出発前に「出発点呼」</li>
+          <li>帰着後に「帰着点呼」</li>
+          <li>アルコール数値の入力は必須</li>
+          <li>入力は記録として保存され、日報・月報に反映</li>
+        </ul>
+        <div style="margin-top:8px;font-weight:700;">それでは点呼して、安全にいってらっしゃい！</div>
       </div>
+
+      <button class="btn primary" onclick="location.href='./departure.html'">出発点呼をする</button>
+      <button class="btn secondary" onclick="location.href='./arrival.html'">帰着点呼をする</button>
+      <button class="btn third" onclick="location.href='./reports.html'">日報 / 月報を出力</button>
+
+      <div class="foot">※ブックマーク推奨（URLは変えません）<br>※Safariの「プライベートモード」はOFFで。</div>
     </div>
   </div>
 </body>
