@@ -2,332 +2,63 @@
 <html lang="ja">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-  <title>OFA 点呼・点検</title>
-  <link rel="stylesheet" href="./style.css" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>OFA 点呼・点検（入口）</title>
+  <style>
+    body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Hiragino Kaku Gothic ProN","Noto Sans JP",sans-serif;margin:0;background:#f6f7fb;color:#111}
+    .wrap{max-width:820px;margin:0 auto;padding:18px}
+    .card{background:#fff;border:1px solid #e6e8f0;border-radius:18px;padding:18px;margin:14px 0;box-shadow:0 6px 22px rgba(20,30,60,.06)}
+    h1{font-size:20px;margin:0 0 6px}
+    .sub{opacity:.75;font-size:13px;margin:0 0 14px}
+    .badge{display:inline-flex;gap:8px;align-items:center;background:#ecfff2;border:1px solid #bfe8c8;color:#1b6b2a;border-radius:999px;padding:8px 12px;font-weight:700;font-size:13px}
+    .btns{display:grid;grid-template-columns:1fr;gap:10px;margin-top:12px}
+    .btn{appearance:none;border:0;border-radius:14px;padding:14px 14px;font-weight:800;font-size:16px;cursor:pointer}
+    .primary{background:linear-gradient(90deg,#ff8a00,#ff3d7f);color:#fff}
+    .ghost{background:#f0f3ff;border:1px solid #d8defa;color:#1c2a7a}
+    .note{font-size:13px;line-height:1.6;opacity:.9}
+    .small{font-size:12px;opacity:.7}
+    .rule li{margin:6px 0}
+  </style>
 </head>
 <body>
-  <div class="bg"></div>
+  <div class="wrap">
+    <div class="card">
+      <h1>🚚 OFA 点呼・点検</h1>
+      <p class="sub">出発点呼 / 帰着点呼 / 運行前点検（スマホ最適）</p>
 
-  <header class="top">
-    <div class="brand">
-      <div class="logo">
-        <span class="logo-inner">OFA</span>
+      <div class="badge">✅ 法令に基づく「点呼・点検」実施（毎日）</div>
+
+      <div class="card" style="margin-top:14px">
+        <b>必ず守るルール（簡単）</b>
+        <ul class="rule">
+          <li>出発前に「出発点呼」</li>
+          <li>帰着後に「帰着点呼」</li>
+          <li>アルコール数値の入力は必須</li>
+          <li>入力は記録として保存され、日報・月報に反映されます</li>
+        </ul>
+        <p class="note"><b>それでは点呼して、安全にいってらっしゃい！</b></p>
+        <p class="small">※ブックマーク推奨（このURLは変更しません）</p>
+
+        <div class="btns">
+          <button class="btn primary" onclick="openApp('departure')">出発点呼をする</button>
+          <button class="btn ghost" onclick="openApp('arrival')">帰着点呼をする</button>
+          <button class="btn ghost" onclick="openApp('reports')">日報 / 月報 を出力</button>
+        </div>
       </div>
-      <div class="brand-text">
-        <h1>🚚 OFA 点呼・点検</h1>
-        <p>出発点呼 / 帰着点呼 / 運行前点検（スマホ最適）</p>
-      </div>
+
+      <p class="small">※動かない時：Safariの「プライベートモード」をOFFにして開き直してください。</p>
     </div>
-  </header>
+  </div>
 
-  <main class="wrap">
-    <!-- HERO -->
-    <section class="hero">
-      <div class="hero-card">
-        <div class="hero-left">
-          <h2>OFA GROUP</h2>
-          <div class="hero-title">点呼＋点検（Drive保存 / 帳票出力）</div>
-          <div class="chips">
-            <span class="chip ok">✅ 写真＋記録JSONをDriveへ</span>
-            <span class="chip ok">✅ ログはスプレッドシートへ</span>
-            <span class="chip ok">✅ 日報/月報PDF・月次CSV</span>
-          </div>
-        </div>
-        <div class="hero-right">
-          <button class="btn btn-ghost" id="btnPing">接続テスト</button>
-          <div id="pingBadge" class="badge neutral">未確認</div>
-        </div>
-      </div>
-    </section>
+<script>
+  // ★ここだけ差し替え：あなたのGAS WebアプリURL（/exec）を入れる
+  const WEBAPP_URL = "https://script.google.com/macros/s/あなたのID/exec";
 
-    <!-- EXPORT -->
-    <section class="panel">
-      <div class="panel-title">出力</div>
-
-      <div class="grid2">
-        <div class="card">
-          <div class="card-h">日報PDF（日付）</div>
-          <input type="date" id="pdfDate" class="input" />
-          <div class="row">
-            <button class="btn btn-soft" id="btnDailyPdf">日報PDF</button>
-            <div class="note">※氏名で絞り込み可（下の氏名が使われます）</div>
-          </div>
-        </div>
-
-        <div class="card">
-          <div class="card-h">月報PDF / 月次CSV（年月）</div>
-          <input type="month" id="pdfMonth" class="input" />
-          <div class="row">
-            <button class="btn btn-soft" id="btnMonthlyPdf">月報PDF</button>
-            <button class="btn btn-soft2" id="btnMonthlyCsv">月次CSV</button>
-          </div>
-          <div class="note">※CSVはダウンロード形式で開きます</div>
-        </div>
-      </div>
-    </section>
-
-    <!-- TABS -->
-    <section class="tabs">
-      <button class="tab active" data-tab="input"><span>📝</span>入力（点呼＋点検）</button>
-      <button class="tab" data-tab="history"><span>🗂</span>履歴（この端末）</button>
-    </section>
-
-    <!-- INPUT TAB -->
-    <section id="tab-input" class="tabbody active">
-
-      <!-- MODE -->
-      <section class="panel">
-        <div class="seg">
-          <button class="seg-btn active" id="modeDeparture">出発点呼</button>
-          <button class="seg-btn" id="modeArrival">帰着点呼</button>
-        </div>
-        <div class="subnote">※出発と帰着は別々に記録します（必須項目も切替）</div>
-      </section>
-
-      <!-- COMMON -->
-      <section class="panel">
-        <div class="panel-title">基本情報（共通）</div>
-
-        <div class="grid2">
-          <div>
-            <label class="label">日付 <span class="req">*</span></label>
-            <input type="date" id="date" class="input" />
-          </div>
-          <div>
-            <label class="label">時刻（自動）</label>
-            <input type="text" id="time" class="input" readonly />
-          </div>
-
-          <div>
-            <label class="label">氏名 <span class="req">*</span></label>
-            <input type="text" id="driverName" class="input" placeholder="例：森下 洸" />
-          </div>
-
-          <div>
-            <label class="label">車両番号 <span class="req">*</span></label>
-            <input type="text" id="vehicleNo" class="input" placeholder="例：鹿児島 480 あ 12-34" />
-          </div>
-
-          <div>
-            <label class="label">電話（任意）</label>
-            <input type="tel" id="phone" class="input" placeholder="例：090-xxxx-xxxx" />
-          </div>
-
-          <div>
-            <label class="label">エリア（任意）</label>
-            <input type="text" id="area" class="input" placeholder="例：鹿児島市 / 世田谷区" />
-          </div>
-
-          <div class="span2">
-            <label class="label">ルート/コース（任意）</label>
-            <input type="text" id="route" class="input" placeholder="例：Aコース / ○○便" />
-          </div>
-        </div>
-      </section>
-
-      <!-- TENKO -->
-      <section class="panel">
-        <div class="panel-title">点呼（健康・酒気帯び確認）</div>
-
-        <div class="grid2">
-          <div>
-            <label class="label">アルコールチェック <span class="req">*</span></label>
-            <select id="alcoholCheck" class="input">
-              <option value="問題なし">問題なし</option>
-              <option value="要再検査">要再検査</option>
-              <option value="陽性">陽性</option>
-            </select>
-          </div>
-
-          <div>
-            <label class="label">数値（任意）</label>
-            <input type="text" id="alcoholValue" class="input" placeholder="例：0.00" />
-          </div>
-
-          <div>
-            <label class="label">体調 <span class="req">*</span></label>
-            <select id="condition" class="input">
-              <option value="良好">良好</option>
-              <option value="やや不調">やや不調</option>
-              <option value="不良">不良</option>
-            </select>
-          </div>
-
-          <div>
-            <label class="label">疲労度（任意）</label>
-            <select id="fatigue" class="input">
-              <option value="">未入力</option>
-              <option value="低い">低い</option>
-              <option value="普通">普通</option>
-              <option value="高い">高い</option>
-            </select>
-          </div>
-
-          <div>
-            <label class="label">体温（任意）</label>
-            <input type="number" step="0.1" id="temperature" class="input" placeholder="例：36.5" />
-          </div>
-
-          <div>
-            <label class="label">睡眠時間（任意）</label>
-            <input type="number" step="0.5" id="sleepHours" class="input" placeholder="例：7" />
-          </div>
-
-          <div>
-            <label class="label">服薬（任意）</label>
-            <select id="medication" class="input">
-              <option value="">未入力</option>
-              <option value="なし">なし</option>
-              <option value="あり（運転に影響なし）">あり（運転に影響なし）</option>
-              <option value="あり（影響の可能性あり）">あり（影響の可能性あり）</option>
-            </select>
-          </div>
-
-          <div>
-            <label class="label">健康メモ（任意）</label>
-            <input type="text" id="healthMemo" class="input" placeholder="例：頭痛あり/花粉症/通院後 など" />
-          </div>
-        </div>
-      </section>
-
-      <!-- INSPECTION (Departure required) -->
-      <section class="panel" id="inspectPanel">
-        <div class="panel-title">運行前点検（必須）</div>
-        <div class="subnote">
-          「異常あり」の場合は、異常内容を必ず入力してください。点検写真も必須です（メーター/外観/警告灯など）。
-        </div>
-
-        <div class="grid2">
-          <div>
-            <label class="label">点検結果 <span class="req">*</span></label>
-            <select id="inspectResult" class="input">
-              <option value="異常なし">異常なし</option>
-              <option value="異常あり">異常あり</option>
-            </select>
-          </div>
-
-          <div>
-            <label class="label">点検チェック（確認）</label>
-            <select id="inspectLevel" class="input">
-              <option value="簡易点検（項目はメモに記載）">簡易点検（項目はメモに記載）</option>
-              <option value="標準点検（下の項目を確認）">標準点検（下の項目を確認）</option>
-              <option value="詳細点検（追加点検あり）">詳細点検（追加点検あり）</option>
-            </select>
-          </div>
-
-          <div class="span2" id="inspectAbnormalBox" style="display:none;">
-            <label class="label">異常内容（異常ありの場合） <span class="req">*</span></label>
-            <input type="text" id="inspectAbnormal" class="input" placeholder="例：左前輪 空気圧低下 / ブレーキ鳴き など" />
-          </div>
-        </div>
-
-        <div class="checkgrid" id="checkgrid">
-          <label class="ck"><input type="checkbox" id="ckTire" checked /> タイヤ（空気圧/損傷）</label>
-          <label class="ck"><input type="checkbox" id="ckBrake" checked /> ブレーキ</label>
-          <label class="ck"><input type="checkbox" id="ckLight" checked /> 灯火類（ヘッド/ウインカー/ブレーキ）</label>
-          <label class="ck"><input type="checkbox" id="ckOil" checked /> オイル/水漏れ</label>
-          <label class="ck"><input type="checkbox" id="ckWiper" checked /> ワイパー/ウォッシャー</label>
-          <label class="ck"><input type="checkbox" id="ckHorn" checked /> ホーン</label>
-          <label class="ck"><input type="checkbox" id="ckMirror" checked /> ミラー/ガラス（視界）</label>
-          <label class="ck"><input type="checkbox" id="ckLoad" checked /> 荷台/ドア/施錠/積載物固定</label>
-          <label class="ck"><input type="checkbox" id="ckWarn" checked /> 警告灯（メーター）</label>
-          <label class="ck"><input type="checkbox" id="ckEtc" checked /> その他（下記メモ）</label>
-        </div>
-
-        <div class="grid2">
-          <div>
-            <label class="label">メーター（出発）<span class="req">*</span></label>
-            <input type="number" id="meterStart" class="input" placeholder="例：12450" />
-            <div class="tiny">※数字のみ推奨</div>
-          </div>
-
-          <div>
-            <label class="label">点検メモ（任意）</label>
-            <input type="text" id="inspectMemo" class="input" placeholder="点検補足 / その他メモ" />
-          </div>
-        </div>
-
-        <div class="grid2">
-          <div>
-            <label class="label">点検写真（メーター/外観/警告灯など）<span class="req">*</span></label>
-            <input type="file" id="photoInspect" class="file" accept="image/*" />
-            <div class="tiny warn">
-              ※iPhoneのHEICは失敗する場合あり（可能ならJPEGで共有→画像で保存 推奨）
-            </div>
-            <div class="preview" id="prevInspect"></div>
-          </div>
-
-          <div>
-            <label class="label">アルコール検知器写真（出発・任意）</label>
-            <input type="file" id="photoAlcohol" class="file" accept="image/*" />
-            <div class="preview" id="prevAlcohol"></div>
-          </div>
-        </div>
-      </section>
-
-      <!-- ARRIVAL ONLY -->
-      <section class="panel" id="arrivalPanel" style="display:none;">
-        <div class="panel-title">帰着時（任意～一部必須）</div>
-
-        <div class="grid2">
-          <div>
-            <label class="label">メーター（帰着）<span class="req">*</span></label>
-            <input type="number" id="meterEnd" class="input" placeholder="例：12590" />
-          </div>
-
-          <div>
-            <label class="label">帰着後アルコール（任意）</label>
-            <select id="alcoholAfter" class="input">
-              <option value="">未入力</option>
-              <option value="問題なし">問題なし</option>
-              <option value="要再検査">要再検査</option>
-              <option value="陽性">陽性</option>
-            </select>
-          </div>
-
-          <div class="span2">
-            <label class="label">クレーム/事故/遅延 など（任意）</label>
-            <textarea id="arrivalMemo" class="input textarea" placeholder="例：遅延理由、クレーム内容、事故報告（要点）"></textarea>
-          </div>
-
-          <div class="span2">
-            <label class="label">帰着写真（任意：メーター/外観など）</label>
-            <input type="file" id="photoArrival" class="file" accept="image/*" />
-            <div class="preview" id="prevArrival"></div>
-          </div>
-        </div>
-      </section>
-
-      <!-- FOOT -->
-      <section class="panel">
-        <div class="panel-title">連絡・備考（任意）</div>
-        <textarea id="note" class="input textarea" placeholder="連絡事項 / 遅延 / クレーム / 車両異常の詳細など"></textarea>
-
-        <div class="action">
-          <button class="btn btn-save" id="btnSave">この記録を保存（Driveへ）</button>
-        </div>
-
-        <div id="status" class="status neutral">準備OK</div>
-
-        <div class="foot-actions">
-          <button class="btn btn-ghost" id="btnClearLocal">この端末の履歴を全削除（ローカル）</button>
-        </div>
-      </section>
-
-      <footer class="footer">© OFA Group / Tenko & Inspection</footer>
-    </section>
-
-    <!-- HISTORY TAB -->
-    <section id="tab-history" class="tabbody">
-      <section class="panel">
-        <div class="panel-title">履歴（この端末）</div>
-        <div class="subnote">※端末内保存（ローカル）。Drive保存とは別です。</div>
-        <div id="historyList" class="history"></div>
-      </section>
-    </section>
-  </main>
-
-  <script src="./app.js"></script>
+  function openApp(mode){
+    const url = new URL(WEBAPP_URL);
+    url.searchParams.set("view", mode); // departure / arrival / reports
+    location.href = url.toString();
+  }
+</script>
 </body>
 </html>
