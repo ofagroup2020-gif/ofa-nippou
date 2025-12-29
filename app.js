@@ -1,17 +1,14 @@
 /* =========================================================
-  OFA 点呼・点検 (GitHub Pages front)
-  - GitHub Pages → GAS WebApp（bridge iframe + postMessage）
-  - 写真圧縮 → dataURL → GASへ送信
-========================================================= */
+   OFA 点呼・点検 (GitHub Pages Front)
+   - departure.html / arrival.html / reports.html
+   - GAS WebApp に保存（Google Drive/Sheet/PDF/CSV）
+   ========================================================= */
 
 const GAS_WEBAPP_URL =
-  "https://script.google.com/macros/s/AKfycbzMON8kEVi2VJrhPGSGtnX5y0Q4yQCrOPM5afh2ph_X_M0_djtmQAmFTrhZhdp8GA69jA/exec";
+  "https://script.google.com/macros/s/AKfycbwBeBa0ZAJfZzelyOoZmoJl62LJNTxIaPkxXx0vGgZA9V0Kb6WWOyC9VdLpK0sGy41glw/exec";
 
-// bridge用（GAS側 doGet?bridge=1 が返すHTML）
-const GAS_BRIDGE_URL = `${GAS_WEBAPP_URL}?bridge=1`;
-
+// ===== 共通 =====
 const $ = (sel) => document.querySelector(sel);
-const $$ = (sel) => Array.from(document.querySelectorAll(sel));
 
 function toast(msg, type = "info") {
   const el = $("#toast");
@@ -19,338 +16,343 @@ function toast(msg, type = "info") {
   el.textContent = msg;
   el.dataset.type = type;
   el.classList.add("show");
-  clearTimeout(window.__toastTimer);
-  window.__toastTimer = setTimeout(() => el.classList.remove("show"), 2500);
+  setTimeout(() => el.classList.remove("show"), 2400);
 }
 
 function fmtDate(d = new Date()) {
   const y = d.getFullYear();
   const m = String(d.getMonth() + 1).padStart(2, "0");
-  const day = String(d.getDate()).padStart(2, "0");
-  return `${y}-${m}-${day}`;
+  const da = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${da}`;
 }
+
 function fmtTime(d = new Date()) {
   const hh = String(d.getHours()).padStart(2, "0");
   const mm = String(d.getMinutes()).padStart(2, "0");
   return `${hh}:${mm}`;
 }
 
-function safeStr(v) {
-  return String(v ?? "").trim();
+function qs() {
+  const p = new URLSearchParams(location.search);
+  const o = {};
+  for (const [k, v] of p.entries()) o[k] = v;
+  return o;
 }
 
-/* ========= bridge（CORS回避） ========= */
-let bridgeReady = false;
-let bridgeIframe = null;
-let pending = new Map();
+function getLocal(key, defVal = "") {
+  try {
+    const v = localStorage.getItem(key);
+    return v == null ? defVal : v;
+  } catch {
+    return defVal;
+  }
+}
 
-function ensureBridge() {
-  if (bridgeIframe) return;
+function setLocal(key, val) {
+  try {
+    localStorage.setItem(key, val);
+  } catch {}
+}
 
-  bridgeIframe = document.createElement("iframe");
-  bridgeIframe.src = GAS_BRIDGE_URL;
-  bridgeIframe.style.display = "none";
-  document.body.appendChild(bridgeIframe);
-
-  window.addEventListener("message", (ev) => {
-    // GAS側からの返信のみ処理（originはscript.google.com / googleusercontent）
-    const data = ev.data;
-    if (!data || typeof data !== "object") return;
-
-    if (data.type === "bridge:ready") {
-      bridgeReady = true;
-      return;
-    }
-
-    if (data.type === "bridge:response") {
-      const { id, ok, payload, message } = data;
-      const p = pending.get(id);
-      if (!p) return;
-      pending.delete(id);
-      ok ? p.resolve(payload) : p.reject(new Error(message || "bridge error"));
-    }
+// ===== GAS呼び出し（CORS回避：GAS側 doPost JSON）=====
+async function gasPost(payload) {
+  const res = await fetch(GAS_WEBAPP_URL, {
+    method: "POST",
+    headers: { "Content-Type": "text/plain;charset=utf-8" },
+    body: JSON.stringify(payload),
   });
+  const txt = await res.text();
+  try {
+    return JSON.parse(txt);
+  } catch (e) {
+    return { ok: false, message: "GAS応答がJSONではありません", raw: txt };
+  }
 }
 
-function callGas(method, args = []) {
-  ensureBridge();
+// ===== 画像圧縮 -> dataURL =====
+async function fileToDataUrl(file, maxW = 1280, quality = 0.82) {
+  const img = await loadImageFromFile(file);
+  const { canvas, ctx, w, h } = fitToCanvas(img, maxW);
+  ctx.drawImage(img, 0, 0, w, h);
+  const dataUrl = canvas.toDataURL("image/jpeg", quality);
+  return dataUrl;
+}
+
+function loadImageFromFile(file) {
   return new Promise((resolve, reject) => {
-    const id = crypto.randomUUID();
-    pending.set(id, { resolve, reject });
-
-    // bridgeがまだでも投げる（ready前でも受け取れるようにGAS側は実装）
-    bridgeIframe.contentWindow.postMessage(
-      { type: "bridge:call", id, method, args },
-      "*"
-    );
-
-    setTimeout(() => {
-      if (pending.has(id)) {
-        pending.delete(id);
-        reject(new Error("タイムアウト：GAS応答なし"));
-      }
-    }, 25000);
+    const fr = new FileReader();
+    fr.onload = () => {
+      const img = new Image();
+      img.onload = () => resolve(img);
+      img.onerror = reject;
+      img.src = fr.result;
+    };
+    fr.onerror = reject;
+    fr.readAsDataURL(file);
   });
 }
 
-/* ========= 画像圧縮 ========= */
-async function fileToDataUrl(file) {
-  const buf = await file.arrayBuffer();
-  const blob = new Blob([buf], { type: file.type || "image/jpeg" });
-  return await new Promise((res) => {
-    const r = new FileReader();
-    r.onload = () => res(r.result);
-    r.readAsDataURL(blob);
-  });
+function fitToCanvas(img, maxW) {
+  const ratio = img.width / img.height;
+  const w = Math.min(img.width, maxW);
+  const h = Math.round(w / ratio);
+  const canvas = document.createElement("canvas");
+  canvas.width = w;
+  canvas.height = h;
+  const ctx = canvas.getContext("2d");
+  return { canvas, ctx, w, h };
 }
 
-async function compressImageDataUrl(dataUrl, maxW = 1280, quality = 0.8) {
-  const img = new Image();
-  img.src = dataUrl;
-
-  await new Promise((r) => (img.onload = r));
-
-  const w = img.width;
-  const h = img.height;
-  const scale = Math.min(1, maxW / w);
-  const nw = Math.round(w * scale);
-  const nh = Math.round(h * scale);
-
-  const c = document.createElement("canvas");
-  c.width = nw;
-  c.height = nh;
-  const ctx = c.getContext("2d");
-  ctx.drawImage(img, 0, 0, nw, nh);
-
-  // JPEGで統一
-  return c.toDataURL("image/jpeg", quality);
-}
-
-/* ========= フォーム共通 ========= */
-function bindCommonDefaults() {
-  const dateEl = $("#date");
-  const timeEl = $("#timeSelected");
-  if (dateEl && !dateEl.value) dateEl.value = fmtDate();
-  if (timeEl && !timeEl.value) timeEl.value = fmtTime();
-}
-
-/* ========= 写真UI ========= */
-function bindPhotoPicker() {
-  const input = $("#photos");
-  const list = $("#photoList");
-  if (!input || !list) return;
-
-  input.addEventListener("change", async () => {
-    list.innerHTML = "";
-    const files = Array.from(input.files || []);
-    if (!files.length) return;
-
-    for (const f of files) {
-      const li = document.createElement("div");
-      li.className = "photoItem";
-      li.textContent = `処理中… ${f.name}`;
-      list.appendChild(li);
-
-      try {
-        const du = await fileToDataUrl(f);
-        const compressed = await compressImageDataUrl(du, 1280, 0.8);
-
-        li.textContent = f.name;
-        li.dataset.dataUrl = compressed;
-        li.dataset.filename = f.name;
-
-        const img = document.createElement("img");
-        img.src = compressed;
-        li.appendChild(img);
-      } catch (e) {
-        li.textContent = `失敗: ${f.name}`;
-      }
-    }
-  });
-}
-
-function collectPhotos() {
-  const list = $("#photoList");
-  if (!list) return [];
-  const items = Array.from(list.querySelectorAll(".photoItem"));
-  const out = [];
-  items.forEach((it) => {
-    const dataUrl = it.dataset.dataUrl;
-    const filename = it.dataset.filename;
-    if (dataUrl && filename) out.push({ dataUrl, filename });
-  });
-  return out;
-}
-
-/* ========= 保存 ========= */
-async function submitTenko(mode) {
-  // 必須
-  const data = {
-    mode,
-    date: safeStr($("#date")?.value),
-    timeSelected: safeStr($("#timeSelected")?.value),
-    driverName: safeStr($("#driverName")?.value),
-    vehicleNo: safeStr($("#vehicleNo")?.value),
-    alcoholValue: safeStr($("#alcoholValue")?.value),
-
-    phone: safeStr($("#phone")?.value),
-    email: safeStr($("#email")?.value),
-    licenseNo: safeStr($("#licenseNo")?.value),
-    area: safeStr($("#area")?.value),
-    route: safeStr($("#route")?.value),
-
-    alcoholJudge: safeStr($("#alcoholJudge")?.value),
-    condition: safeStr($("#condition")?.value),
-    fatigue: safeStr($("#fatigue")?.value),
-    temperature: safeStr($("#temperature")?.value),
-    sleepHours: safeStr($("#sleepHours")?.value),
-    medicine: safeStr($("#medicine")?.value),
-    healthMemo: safeStr($("#healthMemo")?.value),
-
-    checkBrakeTire: safeStr($("#checkBrakeTire")?.value),
-    checkLights: safeStr($("#checkLights")?.value),
-    checkMirror: safeStr($("#checkMirror")?.value),
-    checkLockLoad: safeStr($("#checkLockLoad")?.value),
-    checkOther: safeStr($("#checkOther")?.value),
-
-    meterStart: safeStr($("#meterStart")?.value),
-    meterEnd: safeStr($("#meterEnd")?.value),
-    remarks: safeStr($("#remarks")?.value),
-
-    photos: collectPhotos(),
-  };
-
-  const required = ["mode", "date", "timeSelected", "driverName", "vehicleNo", "alcoholValue"];
-  for (const k of required) {
-    if (!data[k]) throw new Error(`必須が未入力: ${k}`);
-  }
-
-  toast("保存中…", "info");
-
-  // GAS側: saveTenkoRecord を呼ぶ
-  const res = await callGas("saveTenkoRecord", [data]);
-
-  if (res?.ok) {
-    toast("✅ 保存しました", "success");
-    $("#resultBox").classList.remove("hidden");
-    $("#resultRecordId").textContent = res.recordId || "";
-    $("#resultPhotoUrl").href = res.photoFolderUrl || "#";
-    $("#resultPhotoUrl").textContent = res.photoFolderUrl ? "写真フォルダを開く" : "（写真なし）";
-
-    // iPhone/LINE共有用に、結果をクリップボードにも出す
-    const shareText =
-      `OFA点呼保存OK\n` +
-      `日付:${data.date} ${data.timeSelected}\n` +
-      `区分:${data.mode}\n` +
-      `氏名:${data.driverName}\n` +
-      `車両:${data.vehicleNo}\n` +
-      `記録ID:${res.recordId || ""}\n` +
-      (res.photoFolderUrl ? `写真:${res.photoFolderUrl}\n` : "");
-
-    $("#copyText").value = shareText;
-  } else {
-    throw new Error(res?.message || "保存失敗");
-  }
-}
-
-/* ========= レポート ========= */
-async function makeDailyPdf() {
-  const date = safeStr($("#repDate")?.value);
-  const name = safeStr($("#repName")?.value);
-  if (!date) throw new Error("日付が必要です");
-  toast("日報PDF作成中…", "info");
-
-  // GAS側 createDailyPdf を呼ぶ
-  const res = await callGas("createDailyPdf", [date, name]);
-  if (!res?.ok) throw new Error(res?.message || "日報PDF失敗");
-
-  $("#repOut").classList.remove("hidden");
-  $("#repOutTitle").textContent = "日報PDF";
-  $("#repOutUrl").href = res.url;
-  $("#repOutUrl").textContent = res.url;
-  toast("✅ 日報PDFできました", "success");
-}
-
-async function makeMonthlyPdf() {
-  const ym = safeStr($("#repYm")?.value);
-  const name = safeStr($("#repName2")?.value);
-  if (!ym) throw new Error("YYYY-MM が必要です");
-  toast("月報PDF作成中…", "info");
-
-  const res = await callGas("createMonthlyPdf", [ym, name]);
-  if (!res?.ok) throw new Error(res?.message || "月報PDF失敗");
-
-  $("#repOut").classList.remove("hidden");
-  $("#repOutTitle").textContent = "月報PDF";
-  $("#repOutUrl").href = res.url;
-  $("#repOutUrl").textContent = res.url;
-  toast("✅ 月報PDFできました", "success");
-}
-
-async function makeMonthlyCsv() {
-  const ym = safeStr($("#repYm2")?.value);
-  const name = safeStr($("#repName3")?.value);
-  if (!ym) throw new Error("YYYY-MM が必要です");
-  toast("月CSV作成中…", "info");
-
-  const res = await callGas("createMonthlyCsvText", [ym, name]);
-  if (!res?.ok) throw new Error(res?.message || "月CSV失敗");
-
-  const csv = res.csv || "";
-  const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
-  const url = URL.createObjectURL(blob);
-
-  $("#repOut").classList.remove("hidden");
-  $("#repOutTitle").textContent = "月CSV（ダウンロード）";
-  $("#repOutUrl").href = url;
-  $("#repOutUrl").download = `OFA_月CSV_${ym}.csv`;
-  $("#repOutUrl").textContent = "CSVをダウンロード";
-  toast("✅ CSVできました", "success");
-}
-
-/* ========= ページごとの初期化 ========= */
-window.addEventListener("load", () => {
-  // bridgeを先に起動（遅延対策）
-  ensureBridge();
-
+// ===== ページ別初期化 =====
+document.addEventListener("DOMContentLoaded", () => {
   const page = document.body.dataset.page;
 
-  if (page === "departure") {
-    bindCommonDefaults();
-    bindPhotoPicker();
-    $("#submitBtn")?.addEventListener("click", async () => {
-      try { await submitTenko("departure"); }
-      catch (e) { toast(e.message || String(e), "error"); }
-    });
-  }
-
-  if (page === "arrival") {
-    bindCommonDefaults();
-    bindPhotoPicker();
-    $("#submitBtn")?.addEventListener("click", async () => {
-      try { await submitTenko("arrival"); }
-      catch (e) { toast(e.message || String(e), "error"); }
-    });
-  }
-
-  if (page === "reports") {
-    // デフォルト
-    const d = new Date();
-    $("#repDate").value = fmtDate(d);
-    $("#repYm").value = fmtDate(d).slice(0, 7);
-    $("#repYm2").value = fmtDate(d).slice(0, 7);
-
-    $("#btnDailyPdf")?.addEventListener("click", async () => {
-      try { await makeDailyPdf(); }
-      catch (e) { toast(e.message || String(e), "error"); }
-    });
-    $("#btnMonthlyPdf")?.addEventListener("click", async () => {
-      try { await makeMonthlyPdf(); }
-      catch (e) { toast(e.message || String(e), "error"); }
-    });
-    $("#btnMonthlyCsv")?.addEventListener("click", async () => {
-      try { await makeMonthlyCsv(); }
-      catch (e) { toast(e.message || String(e), "error"); }
-    });
-  }
+  if (page === "index") initIndex();
+  if (page === "departure") initForm("departure");
+  if (page === "arrival") initForm("arrival");
+  if (page === "reports") initReports();
 });
+
+// ===== index =====
+function initIndex() {
+  const btnDep = $("#btnDeparture");
+  const btnArr = $("#btnArrival");
+  const btnRep = $("#btnReports");
+
+  if (btnDep) btnDep.addEventListener("click", () => (location.href = "./departure.html"));
+  if (btnArr) btnArr.addEventListener("click", () => (location.href = "./arrival.html"));
+  if (btnRep) btnRep.addEventListener("click", () => (location.href = "./reports.html"));
+
+  // ping確認（任意）
+  const ping = $("#pingStatus");
+  if (ping) {
+    fetch(GAS_WEBAPP_URL + "?ping=1")
+      .then((r) => r.text())
+      .then((t) => {
+        ping.textContent = "接続OK";
+      })
+      .catch(() => {
+        ping.textContent = "接続NG";
+      });
+  }
+}
+
+// ===== departure/arrival 共通フォーム =====
+function initForm(mode) {
+  // 初期値
+  $("#date").value = fmtDate(new Date());
+  $("#timeSelected").value = fmtTime(new Date());
+
+  // ローカル記憶（入力が楽になる）
+  $("#driverName").value = getLocal("ofa_driverName");
+  $("#vehicleNo").value = getLocal("ofa_vehicleNo");
+  $("#phone").value = getLocal("ofa_phone");
+  $("#email").value = getLocal("ofa_email");
+  $("#licenseNo").value = getLocal("ofa_licenseNo");
+  $("#area").value = getLocal("ofa_area");
+
+  // 写真プレビュー
+  const photoInput = $("#photos");
+  const preview = $("#photoPreview");
+  let photoFiles = [];
+
+  if (photoInput) {
+    photoInput.addEventListener("change", () => {
+      photoFiles = Array.from(photoInput.files || []);
+      if (!preview) return;
+      preview.innerHTML = "";
+      photoFiles.forEach((f) => {
+        const div = document.createElement("div");
+        div.className = "thumb";
+        div.textContent = f.name;
+        preview.appendChild(div);
+      });
+      toast(`写真 ${photoFiles.length}枚 選択`, "info");
+    });
+  }
+
+  // 送信
+  $("#btnSubmit").addEventListener("click", async () => {
+    try {
+      $("#btnSubmit").disabled = true;
+      toast("送信中…", "info");
+
+      // 必須
+      const payload = collectPayload(mode);
+
+      // ローカル保存
+      setLocal("ofa_driverName", payload.driverName);
+      setLocal("ofa_vehicleNo", payload.vehicleNo);
+      setLocal("ofa_phone", payload.phone);
+      setLocal("ofa_email", payload.email);
+      setLocal("ofa_licenseNo", payload.licenseNo);
+      setLocal("ofa_area", payload.area);
+
+      // 写真を dataURL 化（最大6枚推奨）
+      const photos = [];
+      const limit = Math.min(photoFiles.length, 6);
+      for (let i = 0; i < limit; i++) {
+        const f = photoFiles[i];
+        const dataUrl = await fileToDataUrl(f);
+        photos.push({ filename: f.name || `photo_${i + 1}.jpg`, dataUrl });
+      }
+      payload.photos = photos;
+
+      const res = await gasPost(payload);
+      if (!res.ok) throw new Error(res.message || "保存に失敗しました");
+
+      toast("保存完了！", "success");
+
+      // 結果表示
+      if ($("#result")) {
+        $("#result").innerHTML =
+          `<div class="resultBox">
+            <div><b>保存OK</b> recordId: ${res.recordId}</div>
+            ${res.photoFolderUrl ? `<div>写真: <a target="_blank" href="${res.photoFolderUrl}">Driveフォルダ</a>（${res.photoCount}枚）</div>` : ""}
+          </div>`;
+      }
+
+      // 次アクション
+      if ($("#btnToTop")) {
+        $("#btnToTop").classList.remove("hidden");
+      }
+    } catch (e) {
+      toast(String(e.message || e), "error");
+    } finally {
+      $("#btnSubmit").disabled = false;
+    }
+  });
+
+  // トップへ
+  const topBtn = $("#btnToTop");
+  if (topBtn) topBtn.addEventListener("click", () => (location.href = "./index.html"));
+}
+
+function collectPayload(mode) {
+  const required = (id, label) => {
+    const v = ($(id).value || "").trim();
+    if (!v) throw new Error(`${label} を入力してください`);
+    return v;
+  };
+
+  const val = (id) => (($(id) && $(id).value) ? $(id).value.trim() : "");
+
+  // アルコール
+  const alcoholValue = required("#alcoholValue", "アルコール数値");
+  const alcoholJudge = (() => {
+    const n = parseFloat(alcoholValue);
+    if (isNaN(n)) return "";
+    return n <= 0.0 ? "OK" : "NG";
+  })();
+
+  return {
+    mode,
+    date: required("#date", "日付"),
+    timeSelected: required("#timeSelected", "時刻"),
+    driverName: required("#driverName", "氏名"),
+    vehicleNo: required("#vehicleNo", "車両番号"),
+    alcoholValue,
+    alcoholJudge,
+
+    phone: val("#phone"),
+    email: val("#email"),
+    licenseNo: val("#licenseNo"),
+    area: val("#area"),
+    route: val("#route"),
+
+    condition: val("#condition"),
+    fatigue: val("#fatigue"),
+    temperature: val("#temperature"),
+    sleepHours: val("#sleepHours"),
+    medicine: val("#medicine"),
+    healthMemo: val("#healthMemo"),
+
+    checkBrakeTire: val("#checkBrakeTire"),
+    checkLights: val("#checkLights"),
+    checkMirror: val("#checkMirror"),
+    checkLockLoad: val("#checkLockLoad"),
+    checkOther: val("#checkOther"),
+
+    meterStart: val("#meterStart"),
+    meterEnd: val("#meterEnd"),
+    remarks: val("#remarks"),
+  };
+}
+
+// ===== reports =====
+function initReports() {
+  // 初期値
+  $("#repDate").value = fmtDate(new Date());
+  $("#repYm").value = fmtDate(new Date()).slice(0, 7);
+  $("#repName").value = getLocal("ofa_driverName");
+
+  // 日報PDF
+  $("#btnDailyPdf").addEventListener("click", async () => {
+    try {
+      toast("日報PDF作成中…", "info");
+      const date = ($("#repDate").value || "").trim();
+      const name = ($("#repName").value || "").trim();
+      const res = await gasPost({ mode: "createDailyPdf", date, name });
+      if (!res.ok) throw new Error(res.message || "失敗");
+      showLink("日報PDF", res.url);
+    } catch (e) {
+      toast(String(e.message || e), "error");
+    }
+  });
+
+  // 月報PDF
+  $("#btnMonthlyPdf").addEventListener("click", async () => {
+    try {
+      toast("月報PDF作成中…", "info");
+      const ym = ($("#repYm").value || "").trim();
+      const name = ($("#repName").value || "").trim();
+      const res = await gasPost({ mode: "createMonthlyPdf", ym, name });
+      if (!res.ok) throw new Error(res.message || "失敗");
+      showLink("月報PDF", res.url);
+    } catch (e) {
+      toast(String(e.message || e), "error");
+    }
+  });
+
+  // 月CSV
+  $("#btnMonthlyCsv").addEventListener("click", async () => {
+    try {
+      toast("月CSV生成中…", "info");
+      const ym = ($("#repYm").value || "").trim();
+      const name = ($("#repName").value || "").trim();
+      const res = await gasPost({ mode: "createMonthlyCsvText", ym, name });
+      if (!res.ok) throw new Error(res.message || "失敗");
+      downloadText(`OFA_${ym}_tenko.csv`, res.csv || "");
+      toast("CSVをダウンロードしました", "success");
+    } catch (e) {
+      toast(String(e.message || e), "error");
+    }
+  });
+
+  $("#btnToTop").addEventListener("click", () => (location.href = "./index.html"));
+}
+
+function showLink(label, url) {
+  const box = $("#repResult");
+  if (!box) return;
+  box.innerHTML =
+    `<div class="resultBox">
+      <div><b>${label}</b></div>
+      <div><a target="_blank" href="${url}">${url}</a></div>
+      <div class="small">※iPhoneなら「共有」→ LINE で送れます</div>
+    </div>`;
+}
+
+function downloadText(filename, text) {
+  const blob = new Blob([text], { type: "text/csv;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(() => {
+    URL.revokeObjectURL(url);
+    a.remove();
+  }, 500);
+}
