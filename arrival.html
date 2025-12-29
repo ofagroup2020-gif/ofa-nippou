@@ -1,57 +1,110 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>帰着点呼｜OFA 点呼・点検</title>
-  <link rel="stylesheet" href="style.css" />
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>帰着点呼 | OFA</title>
+<link rel="stylesheet" href="style.css" />
 </head>
+
 <body>
-  <main class="wrap">
-    <section class="card">
-      <header class="header">
-        <div class="logo">🏁</div>
-        <div>
-          <h1>帰着点呼</h1>
-          <p class="sub">帰着後の点呼・点検を記録します（スマホ最適）</p>
-        </div>
-      </header>
+<div class="container">
+  <h1>✅ 帰着点呼</h1>
+  <p class="desc">業務終了後の点呼・日報を記録します</p>
 
-      <div class="form">
-        <label class="field">
-          <span>氏名（必須）</span>
-          <input id="name" type="text" inputmode="text" autocomplete="name" placeholder="例）森下 洸" />
-        </label>
+  <form id="arrivalForm">
+    <!-- 共通 -->
+    <label>日付（必須）</label>
+    <input type="date" name="date" required />
 
-        <label class="field">
-          <span>車両番号 / 車番</span>
-          <input id="vehicle" type="text" inputmode="text" autocomplete="off" placeholder="例）鹿児島 480 あ 1234" />
-        </label>
+    <label>時刻（必須）</label>
+    <input type="time" name="time" required />
 
-        <label class="field">
-          <span>メモ（異常・事故・ヒヤリハット・車両不具合など）</span>
-          <textarea id="memo" rows="4" placeholder="例）本日異常なし／右後ろタイヤ空気圧低め／再配達2件など"></textarea>
-        </label>
+    <label>運転者氏名（必須）</label>
+    <input type="text" name="driver" required />
 
-        <label class="field">
-          <span>写真（任意 / 複数OK）</span>
-          <input id="photo" type="file" accept="image/*" multiple />
-          <small class="hint">例：車両不具合箇所、事故状況、メーター、点検箇所など</small>
-        </label>
+    <label>車両番号（必須）</label>
+    <input type="text" name="vehicle" required />
 
-        <div class="actions">
-          <button class="btn primary" onclick="submitTenko('arrival')">送信（帰着点呼）</button>
-          <button class="btn" onclick="location.href='index.html'">戻る</button>
-        </div>
-      </div>
+    <label>点呼実施者（必須）</label>
+    <input type="text" name="checker" required />
 
-      <p class="note">
-        ※送信後は自動でトップへ戻ります。<br/>
-        ※写真が多いと送信に時間がかかる場合があります。
-      </p>
-    </section>
-  </main>
+    <label>点呼方法</label>
+    <select name="method">
+      <option value="対面">対面</option>
+      <option value="電話">電話</option>
+      <option value="IT点呼">IT点呼</option>
+    </select>
 
-  <script src="app.js"></script>
+    <label>点呼場所</label>
+    <input type="text" name="place" placeholder="営業所・車庫・その他" />
+
+    <!-- アルコール -->
+    <label>アルコール測定値（必須）</label>
+    <input type="number" step="0.01" name="alcohol" required />
+
+    <label>酒気帯び</label>
+    <select name="alcohol_result">
+      <option value="なし">なし</option>
+      <option value="あり">あり</option>
+    </select>
+
+    <!-- 業務内容（日報） -->
+    <hr>
+    <h2>📄 日報（業務内容）</h2>
+
+    <label>本日の業務内容（必須）</label>
+    <textarea name="work_detail" rows="3" required
+      placeholder="例：Amazon宅配、企業配、スポット便など"></textarea>
+
+    <label>配送エリア</label>
+    <input type="text" name="area" />
+
+    <label>稼働時間</label>
+    <input type="text" name="work_time" placeholder="例：9:00〜18:00" />
+
+    <label>配送個数</label>
+    <input type="number" name="packages" />
+
+    <!-- 業務後確認 -->
+    <hr>
+    <h2>🚚 業務後確認</h2>
+
+    <label>車両状態</label>
+    <select name="vehicle_status">
+      <option value="異常なし">異常なし</option>
+      <option value="異常あり">異常あり</option>
+    </select>
+
+    <label>道路・天候状況</label>
+    <input type="text" name="road_condition" />
+
+    <label>事故・トラブル</label>
+    <select name="trouble">
+      <option value="なし">なし</option>
+      <option value="あり">あり</option>
+    </select>
+
+    <label>特記事項</label>
+    <textarea name="note" rows="3"></textarea>
+
+    <!-- 写真 -->
+    <label>写真（任意・複数OK）</label>
+    <input type="file" name="photos" accept="image/*" multiple />
+
+    <div class="buttons">
+      <button type="submit">送信（帰着点呼）</button>
+      <button type="button" onclick="location.href='index.html'">戻る</button>
+    </div>
+  </form>
+</div>
+
+<script src="app.js"></script>
+<script>
+document.getElementById("arrivalForm").addEventListener("submit", (e) => {
+  e.preventDefault();
+  submitForm("arrival", e.target);
+});
+</script>
 </body>
 </html>
