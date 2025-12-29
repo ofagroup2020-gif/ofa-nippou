@@ -6,45 +6,66 @@
   <title>OFA 出発点呼</title>
   <link rel="stylesheet" href="./style.css" />
   <style>
-    /* ページ単体でも崩れない最低限（style.cssがあれば上書きされます） */
-    :root{ --card:#fff; --bg:#f4f6fb; --line:#e7eaf2; --txt:#111827; --sub:#6b7280;}
-    body{background:var(--bg); color:var(--txt); font-family: system-ui,-apple-system,"Hiragino Kaku Gothic ProN","Noto Sans JP",sans-serif; margin:0;}
-    .wrap{max-width:720px;margin:0 auto;padding:16px 14px 40px;}
-    .card{background:var(--card); border:1px solid var(--line); border-radius:18px; padding:16px; box-shadow:0 8px 24px rgba(17,24,39,.06);}
-    .title{display:flex;gap:10px;align-items:center;margin:0 0 6px;}
-    .title h1{font-size:22px;margin:0;}
-    .subtitle{color:var(--sub);font-size:13px;margin:0 0 14px;}
-    .grid{display:grid;grid-template-columns:1fr;gap:12px;}
-    @media (min-width:680px){ .grid.two{grid-template-columns:1fr 1fr;} }
-    label{display:block;font-size:12px;color:var(--sub);margin:0 0 6px;}
-    input,select,textarea{width:100%; box-sizing:border-box; border:1px solid var(--line); border-radius:14px; padding:12px 12px; font-size:16px; background:#fff; outline:none;}
-    textarea{min-height:96px; resize:vertical;}
-    .row{display:flex; gap:10px; align-items:center;}
-    .btnrow{display:flex; gap:10px; margin-top:14px;}
-    .btn{flex:1; border:none; border-radius:16px; padding:14px 14px; font-size:16px; font-weight:700; cursor:pointer;}
-    .btn-primary{background:linear-gradient(90deg,#ff8a00,#ff3d8b,#7c3aed); color:#fff;}
-    .btn-ghost{background:#eef2ff; color:#1f2937;}
-    .hint{font-size:12px;color:var(--sub);line-height:1.55;margin-top:10px;}
-    .section{margin-top:14px;border-top:1px dashed var(--line);padding-top:14px;}
-    #toast{position:fixed;left:50%;transform:translateX(-50%);bottom:18px;z-index:9999;
-      background:#111827;color:#fff;padding:10px 14px;border-radius:14px;font-weight:700;opacity:0;pointer-events:none;transition:.2s;}
-    #toast.show{opacity:1;}
-    #toast[data-type="ok"]{background:#16a34a;}
-    #toast[data-type="err"]{background:#dc2626;}
-    #toast[data-type="info"]{background:#111827;}
+    /* 追加の微調整（style.cssがあっても崩れない） */
+    :root { --card:#fff; --bg:#f4f6fb; --line:#e7ebf3; --txt:#0f172a; --muted:#64748b; }
+    body{ background:var(--bg); color:var(--txt); }
+    .wrap{ max-width:720px; margin:0 auto; padding:16px 14px 40px; }
+    .card{ background:var(--card); border:1px solid var(--line); border-radius:16px; padding:14px; box-shadow:0 6px 18px rgba(15,23,42,.06); }
+    .title{ font-size:22px; font-weight:800; display:flex; gap:10px; align-items:center; margin:4px 0 10px; }
+    .sub{ color:var(--muted); font-size:13px; margin:0 0 12px; line-height:1.5; }
+    .badge{ display:inline-flex; align-items:center; gap:8px; padding:8px 10px; background:#eef2ff; color:#3730a3; border-radius:999px; font-size:12px; font-weight:700; }
+    .grid{ display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+    @media (max-width:680px){ .grid{ grid-template-columns:1fr; } }
+    label{ display:block; font-size:12px; font-weight:700; margin:12px 0 6px; color:#1f2937; }
+    input, select, textarea{
+      width:100%; box-sizing:border-box; border:1px solid var(--line); border-radius:12px;
+      padding:12px 12px; font-size:16px; background:#fff; outline:none;
+    }
+    textarea{ min-height:110px; resize:vertical; }
+    .hint{ font-size:12px; color:var(--muted); margin-top:6px; }
+    .hr{ height:1px; background:var(--line); margin:14px 0; }
+    .sectionTitle{ font-weight:900; font-size:14px; display:flex; align-items:center; gap:8px; margin:4px 0 0; }
+    .checks{ display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:10px; }
+    @media (max-width:680px){ .checks{ grid-template-columns:1fr; } }
+    .checkItem{
+      border:1px solid var(--line); border-radius:14px; padding:10px 12px; background:#fbfdff;
+      display:flex; align-items:center; justify-content:space-between; gap:10px;
+    }
+    .checkItem .k{ font-weight:800; font-size:13px; }
+    .checkItem select{ width:140px; padding:10px; font-size:14px; }
+    .actions{ display:flex; gap:10px; margin-top:14px; }
+    .btn{
+      flex:1; border:none; border-radius:14px; padding:14px 12px; font-size:16px; font-weight:900; cursor:pointer;
+    }
+    .btnPrimary{
+      background:linear-gradient(90deg,#ff8a00,#ff3d81,#6a5cff);
+      color:#fff;
+    }
+    .btnGhost{ background:#fff; border:1px solid var(--line); }
+    #toast{
+      position:fixed; left:50%; bottom:18px; transform:translateX(-50%);
+      background:#111827; color:#fff; padding:12px 14px; border-radius:999px;
+      font-size:13px; opacity:0; pointer-events:none; transition:.2s;
+      max-width:92vw; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+    }
+    #toast.show{ opacity:1; }
+    #toast[data-type="ok"]{ background:#065f46; }
+    #toast[data-type="err"]{ background:#991b1b; }
+    .mini{ font-size:12px; color:var(--muted); margin-top:10px; line-height:1.6; }
   </style>
 </head>
 
 <body>
   <div class="wrap">
     <div class="card">
-      <div class="title">
-        <div style="font-size:22px;">🚚</div>
-        <h1>出発点呼</h1>
-      </div>
-      <p class="subtitle">出発前の点呼・点検を記録します（スマホ最適 / 送信後は自動でトップに戻ります）</p>
+      <div class="title">🚚 出発点呼</div>
+      <p class="sub">出発前の点呼・点検を記録します（スマホ最適）／送信後は自動でトップへ戻ります。</p>
+      <div class="badge">✅ 法令に基づく 点呼・点検（毎日）</div>
 
-      <div class="grid two">
+      <div class="hr"></div>
+
+      <!-- 共通（必須） -->
+      <div class="grid">
         <div>
           <label>日付（必須）</label>
           <input id="date" type="date" />
@@ -55,111 +76,124 @@
         </div>
       </div>
 
-      <div class="grid two">
-        <div>
-          <label>運転者氏名（必須）</label>
-          <input id="driverName" type="text" placeholder="例）森下 洸" autocomplete="name" />
-        </div>
-        <div>
-          <label>車両番号（必須）</label>
-          <input id="vehicleNo" type="text" placeholder="例）鹿児島 480 あ 1234 / 車番" />
-        </div>
-      </div>
+      <label>運転者氏名（必須）</label>
+      <input id="driverName" placeholder="例）森下 洸" />
 
-      <div class="grid two">
-        <div>
-          <label>点呼実施者（必須）</label>
-          <input id="managerName" type="text" placeholder="例）管理者名 / リーダー名" />
-        </div>
+      <label>車両番号 / 車番（必須）</label>
+      <input id="vehicleNo" placeholder="例）鹿児島480 あ 1234 / OFA-01" />
+
+      <label>点呼実施者（必須）</label>
+      <input id="managerName" placeholder="例）運行管理者名" />
+
+      <div class="grid">
         <div>
           <label>点呼方法（必須）</label>
           <select id="method">
-            <option value="">選択してください</option>
+            <option value="">選択</option>
             <option>対面</option>
             <option>電話</option>
-            <option>ビデオ通話</option>
-            <option>点呼アプリ</option>
+            <option>IT点呼</option>
             <option>その他</option>
           </select>
         </div>
-      </div>
-
-      <div class="grid two">
         <div>
           <label>点呼場所（任意）</label>
-          <input id="place" type="text" placeholder="例）営業所 / 車庫 / 自宅 / その他" />
-        </div>
-        <div>
-          <label>アルコール測定値（必須）</label>
-          <input id="alcoholValue" type="number" step="0.01" inputmode="decimal" placeholder="例）0.00" />
+          <input id="place" placeholder="例）営業所 / 車庫 / 自宅" />
         </div>
       </div>
 
-      <div class="grid two">
+      <div class="grid">
+        <div>
+          <label>アルコール測定値（必須）</label>
+          <input id="alcoholValue" inputmode="decimal" placeholder="例）0.00" />
+          <div class="hint">小数OK（例：0.00）</div>
+        </div>
         <div>
           <label>酒気帯び（必須）</label>
           <select id="alcoholBand">
-            <option value="">選択してください</option>
+            <option value="">選択</option>
             <option>なし</option>
             <option>あり</option>
           </select>
         </div>
+      </div>
+
+      <label>安全運行に支障の恐れ（任意）</label>
+      <select id="healthRisk">
+        <option value="">選択</option>
+        <option>なし</option>
+        <option>あり（軽度）</option>
+        <option>あり（要休務）</option>
+      </select>
+
+      <div class="grid">
         <div>
-          <label>体調不良等（任意）</label>
-          <select id="healthRisk">
-            <option value="">未選択</option>
-            <option>問題なし</option>
-            <option>少し不安あり</option>
-            <option>運行不可の可能性</option>
-          </select>
+          <label>開始走行距離（必須）</label>
+          <input id="odoStart" inputmode="numeric" placeholder="例）123456" />
+        </div>
+        <div>
+          <label>運転免許番号（任意）</label>
+          <input id="licenseNo" placeholder="例）第XXXXXXXXXXXX号" />
         </div>
       </div>
 
-      <div class="section">
-        <label>その他必要事項（必須）※点検/体温/睡眠/日常点検などを一言でOK</label>
-        <textarea id="memo" placeholder="例）体温36.5、睡眠OK、日常点検OK、アルコール0.00"></textarea>
+      <label>その他必要事項（必須）</label>
+      <textarea id="memo" placeholder="例）体温36.5／体調良好／日常点検OK／アルコール0.00"></textarea>
 
-        <div class="grid two" style="margin-top:12px;">
-          <div>
-            <label>日常点検・装置確認（任意）</label>
-            <select id="deviceCheck">
-              <option value="">未選択</option>
-              <option>OK</option>
-              <option>要注意</option>
-              <option>不良</option>
-            </select>
-          </div>
-          <div>
-            <label>運転者への指示事項（任意）</label>
-            <input id="instruction" type="text" placeholder="例）速度注意 / 休憩多め / 再配達注意" />
-          </div>
-        </div>
+      <div class="hr"></div>
 
-        <div class="grid">
-          <div>
-            <label>業務不可の理由・代替措置（任意）</label>
-            <input id="notAllowedReason" type="text" placeholder="例）体調不良のため交代 / 休養指示 など" />
-          </div>
-        </div>
+      <!-- 車両点検（増量） -->
+      <div class="sectionTitle">🛠 車両点検（出発前）</div>
+      <div class="checks">
+        <div class="checkItem"><div class="k">タイヤ</div>
+          <select id="insp_tire"><option>OK</option><option>注意</option><option>NG</option></select></div>
+        <div class="checkItem"><div class="k">ブレーキ</div>
+          <select id="insp_brake"><option>OK</option><option>注意</option><option>NG</option></select></div>
+        <div class="checkItem"><div class="k">ライト</div>
+          <select id="insp_light"><option>OK</option><option>注意</option><option>NG</option></select></div>
+        <div class="checkItem"><div class="k">ウィンカー</div>
+          <select id="insp_blinker"><option>OK</option><option>注意</option><option>NG</option></select></div>
+        <div class="checkItem"><div class="k">ワイパー</div>
+          <select id="insp_wiper"><option>OK</option><option>注意</option><option>NG</option></select></div>
+        <div class="checkItem"><div class="k">エンジンオイル</div>
+          <select id="insp_oil"><option>OK</option><option>注意</option><option>NG</option></select></div>
+        <div class="checkItem"><div class="k">冷却水</div>
+          <select id="insp_coolant"><option>OK</option><option>注意</option><option>NG</option></select></div>
+        <div class="checkItem"><div class="k">外傷/破損</div>
+          <select id="insp_damage"><option>なし</option><option>あり</option></select></div>
+        <div class="checkItem"><div class="k">荷崩れ防止</div>
+          <select id="insp_loadSecure"><option>OK</option><option>注意</option><option>NG</option></select></div>
       </div>
 
-      <div class="section">
-        <label>写真（任意 / 複数OK）※メーター、外観、点検箇所、アルコールチェッカー等</label>
-        <input id="photos" type="file" accept="image/*" multiple />
-        <p class="hint">
-          ※送信後は自動でトップへ戻ります。<br/>
-          ※写真が多いと送信に時間がかかる場合があります（自動圧縮します）。
-        </p>
+      <label>点検メモ（任意）</label>
+      <input id="insp_other" placeholder="例）右後輪空気圧少し低め→補充" />
+
+      <div class="hr"></div>
+
+      <!-- 写真 -->
+      <div class="sectionTitle">📷 写真（任意／複数OK）</div>
+      <label>点呼・車両・メーター・チェック器など</label>
+      <input id="photos" type="file" accept="image/*" multiple />
+      <div class="hint">写真が多いと送信に時間がかかる場合があります（自動圧縮します）。</div>
+
+      <label>免許証写真（任意／表・裏など）</label>
+      <input id="licensePhotos" type="file" accept="image/*" multiple />
+      <div class="hint">免許番号入力が難しい場合は写真だけでもOK。</div>
+
+      <!-- actions -->
+      <div class="actions">
+        <button class="btn btnGhost" onclick="location.href='./index.html'">戻る</button>
+        <button id="submitDeparture" class="btn btnPrimary">送信（出発点呼）</button>
       </div>
 
-      <div class="btnrow">
-        <button class="btn btn-ghost" type="button" onclick="location.href='./index.html'">戻る</button>
-        <button class="btn btn-primary" id="submitDeparture" type="button">送信（departure）</button>
+      <div class="mini">
+        ※送信後は自動でトップへ戻ります。<br>
+        ※保存先：Google Drive / Spreadsheet（GAS側で保管）
       </div>
     </div>
   </div>
 
-  <div id="toast" aria-live="polite"></div>
+  <div id="toast"></div>
 
   <script src="./app.js"></script>
 </body>
