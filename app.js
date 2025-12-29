@@ -6,7 +6,8 @@
   - 送信成功後 700ms で index.html に戻る
 ========================================================= */
 
-const GAS_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbyTwsUHSuJ_CPGqI5dEdp6JHGnMKYllnEqZINg4ZfsR40RoJyoaGe1yeNmtncpxTf4F5w/exec";
+const GAS_WEBAPP_URL =
+  "https://script.google.com/macros/s/AKfycbyVAN05EnWxjjQXeIuy-Ipl1ohjelLOl19WtI-7wjjGD9CdsksEDrr0LSMgHeMu5rmLmg/exec";
 
 // ===== DOM helper =====
 const $ = (sel) => document.querySelector(sel);
@@ -36,12 +37,6 @@ function val(id) {
   const el = document.getElementById(id);
   return el ? (el.value ?? "").toString().trim() : "";
 }
-function numVal(id) {
-  const s = val(id);
-  if (!s) return "";
-  const n = Number(s);
-  return Number.isFinite(n) ? String(n) : "";
-}
 
 // ===== image compress =====
 async function fileToDataUrl(file) {
@@ -56,7 +51,10 @@ async function fileToDataUrl(file) {
 async function compressImageDataUrl(dataUrl, maxW = 1280, quality = 0.8) {
   const img = new Image();
   img.src = dataUrl;
-  await new Promise((res, rej) => { img.onload = res; img.onerror = rej; });
+  await new Promise((res, rej) => {
+    img.onload = res;
+    img.onerror = rej;
+  });
 
   const scale = Math.min(1, maxW / img.width);
   const w = Math.round(img.width * scale);
@@ -92,7 +90,6 @@ function mustField(label, v) {
 
 // ===== inspection collect =====
 function collectInspection() {
-  // チェック欄（select or input）
   const get = (id) => val(id);
   return {
     tire: get("insp_tire"),
@@ -104,7 +101,7 @@ function collectInspection() {
     coolant: get("insp_coolant"),
     damage: get("insp_damage"),
     loadSecure: get("insp_loadSecure"),
-    other: get("insp_other")
+    other: get("insp_other"),
   };
 }
 
@@ -114,7 +111,10 @@ function autoDistance() {
   const e = Number(val("odoEnd"));
   const el = document.getElementById("distanceAuto");
   if (!el) return;
-  if (!Number.isFinite(s) || !Number.isFinite(e)) { el.textContent = ""; return; }
+  if (!Number.isFinite(s) || !Number.isFinite(e)) {
+    el.textContent = "";
+    return;
+  }
   el.textContent = String(Math.max(0, e - s));
 }
 
@@ -131,18 +131,21 @@ async function postToGAS(payload) {
   const res = await fetch(GAS_WEBAPP_URL, {
     method: "POST",
     headers: { "Content-Type": "text/plain;charset=utf-8" },
-    body: JSON.stringify(payload)
+    body: JSON.stringify(payload),
   });
   const text = await res.text();
   let json;
-  try { json = JSON.parse(text); } catch (e) { throw new Error("GAS応答が不正です: " + text); }
+  try {
+    json = JSON.parse(text);
+  } catch (e) {
+    throw new Error("GAS応答が不正です: " + text);
+  }
   if (!json.ok) throw new Error(json.message || "保存に失敗しました");
   return json;
 }
 
 async function submitDeparture() {
   try {
-    // 必須
     const date = val("date");
     const time = val("time");
     const driverName = val("driverName");
@@ -177,24 +180,37 @@ async function submitDeparture() {
       app: "OFA_TENKO",
       mode: "departure",
       data: {
-        date, time, driverName, vehicleNo, managerName, method, place,
-        alcoholValue, alcoholBand, healthRisk, memo,
+        date,
+        time,
+        driverName,
+        vehicleNo,
+        managerName,
+        method,
+        place,
+        alcoholValue,
+        alcoholBand,
+        healthRisk,
+        memo,
         odoStart,
-        odoEnd: "", // 出発は空
-        workType: "", area: "", dailyNote: "", workTime: "", countDelivered: "", countReturn: "",
+        odoEnd: "",
+        workType: "",
+        area: "",
+        dailyNote: "",
+        workTime: "",
+        countDelivered: "",
+        countReturn: "",
         licenseNo,
-        inspection: collectInspection()
+        inspection: collectInspection(),
       },
       photos,
       reportPhotos: [],
-      licensePhotos
+      licensePhotos,
     };
 
     await postToGAS(payload);
 
     toast("保存しました（出発点呼）", "ok");
-    setTimeout(() => location.href = "./index.html", 700);
-
+    setTimeout(() => (location.href = "./index.html"), 700);
   } catch (err) {
     toast(String(err.message || err), "err");
   }
@@ -214,7 +230,7 @@ async function submitArrival() {
     const healthRisk = val("healthRisk");
     const memo = val("memo");
     const odoEnd = val("odoEnd");
-    const odoStart = val("odoStart"); // 任意（両方入ると距離計算）
+    const odoStart = val("odoStart");
     const licenseNo = val("licenseNo");
 
     const workType = val("workType");
@@ -235,7 +251,6 @@ async function submitArrival() {
     mustField("その他必要事項", memo);
     mustField("終了走行距離", odoEnd);
 
-    // 日報（厚くする）
     mustField("業務内容", workType);
     mustField("本日の業務内容", dailyNote);
 
@@ -249,23 +264,37 @@ async function submitArrival() {
       app: "OFA_TENKO",
       mode: "arrival",
       data: {
-        date, time, driverName, vehicleNo, managerName, method, place,
-        alcoholValue, alcoholBand, healthRisk, memo,
-        odoStart, odoEnd,
-        workType, area, dailyNote, workTime, countDelivered, countReturn,
+        date,
+        time,
+        driverName,
+        vehicleNo,
+        managerName,
+        method,
+        place,
+        alcoholValue,
+        alcoholBand,
+        healthRisk,
+        memo,
+        odoStart,
+        odoEnd,
+        workType,
+        area,
+        dailyNote,
+        workTime,
+        countDelivered,
+        countReturn,
         licenseNo,
-        inspection: collectInspection()
+        inspection: collectInspection(),
       },
       photos,
       reportPhotos,
-      licensePhotos
+      licensePhotos,
     };
 
     await postToGAS(payload);
 
     toast("保存しました（帰着点呼/日報）", "ok");
-    setTimeout(() => location.href = "./index.html", 700);
-
+    setTimeout(() => (location.href = "./index.html"), 700);
   } catch (err) {
     toast(String(err.message || err), "err");
   }
@@ -288,7 +317,4 @@ window.addEventListener("DOMContentLoaded", () => {
 
   const btnArr = document.getElementById("submitArrival");
   if (btnArr) btnArr.addEventListener("click", submitArrival);
-
-  // departureが開けない系は、リンク先が古い or ファイル名違いが多いので、
-  // ここに来れている時点でOK。必要なら index.html のリンクも後で直します。
 });
