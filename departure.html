@@ -2,157 +2,228 @@
 <html lang="ja">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-  <title>OFA 出発点呼</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>🚚 出発点呼 | OFA 点呼・点検</title>
 
-  <!-- ここだけあなたのGAS WebApp URL（必要なら差し替え） -->
-  <script>
-    window.GAS_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbyIDH-hK7hrDepgPMFtEfzgwXMQ6ml3fDEcQS0yxAszqdFy7Q8O-tpBQbWetbN212rfgw/exec";
-  </script>
+  <!-- 既存CSSを使う前提（なければ style.css を後で整えます） -->
+  <link rel="stylesheet" href="./style.css" />
 
   <style>
-    :root{
-      --bg:#f6f7fb;
-      --card:#ffffff;
-      --text:#111827;
-      --muted:#6b7280;
-      --line:#e5e7eb;
-      --ok:#10b981;
-      --ng:#ef4444;
-      --warn:#f59e0b;
-      --brand1:#ff7a18;
-      --brand2:#af002d;
-      --brand3:#319197;
-      --shadow:0 10px 30px rgba(17,24,39,.08);
-      --radius:18px;
+    /* departure/arrival 共通のスマホ最適化（style.cssが薄くても崩れない最低限） */
+    :root{ --card:#fff; --bg:#f3f6fb; --text:#111; --muted:#667085; --line:#e6eaf2; }
+    body{ background:var(--bg); color:var(--text); margin:0; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Noto Sans JP","Hiragino Kaku Gothic ProN","Yu Gothic",sans-serif; }
+    .wrap{ max-width:780px; margin:0 auto; padding:16px; }
+    .card{ background:var(--card); border:1px solid var(--line); border-radius:18px; padding:16px; box-shadow:0 8px 24px rgba(16,24,40,.06); }
+    .title{ display:flex; align-items:center; gap:10px; margin:4px 0 8px; }
+    .title h1{ font-size:22px; margin:0; }
+    .subtitle{ color:var(--muted); font-size:13px; margin:0 0 14px; }
+    .badge{ display:inline-flex; align-items:center; gap:8px; padding:10px 12px; border-radius:999px; background:#eef6ff; color:#175cd3; font-weight:700; font-size:13px; }
+    .section{ margin-top:14px; border-top:1px dashed var(--line); padding-top:14px; }
+    .section h2{ font-size:15px; margin:0 0 10px; }
+    .grid{ display:grid; grid-template-columns:1fr; gap:10px; }
+    @media (min-width:680px){ .grid.two{ grid-template-columns:1fr 1fr; } }
+    label{ display:block; font-size:12px; color:var(--muted); margin:0 0 6px; }
+    input, select, textarea{
+      width:100%; box-sizing:border-box; border:1px solid var(--line); border-radius:14px;
+      padding:14px 12px; font-size:16px; background:#fff; outline:none;
     }
-    *{box-sizing:border-box}
-    body{
-      margin:0;
-      font-family:-apple-system,BlinkMacSystemFont,"Hiragino Kaku Gothic ProN","Noto Sans JP",Meiryo,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
-      background:linear-gradient(180deg,#ffffff 0%, var(--bg) 40%);
-      color:var(--text);
-    }
-    .wrap{
-      max-width:720px;
-      margin:0 auto;
-      padding:18px 14px 40px;
-    }
-    .top{
-      background:var(--card);
-      border:1px solid var(--line);
-      border-radius:var(--radius);
-      padding:18px 16px;
-      box-shadow:var(--shadow);
-    }
-    .badge{
-      display:inline-flex;
-      align-items:center;
-      gap:8px;
-      font-weight:700;
-      padding:8px 12px;
-      border-radius:999px;
-      background:#ecfeff;
-      border:1px solid #cffafe;
-      color:#0f766e;
-      font-size:14px;
-    }
-    h1{
-      margin:10px 0 6px;
-      font-size:22px;
-      letter-spacing:.2px;
-    }
-    .desc{color:var(--muted); font-size:13px; line-height:1.6; margin:0}
-    .grid{
-      display:grid;
-      gap:12px;
-      margin-top:14px;
-    }
-    .card{
-      background:var(--card);
-      border:1px solid var(--line);
-      border-radius:var(--radius);
-      padding:14px;
-      box-shadow:var(--shadow);
-    }
-    .section-title{
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap:10px;
-      margin:0 0 10px;
-      font-size:15px;
-      font-weight:800;
-    }
-    .section-sub{color:var(--muted); font-size:12px; margin:0 0 10px; line-height:1.6}
-    .row{display:grid; grid-template-columns:1fr; gap:10px}
-    @media (min-width:640px){
-      .row.two{grid-template-columns:1fr 1fr}
-      .row.three{grid-template-columns:1fr 1fr 1fr}
-    }
-    label{display:block; font-size:12px; color:var(--muted); margin:0 0 6px}
-    input,select,textarea{
-      width:100%;
-      padding:12px 12px;
-      border:1px solid var(--line);
-      border-radius:14px;
-      font-size:16px;
-      background:#fff;
-      outline:none;
-    }
-    textarea{min-height:90px; resize:vertical}
-    input:focus,select:focus,textarea:focus{border-color:#93c5fd; box-shadow:0 0 0 4px rgba(59,130,246,.12)}
-    .chips{display:flex; flex-wrap:wrap; gap:8px}
-    .chip{
-      display:inline-flex; align-items:center; gap:8px;
-      padding:10px 12px;
-      border-radius:999px;
-      border:1px solid var(--line);
-      background:#fff;
-      font-size:14px;
-      user-select:none;
-    }
-    .chip input{width:auto; transform:scale(1.15)}
-    .hr{height:1px; background:var(--line); margin:12px 0}
-    .btns{display:flex; gap:10px; flex-wrap:wrap; margin-top:12px}
+    textarea{ min-height:88px; resize:vertical; }
+    .row{ display:flex; gap:10px; flex-wrap:wrap; }
     .btn{
-      border:none;
-      padding:14px 14px;
-      border-radius:16px;
-      font-weight:900;
-      font-size:16px;
+      border:0; border-radius:14px; padding:14px 14px; font-weight:800; font-size:16px;
       cursor:pointer;
-      width:100%;
     }
-    .btn.primary{
-      background:linear-gradient(90deg,var(--brand1),#ff3d6a 55%, #6a5cff);
-      color:#fff;
-      box-shadow:0 12px 24px rgba(255,61,106,.18);
-    }
-    .btn.secondary{
-      background:#f3f4f6;
-      color:#111827;
-      border:1px solid var(--line);
-    }
-    .tiny{font-size:12px; color:var(--muted); line-height:1.6; margin-top:8px}
-    .req{color:#ef4444; font-weight:900; margin-left:4px}
+    .btn.primary{ background:linear-gradient(90deg,#ff7a18,#ff3d81); color:#fff; flex:1; }
+    .btn.ghost{ background:#eef2ff; color:#1d2939; }
+    .help{ font-size:12px; color:var(--muted); margin-top:6px; line-height:1.5; }
+    .req{ color:#d92d20; font-weight:800; margin-left:4px; }
     .toast{
       position:fixed; left:50%; transform:translateX(-50%);
-      bottom:18px;
-      background:#111827;
-      color:#fff;
-      padding:12px 14px;
-      border-radius:14px;
-      max-width:min(92vw,720px);
-      width:max-content;
-      box-shadow:0 20px 40px rgba(0,0,0,.2);
-      opacity:0; pointer-events:none;
-      transition:.18s ease;
-      font-size:14px;
-      z-index:9999;
+      bottom:18px; background:#111; color:#fff; padding:10px 12px; border-radius:999px;
+      font-size:13px; opacity:0; pointer-events:none; transition:.2s;
+      max-width:92vw; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
     }
-    .toast.show{opacity:1}
-    .toast[data-type="ok"]{background:#065f46}
-    .toast[data-type="ng"]{background:#7f1d1d}
-    .toast[data-type="warn"]{background:#7c2d12}
-    .
+    .toast.show{ opacity:1; }
+  </style>
+</head>
+
+<body>
+  <div class="wrap">
+    <div class="card">
+      <div class="title">
+        <div class="badge">🚚 出発点呼</div>
+        <h1>点呼・点検（業務前）</h1>
+      </div>
+      <p class="subtitle">入力 → 写真 → 送信（Drive/スプレッドシートに保存）｜スマホ最適</p>
+
+      <!-- app.js が拾いやすいように form を固定 -->
+      <form id="tenkoForm" data-mode="departure">
+
+        <div class="grid two">
+          <div>
+            <label>日付<span class="req">必須</span></label>
+            <input id="date" name="date" type="date" required />
+          </div>
+          <div>
+            <label>時刻<span class="req">必須</span></label>
+            <input id="time" name="time" type="time" required />
+          </div>
+        </div>
+
+        <div class="grid two">
+          <div>
+            <label>運転者氏名<span class="req">必須</span></label>
+            <input id="driverName" name="driverName" type="text" placeholder="例）森下 洸" required />
+          </div>
+          <div>
+            <label>車両番号 / 車番<span class="req">必須</span></label>
+            <input id="vehicleNo" name="vehicleNo" type="text" placeholder="例）鹿児島 480 あ 1234 / 車番12" required />
+          </div>
+        </div>
+
+        <div class="grid two">
+          <div>
+            <label>点呼実施者（運行管理者等）<span class="req">必須</span></label>
+            <input id="managerName" name="managerName" type="text" placeholder="例）OFA 本部 太田" required />
+          </div>
+          <div>
+            <label>点呼方法<span class="req">必須</span></label>
+            <select id="method" name="method" required>
+              <option value="">選択してください</option>
+              <option>対面</option>
+              <option>電話</option>
+              <option>IT点呼（アプリ）</option>
+              <option>その他</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="grid">
+          <div>
+            <label>点呼場所（営業所・車庫以外の場合）</label>
+            <input id="place" name="place" type="text" placeholder="例）自宅 / 現場 / 車庫" />
+          </div>
+        </div>
+
+        <div class="section">
+          <h2>🍺 アルコール確認</h2>
+          <div class="grid two">
+            <div>
+              <label>アルコール測定値<span class="req">必須</span></label>
+              <input id="alcoholValue" name="alcoholValue" type="number" step="0.01" min="0" placeholder="0.00" required />
+              <div class="help">0.00 以外は送信前に必ず確認・連絡</div>
+            </div>
+            <div>
+              <label>酒気帯び<span class="req">必須</span></label>
+              <select id="alcoholBand" name="alcoholBand" required>
+                <option value="">選択</option>
+                <option>なし</option>
+                <option>あり</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="grid">
+            <div>
+              <label>測定画像/動画（任意・複数OK）</label>
+              <input id="photos" name="photos" type="file" accept="image/*,video/*" multiple />
+              <div class="help">例：検知器表示、メーター、車両外観、点検箇所など</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="section">
+          <h2>🩺 体調・安全確認（業務前）</h2>
+          <div class="grid two">
+            <div>
+              <label>体温（任意）</label>
+              <input id="temp" name="temp" type="number" step="0.1" placeholder="例）36.5" />
+            </div>
+            <div>
+              <label>血圧（任意）</label>
+              <input id="bp" name="bp" type="text" placeholder="例）120/80" />
+            </div>
+          </div>
+
+          <div class="grid">
+            <div>
+              <label>睡眠/疲労の状況（必須）</label>
+              <select id="fatigue" name="fatigue" required>
+                <option value="">選択</option>
+                <option>問題なし</option>
+                <option>やや不安</option>
+                <option>不安あり（要相談）</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="grid">
+            <div>
+              <label>日常点検・車両状態（必須）</label>
+              <select id="vehicleCheck" name="vehicleCheck" required>
+                <option value="">選択</option>
+                <option>異常なし</option>
+                <option>軽微な不具合あり（メモ記載）</option>
+                <option>異常あり（運行不可/要対応）</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="grid">
+            <div>
+              <label>指示事項 / メモ（必須）</label>
+              <textarea id="memo" name="memo" placeholder="例）体調良好。アルコール0。日常点検OK。注意：雨天・安全運転。連絡事項：○○" required></textarea>
+            </div>
+          </div>
+
+          <div class="grid">
+            <div>
+              <label>業務不可と判断した場合の理由・代替措置（該当時のみ）</label>
+              <textarea id="notfit" name="notfit" placeholder="例）発熱のため運行不可→代走手配、管理者へ連絡済み"></textarea>
+            </div>
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="row">
+            <button type="button" class="btn ghost" onclick="history.back()">戻る</button>
+            <button type="submit" class="btn primary">送信（出発点呼）</button>
+          </div>
+          <div class="help">
+            送信後は自動でトップに戻ります。写真が多いと送信に時間がかかる場合があります。<br/>
+            Safari/Chromeで動かない時は「プライベートモードOFF」「通信環境」「容量不足」を確認してください。
+          </div>
+        </div>
+
+      </form>
+    </div>
+  </div>
+
+  <div id="toast" class="toast">送信中...</div>
+
+  <!-- 既存の app.js を読む -->
+  <script src="./app.js"></script>
+
+  <script>
+    // app.js 側に submitTenko があれば使う。なければ最低限の送信ガードだけ。
+    const form = document.getElementById("tenkoForm");
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      // app.js に submitTenko(mode, form) がある想定
+      if (typeof window.submitTenko === "function") {
+        await window.submitTenko("departure", form);
+        return;
+      }
+      // ない場合は警告（ここは後であなたの app.js に合わせて調整する）
+      alert("app.js の submitTenko が見つかりません。app.js を最新にしてください。");
+    });
+
+    // 初期値（今日/現在時刻）を自動セット
+    const d = new Date();
+    const pad = (n) => String(n).padStart(2,"0");
+    document.getElementById("date").value = `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+    document.getElementById("time").value = `${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  </script>
+</body>
+</html>
