@@ -2,48 +2,36 @@
 <html lang="ja">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>🚚 出発点呼 | OFA 点呼・点検</title>
-
-  <!-- 既存CSSを使う前提（なければ style.css を後で整えます） -->
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <title>OFA 出発点呼</title>
   <link rel="stylesheet" href="./style.css" />
-
   <style>
-    /* departure/arrival 共通のスマホ最適化（style.cssが薄くても崩れない最低限） */
-    :root{ --card:#fff; --bg:#f3f6fb; --text:#111; --muted:#667085; --line:#e6eaf2; }
-    body{ background:var(--bg); color:var(--text); margin:0; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Noto Sans JP","Hiragino Kaku Gothic ProN","Yu Gothic",sans-serif; }
-    .wrap{ max-width:780px; margin:0 auto; padding:16px; }
-    .card{ background:var(--card); border:1px solid var(--line); border-radius:18px; padding:16px; box-shadow:0 8px 24px rgba(16,24,40,.06); }
-    .title{ display:flex; align-items:center; gap:10px; margin:4px 0 8px; }
-    .title h1{ font-size:22px; margin:0; }
-    .subtitle{ color:var(--muted); font-size:13px; margin:0 0 14px; }
-    .badge{ display:inline-flex; align-items:center; gap:8px; padding:10px 12px; border-radius:999px; background:#eef6ff; color:#175cd3; font-weight:700; font-size:13px; }
-    .section{ margin-top:14px; border-top:1px dashed var(--line); padding-top:14px; }
-    .section h2{ font-size:15px; margin:0 0 10px; }
-    .grid{ display:grid; grid-template-columns:1fr; gap:10px; }
-    @media (min-width:680px){ .grid.two{ grid-template-columns:1fr 1fr; } }
-    label{ display:block; font-size:12px; color:var(--muted); margin:0 0 6px; }
-    input, select, textarea{
-      width:100%; box-sizing:border-box; border:1px solid var(--line); border-radius:14px;
-      padding:14px 12px; font-size:16px; background:#fff; outline:none;
-    }
-    textarea{ min-height:88px; resize:vertical; }
-    .row{ display:flex; gap:10px; flex-wrap:wrap; }
-    .btn{
-      border:0; border-radius:14px; padding:14px 14px; font-weight:800; font-size:16px;
-      cursor:pointer;
-    }
-    .btn.primary{ background:linear-gradient(90deg,#ff7a18,#ff3d81); color:#fff; flex:1; }
-    .btn.ghost{ background:#eef2ff; color:#1d2939; }
-    .help{ font-size:12px; color:var(--muted); margin-top:6px; line-height:1.5; }
-    .req{ color:#d92d20; font-weight:800; margin-left:4px; }
-    .toast{
-      position:fixed; left:50%; transform:translateX(-50%);
-      bottom:18px; background:#111; color:#fff; padding:10px 12px; border-radius:999px;
-      font-size:13px; opacity:0; pointer-events:none; transition:.2s;
-      max-width:92vw; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
-    }
-    .toast.show{ opacity:1; }
+    /* ページ単体でも崩れない最低限（style.cssがあれば上書きされます） */
+    :root{ --card:#fff; --bg:#f4f6fb; --line:#e7eaf2; --txt:#111827; --sub:#6b7280;}
+    body{background:var(--bg); color:var(--txt); font-family: system-ui,-apple-system,"Hiragino Kaku Gothic ProN","Noto Sans JP",sans-serif; margin:0;}
+    .wrap{max-width:720px;margin:0 auto;padding:16px 14px 40px;}
+    .card{background:var(--card); border:1px solid var(--line); border-radius:18px; padding:16px; box-shadow:0 8px 24px rgba(17,24,39,.06);}
+    .title{display:flex;gap:10px;align-items:center;margin:0 0 6px;}
+    .title h1{font-size:22px;margin:0;}
+    .subtitle{color:var(--sub);font-size:13px;margin:0 0 14px;}
+    .grid{display:grid;grid-template-columns:1fr;gap:12px;}
+    @media (min-width:680px){ .grid.two{grid-template-columns:1fr 1fr;} }
+    label{display:block;font-size:12px;color:var(--sub);margin:0 0 6px;}
+    input,select,textarea{width:100%; box-sizing:border-box; border:1px solid var(--line); border-radius:14px; padding:12px 12px; font-size:16px; background:#fff; outline:none;}
+    textarea{min-height:96px; resize:vertical;}
+    .row{display:flex; gap:10px; align-items:center;}
+    .btnrow{display:flex; gap:10px; margin-top:14px;}
+    .btn{flex:1; border:none; border-radius:16px; padding:14px 14px; font-size:16px; font-weight:700; cursor:pointer;}
+    .btn-primary{background:linear-gradient(90deg,#ff8a00,#ff3d8b,#7c3aed); color:#fff;}
+    .btn-ghost{background:#eef2ff; color:#1f2937;}
+    .hint{font-size:12px;color:var(--sub);line-height:1.55;margin-top:10px;}
+    .section{margin-top:14px;border-top:1px dashed var(--line);padding-top:14px;}
+    #toast{position:fixed;left:50%;transform:translateX(-50%);bottom:18px;z-index:9999;
+      background:#111827;color:#fff;padding:10px 14px;border-radius:14px;font-weight:700;opacity:0;pointer-events:none;transition:.2s;}
+    #toast.show{opacity:1;}
+    #toast[data-type="ok"]{background:#16a34a;}
+    #toast[data-type="err"]{background:#dc2626;}
+    #toast[data-type="info"]{background:#111827;}
   </style>
 </head>
 
@@ -51,179 +39,128 @@
   <div class="wrap">
     <div class="card">
       <div class="title">
-        <div class="badge">🚚 出発点呼</div>
-        <h1>点呼・点検（業務前）</h1>
+        <div style="font-size:22px;">🚚</div>
+        <h1>出発点呼</h1>
       </div>
-      <p class="subtitle">入力 → 写真 → 送信（Drive/スプレッドシートに保存）｜スマホ最適</p>
+      <p class="subtitle">出発前の点呼・点検を記録します（スマホ最適 / 送信後は自動でトップに戻ります）</p>
 
-      <!-- app.js が拾いやすいように form を固定 -->
-      <form id="tenkoForm" data-mode="departure">
-
-        <div class="grid two">
-          <div>
-            <label>日付<span class="req">必須</span></label>
-            <input id="date" name="date" type="date" required />
-          </div>
-          <div>
-            <label>時刻<span class="req">必須</span></label>
-            <input id="time" name="time" type="time" required />
-          </div>
+      <div class="grid two">
+        <div>
+          <label>日付（必須）</label>
+          <input id="date" type="date" />
         </div>
-
-        <div class="grid two">
-          <div>
-            <label>運転者氏名<span class="req">必須</span></label>
-            <input id="driverName" name="driverName" type="text" placeholder="例）森下 洸" required />
-          </div>
-          <div>
-            <label>車両番号 / 車番<span class="req">必須</span></label>
-            <input id="vehicleNo" name="vehicleNo" type="text" placeholder="例）鹿児島 480 あ 1234 / 車番12" required />
-          </div>
+        <div>
+          <label>時刻（必須）</label>
+          <input id="time" type="time" />
         </div>
+      </div>
 
-        <div class="grid two">
+      <div class="grid two">
+        <div>
+          <label>運転者氏名（必須）</label>
+          <input id="driverName" type="text" placeholder="例）森下 洸" autocomplete="name" />
+        </div>
+        <div>
+          <label>車両番号（必須）</label>
+          <input id="vehicleNo" type="text" placeholder="例）鹿児島 480 あ 1234 / 車番" />
+        </div>
+      </div>
+
+      <div class="grid two">
+        <div>
+          <label>点呼実施者（必須）</label>
+          <input id="managerName" type="text" placeholder="例）管理者名 / リーダー名" />
+        </div>
+        <div>
+          <label>点呼方法（必須）</label>
+          <select id="method">
+            <option value="">選択してください</option>
+            <option>対面</option>
+            <option>電話</option>
+            <option>ビデオ通話</option>
+            <option>点呼アプリ</option>
+            <option>その他</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="grid two">
+        <div>
+          <label>点呼場所（任意）</label>
+          <input id="place" type="text" placeholder="例）営業所 / 車庫 / 自宅 / その他" />
+        </div>
+        <div>
+          <label>アルコール測定値（必須）</label>
+          <input id="alcoholValue" type="number" step="0.01" inputmode="decimal" placeholder="例）0.00" />
+        </div>
+      </div>
+
+      <div class="grid two">
+        <div>
+          <label>酒気帯び（必須）</label>
+          <select id="alcoholBand">
+            <option value="">選択してください</option>
+            <option>なし</option>
+            <option>あり</option>
+          </select>
+        </div>
+        <div>
+          <label>体調不良等（任意）</label>
+          <select id="healthRisk">
+            <option value="">未選択</option>
+            <option>問題なし</option>
+            <option>少し不安あり</option>
+            <option>運行不可の可能性</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="section">
+        <label>その他必要事項（必須）※点検/体温/睡眠/日常点検などを一言でOK</label>
+        <textarea id="memo" placeholder="例）体温36.5、睡眠OK、日常点検OK、アルコール0.00"></textarea>
+
+        <div class="grid two" style="margin-top:12px;">
           <div>
-            <label>点呼実施者（運行管理者等）<span class="req">必須</span></label>
-            <input id="managerName" name="managerName" type="text" placeholder="例）OFA 本部 太田" required />
-          </div>
-          <div>
-            <label>点呼方法<span class="req">必須</span></label>
-            <select id="method" name="method" required>
-              <option value="">選択してください</option>
-              <option>対面</option>
-              <option>電話</option>
-              <option>IT点呼（アプリ）</option>
-              <option>その他</option>
+            <label>日常点検・装置確認（任意）</label>
+            <select id="deviceCheck">
+              <option value="">未選択</option>
+              <option>OK</option>
+              <option>要注意</option>
+              <option>不良</option>
             </select>
+          </div>
+          <div>
+            <label>運転者への指示事項（任意）</label>
+            <input id="instruction" type="text" placeholder="例）速度注意 / 休憩多め / 再配達注意" />
           </div>
         </div>
 
         <div class="grid">
           <div>
-            <label>点呼場所（営業所・車庫以外の場合）</label>
-            <input id="place" name="place" type="text" placeholder="例）自宅 / 現場 / 車庫" />
+            <label>業務不可の理由・代替措置（任意）</label>
+            <input id="notAllowedReason" type="text" placeholder="例）体調不良のため交代 / 休養指示 など" />
           </div>
         </div>
+      </div>
 
-        <div class="section">
-          <h2>🍺 アルコール確認</h2>
-          <div class="grid two">
-            <div>
-              <label>アルコール測定値<span class="req">必須</span></label>
-              <input id="alcoholValue" name="alcoholValue" type="number" step="0.01" min="0" placeholder="0.00" required />
-              <div class="help">0.00 以外は送信前に必ず確認・連絡</div>
-            </div>
-            <div>
-              <label>酒気帯び<span class="req">必須</span></label>
-              <select id="alcoholBand" name="alcoholBand" required>
-                <option value="">選択</option>
-                <option>なし</option>
-                <option>あり</option>
-              </select>
-            </div>
-          </div>
+      <div class="section">
+        <label>写真（任意 / 複数OK）※メーター、外観、点検箇所、アルコールチェッカー等</label>
+        <input id="photos" type="file" accept="image/*" multiple />
+        <p class="hint">
+          ※送信後は自動でトップへ戻ります。<br/>
+          ※写真が多いと送信に時間がかかる場合があります（自動圧縮します）。
+        </p>
+      </div>
 
-          <div class="grid">
-            <div>
-              <label>測定画像/動画（任意・複数OK）</label>
-              <input id="photos" name="photos" type="file" accept="image/*,video/*" multiple />
-              <div class="help">例：検知器表示、メーター、車両外観、点検箇所など</div>
-            </div>
-          </div>
-        </div>
-
-        <div class="section">
-          <h2>🩺 体調・安全確認（業務前）</h2>
-          <div class="grid two">
-            <div>
-              <label>体温（任意）</label>
-              <input id="temp" name="temp" type="number" step="0.1" placeholder="例）36.5" />
-            </div>
-            <div>
-              <label>血圧（任意）</label>
-              <input id="bp" name="bp" type="text" placeholder="例）120/80" />
-            </div>
-          </div>
-
-          <div class="grid">
-            <div>
-              <label>睡眠/疲労の状況（必須）</label>
-              <select id="fatigue" name="fatigue" required>
-                <option value="">選択</option>
-                <option>問題なし</option>
-                <option>やや不安</option>
-                <option>不安あり（要相談）</option>
-              </select>
-            </div>
-          </div>
-
-          <div class="grid">
-            <div>
-              <label>日常点検・車両状態（必須）</label>
-              <select id="vehicleCheck" name="vehicleCheck" required>
-                <option value="">選択</option>
-                <option>異常なし</option>
-                <option>軽微な不具合あり（メモ記載）</option>
-                <option>異常あり（運行不可/要対応）</option>
-              </select>
-            </div>
-          </div>
-
-          <div class="grid">
-            <div>
-              <label>指示事項 / メモ（必須）</label>
-              <textarea id="memo" name="memo" placeholder="例）体調良好。アルコール0。日常点検OK。注意：雨天・安全運転。連絡事項：○○" required></textarea>
-            </div>
-          </div>
-
-          <div class="grid">
-            <div>
-              <label>業務不可と判断した場合の理由・代替措置（該当時のみ）</label>
-              <textarea id="notfit" name="notfit" placeholder="例）発熱のため運行不可→代走手配、管理者へ連絡済み"></textarea>
-            </div>
-          </div>
-        </div>
-
-        <div class="section">
-          <div class="row">
-            <button type="button" class="btn ghost" onclick="history.back()">戻る</button>
-            <button type="submit" class="btn primary">送信（出発点呼）</button>
-          </div>
-          <div class="help">
-            送信後は自動でトップに戻ります。写真が多いと送信に時間がかかる場合があります。<br/>
-            Safari/Chromeで動かない時は「プライベートモードOFF」「通信環境」「容量不足」を確認してください。
-          </div>
-        </div>
-
-      </form>
+      <div class="btnrow">
+        <button class="btn btn-ghost" type="button" onclick="location.href='./index.html'">戻る</button>
+        <button class="btn btn-primary" id="submitDeparture" type="button">送信（departure）</button>
+      </div>
     </div>
   </div>
 
-  <div id="toast" class="toast">送信中...</div>
+  <div id="toast" aria-live="polite"></div>
 
-  <!-- 既存の app.js を読む -->
   <script src="./app.js"></script>
-
-  <script>
-    // app.js 側に submitTenko があれば使う。なければ最低限の送信ガードだけ。
-    const form = document.getElementById("tenkoForm");
-
-    form.addEventListener("submit", async (e) => {
-      e.preventDefault();
-      // app.js に submitTenko(mode, form) がある想定
-      if (typeof window.submitTenko === "function") {
-        await window.submitTenko("departure", form);
-        return;
-      }
-      // ない場合は警告（ここは後であなたの app.js に合わせて調整する）
-      alert("app.js の submitTenko が見つかりません。app.js を最新にしてください。");
-    });
-
-    // 初期値（今日/現在時刻）を自動セット
-    const d = new Date();
-    const pad = (n) => String(n).padStart(2,"0");
-    document.getElementById("date").value = `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
-    document.getElementById("time").value = `${pad(d.getHours())}:${pad(d.getMinutes())}`;
-  </script>
 </body>
 </html>
