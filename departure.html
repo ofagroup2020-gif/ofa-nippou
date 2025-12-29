@@ -3,192 +3,55 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>出発点呼 | OFA</title>
+  <title>出発点呼｜OFA 点呼・点検</title>
   <link rel="stylesheet" href="style.css" />
 </head>
-<body data-page="departure">
+<body>
   <main class="wrap">
     <section class="card">
-      <div class="header">
+      <header class="header">
+        <div class="logo">🚚</div>
         <div>
-          <h1 class="title">✅ 出発点呼</h1>
-          <p class="sub">入力 → 写真 → 保存（Drive/スプレッドシートに保管）</p>
+          <h1>出発点呼</h1>
+          <p class="sub">出発前の点呼・点検を記録します（スマホ最適）</p>
+        </div>
+      </header>
+
+      <div class="form">
+        <label class="field">
+          <span>氏名（必須）</span>
+          <input id="name" type="text" inputmode="text" autocomplete="name" placeholder="例）森下 洸" />
+        </label>
+
+        <label class="field">
+          <span>車両番号 / 車番</span>
+          <input id="vehicle" type="text" inputmode="text" autocomplete="off" placeholder="例）鹿児島 480 あ 1234" />
+        </label>
+
+        <label class="field">
+          <span>メモ（体調・アルコール0確認・車両日常点検など）</span>
+          <textarea id="memo" rows="4" placeholder="例）体温36.5、体調良好、アルコール0、日常点検OK"></textarea>
+        </label>
+
+        <label class="field">
+          <span>写真（任意 / 複数OK）</span>
+          <input id="photo" type="file" accept="image/*" multiple />
+          <small class="hint">例：メーター、車両外観、点検箇所、アルコールチェッカーなど</small>
+        </label>
+
+        <div class="actions">
+          <button class="btn primary" onclick="submitTenko('departure')">送信（出発点呼）</button>
+          <button class="btn" onclick="location.href='index.html'">戻る</button>
         </div>
       </div>
 
-      <div class="grid">
-        <div class="field">
-          <label>日付（必須）</label>
-          <input id="date" type="date" />
-        </div>
-        <div class="field">
-          <label>時刻（必須）</label>
-          <input id="timeSelected" type="time" />
-        </div>
-
-        <div class="field">
-          <label>氏名（必須）</label>
-          <input id="driverName" placeholder="例：森下 洸" />
-        </div>
-        <div class="field">
-          <label>車両番号（必須）</label>
-          <input id="vehicleNo" placeholder="例：鹿児島 500 あ 1234" />
-        </div>
-
-        <div class="field">
-          <label>アルコール数値（必須）</label>
-          <input id="alcoholValue" inputmode="decimal" placeholder="例：0.00" />
-        </div>
-        <div class="field">
-          <label>判定（任意）</label>
-          <select id="alcoholJudge">
-            <option value="">未選択</option>
-            <option value="OK">OK</option>
-            <option value="NG">NG</option>
-          </select>
-        </div>
-
-        <div class="field">
-          <label>電話（任意）</label>
-          <input id="phone" inputmode="tel" placeholder="090..." />
-        </div>
-        <div class="field">
-          <label>メール（任意）</label>
-          <input id="email" inputmode="email" placeholder="xxx@ofa..." />
-        </div>
-
-        <div class="field">
-          <label>免許番号（任意）</label>
-          <input id="licenseNo" placeholder="" />
-        </div>
-        <div class="field">
-          <label>エリア（任意）</label>
-          <input id="area" placeholder="例：鹿児島中央" />
-        </div>
-
-        <div class="field">
-          <label>ルート（任意）</label>
-          <input id="route" placeholder="例：Aコース" />
-        </div>
-        <div class="field">
-          <label>体温（任意）</label>
-          <input id="temperature" inputmode="decimal" placeholder="例：36.5" />
-        </div>
-
-        <div class="field">
-          <label>体調（任意）</label>
-          <select id="condition">
-            <option value="">未選択</option>
-            <option value="良好">良好</option>
-            <option value="普通">普通</option>
-            <option value="不調">不調</option>
-          </select>
-        </div>
-        <div class="field">
-          <label>疲労（任意）</label>
-          <select id="fatigue">
-            <option value="">未選択</option>
-            <option value="低">低</option>
-            <option value="中">中</option>
-            <option value="高">高</option>
-          </select>
-        </div>
-
-        <div class="field">
-          <label>睡眠時間（任意）</label>
-          <input id="sleepHours" inputmode="decimal" placeholder="例：6.5" />
-        </div>
-        <div class="field">
-          <label>服薬（任意）</label>
-          <input id="medicine" placeholder="なし / あり" />
-        </div>
-      </div>
-
-      <div class="sectionTitle">点検（任意）</div>
-      <div class="grid">
-        <div class="field">
-          <label>ブレーキ/タイヤ</label>
-          <select id="checkBrakeTire">
-            <option value="">未選択</option>
-            <option value="OK">OK</option>
-            <option value="NG">NG</option>
-          </select>
-        </div>
-        <div class="field">
-          <label>灯火</label>
-          <select id="checkLights">
-            <option value="">未選択</option>
-            <option value="OK">OK</option>
-            <option value="NG">NG</option>
-          </select>
-        </div>
-        <div class="field">
-          <label>ミラー/視界</label>
-          <select id="checkMirror">
-            <option value="">未選択</option>
-            <option value="OK">OK</option>
-            <option value="NG">NG</option>
-          </select>
-        </div>
-        <div class="field">
-          <label>積荷/施錠</label>
-          <select id="checkLockLoad">
-            <option value="">未選択</option>
-            <option value="OK">OK</option>
-            <option value="NG">NG</option>
-          </select>
-        </div>
-        <div class="field">
-          <label>その他</label>
-          <input id="checkOther" placeholder="異常なし など" />
-        </div>
-        <div class="field">
-          <label>健康メモ</label>
-          <input id="healthMemo" placeholder="" />
-        </div>
-      </div>
-
-      <div class="sectionTitle">メーター（任意）</div>
-      <div class="grid">
-        <div class="field">
-          <label>開始</label>
-          <input id="meterStart" inputmode="numeric" />
-        </div>
-        <div class="field">
-          <label>終了</label>
-          <input id="meterEnd" inputmode="numeric" />
-        </div>
-      </div>
-
-      <div class="sectionTitle">写真（複数OK）</div>
-      <div class="field">
-        <label>アルコール検知器 / 車両 / 伝票など</label>
-        <input id="photos" type="file" accept="image/*" multiple />
-      </div>
-      <div id="photoList" class="photoList"></div>
-
-      <div class="field">
-        <label>備考（任意）</label>
-        <textarea id="remarks" placeholder=""></textarea>
-      </div>
-
-      <div class="actions">
-        <button class="backBtn" onclick="location.href='index.html'">戻る</button>
-        <button id="submitBtn" class="actionBtn">保存する</button>
-      </div>
-
-      <div id="resultBox" class="result hidden">
-        <div><b>保存結果</b></div>
-        <div class="small">recordId: <span id="resultRecordId"></span></div>
-        <div class="small"><a id="resultPhotoUrl" target="_blank" rel="noopener"></a></div>
-
-        <textarea id="copyText" class="copyBox" readonly></textarea>
-        <div class="small">↑ そのままLINEに貼れます</div>
-      </div>
+      <p class="note">
+        ※送信後は自動でトップへ戻ります。<br/>
+        ※写真が多いと送信に時間がかかる場合があります。
+      </p>
     </section>
   </main>
 
-  <div id="toast"></div>
   <script src="app.js"></script>
 </body>
 </html>
