@@ -1,56 +1,32 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="ja">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>OFA 点呼・点検ポータル</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <style>
-        body { background-color: #f8f9fa; }
-        .hero { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); color: white; padding: 40px 20px; text-align: center; }
-        .rule-card { border-left: 5px solid #4facfe; margin-bottom: 20px; }
-    </style>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>OFA 点呼・点検</title>
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-
-<div class="hero">
-    <h1>OFA 点呼・点検システム</h1>
-    <p>法令に基づいた確実な点呼を実施しましょう</p>
-</div>
-
-<div class="container my-5">
-    <div class="row">
-        <div class="col-md-6 mb-4">
-            <div class="card h-100 shadow-sm">
-                <div class="card-body text-center">
-                    <h5 class="card-title">点呼・点検入力</h5>
-                    <p class="card-text">出発前・帰着時の記録はこちらから</p>
-                    <a href="https://script.google.com/macros/s/AKfycbzVV81i3fa8kD8mTJYfCTs7jZPnVf0NNBeCy7bPvna3V0EsJbYtPGWatmhIP7xonG9nhQ/exec" class="btn btn-primary btn-lg">フォームを開く</a>
-                </div>
-            </div>
+  <main class="wrap">
+    <section class="card">
+      <div class="header">
+        <div>
+          <h1 class="title">🚚 OFA 点呼・点検</h1>
+          <p class="sub">出発点呼 / 帰着点呼 / 日報・月報（スマホ最適）</p>
         </div>
+      </div>
 
-        <div class="col-md-6">
-            <div class="card h-100 shadow-sm">
-                <div class="card-body">
-                    <h5 class="card-title">点呼の重要ルール</h5>
-                    <div class="rule-card p-2 bg-light">
-                        <strong>1. アルコールチェックの義務化</strong><br>
-                        酒気帯びの有無を対面（または電話）で確認し、記録を1年間保存します。
-                    </div>
-                    <div class="rule-card p-2 bg-light">
-                        <strong>2. 日常点検の実施</strong><br>
-                        ブレーキ、タイヤ、灯火類など、運行前に必ず異常がないか確認してください。
-                    </div>
-                    <div class="rule-card p-2 bg-light">
-                        <strong>3. 健康状態の申告</strong><br>
-                        睡眠不足や体調不良がある場合は必ず管理者に報告してください。
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
+      <div class="btns">
+        <a class="btn main" href="departure.html">出発点呼をする</a>
+        <a class="btn sub2" href="arrival.html">帰着点呼をする</a>
+        <a class="btn gray" href="reports.html">日報 / 月報を出力</a>
+      </div>
 
+      <div class="hr"></div>
+      <p class="small">※ボタンが反応しない時：ページ更新（再読み込み）してください。</p>
+    </section>
+  </main>
+  <div id="toast"></div>
+  <script src="app.js"></script>
 </body>
 </html>
