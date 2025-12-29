@@ -2,201 +2,79 @@
 <html lang="ja">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>日報 / 月報 | OFA</title>
-  <style>
-    body { font-family: system-ui, -apple-system, "Hiragino Sans", "Noto Sans JP", sans-serif; background:#f6f7fb; margin:0; }
-    .wrap { max-width: 720px; margin: 0 auto; padding: 16px; }
-    .topbar { display:flex; align-items:center; gap:10px; padding:10px 4px; }
-    .back { text-decoration:none; color:#1b2a8a; font-weight:700; }
-    .card { background:#fff; border-radius:16px; box-shadow:0 8px 24px rgba(0,0,0,.08); padding:16px; margin-bottom:14px; }
-    h1 { font-size:18px; margin:0 0 6px; }
-    .muted { color:#666; font-size:13px; margin:0; }
-    label { display:block; font-size:13px; color:#333; margin-top:12px; }
-    input { width:100%; padding:12px; border:1px solid #ddd; border-radius:12px; font-size:16px; box-sizing:border-box; }
-    .row { display:grid; grid-template-columns: 1fr 1fr; gap:10px; }
-    .btn { width:100%; border:0; border-radius:14px; padding:14px; font-size:16px; margin-top:12px; cursor:pointer; font-weight:800; }
-    .primary { background: linear-gradient(90deg,#ff8a00,#ff2aa1); color:#fff; }
-    .secondary { background:#eef1ff; color:#1b2a8a; }
-    .status { margin-top:10px; font-size:14px; white-space:pre-wrap; }
-    .ok { color:#0a7a2a; }
-    .ng { color:#c01919; }
-    code { background:#f1f3f8; padding:2px 6px; border-radius:8px; }
-  </style>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>日報・月報 | OFA</title>
+  <link rel="stylesheet" href="style.css" />
 </head>
-<body>
-  <div class="wrap">
-    <div class="topbar">
-      <a class="back" href="./index.html">← 戻る</a>
-      <div style="font-weight:800;">OFA 日報 / 月報</div>
-    </div>
-
-    <div class="card">
-      <h1>日報 / 月報 出力</h1>
-      <p class="muted">※PDFは別タブで開きます（iPhone Safari 対応）</p>
-    </div>
-
-    <div class="card" id="pingCard">
-      <h1>接続テスト（ping）</h1>
-      <p class="muted">URL: <code>#ping</code> で自動実行</p>
-      <button class="btn secondary" id="pingBtn">ping を実行</button>
-      <div id="pingStatus" class="status muted"></div>
-    </div>
-
-    <div class="card">
-      <h1>日報PDF</h1>
-      <div class="row">
+<body data-page="reports">
+  <main class="wrap">
+    <section class="card">
+      <div class="header">
         <div>
-          <label>日付（YYYY-MM-DD）</label>
-          <input id="dailyDate" type="date" />
-        </div>
-        <div>
-          <label>氏名（任意）</label>
-          <input id="dailyName" type="text" placeholder="例：森下洸" />
+          <h1 class="title">📄 日報 / 月報 出力</h1>
+          <p class="sub">Driveに保存 → URLが出る（LINE共有OK）</p>
         </div>
       </div>
-      <button class="btn primary" id="dailyBtn">日報PDFを開く</button>
-      <div id="dailyStatus" class="status muted"></div>
-    </div>
 
-    <div class="card">
-      <h1>月報PDF（一覧）</h1>
-      <div class="row">
-        <div>
+      <div class="sectionTitle">日報PDF</div>
+      <div class="grid">
+        <div class="field">
+          <label>日付</label>
+          <input id="repDate" type="date" />
+        </div>
+        <div class="field">
+          <label>氏名（任意）</label>
+          <input id="repName" placeholder="未入力なら全員" />
+        </div>
+      </div>
+      <div class="actions">
+        <button class="backBtn" onclick="location.href='index.html'">戻る</button>
+        <button id="btnDailyPdf" class="actionBtn">日報PDFを作成</button>
+      </div>
+
+      <div class="hr"></div>
+
+      <div class="sectionTitle">月報PDF</div>
+      <div class="grid">
+        <div class="field">
           <label>年月（YYYY-MM）</label>
-          <input id="monthYm" type="month" />
+          <input id="repYm" placeholder="2025-12" />
         </div>
-        <div>
+        <div class="field">
           <label>氏名（任意）</label>
-          <input id="monthName" type="text" placeholder="例：森下洸" />
+          <input id="repName2" placeholder="未入力なら全員" />
         </div>
       </div>
-      <button class="btn secondary" id="monthlyBtn">月報PDFを開く</button>
-      <button class="btn secondary" id="csvBtn">月次CSVをダウンロード</button>
-      <div id="monthStatus" class="status muted"></div>
-    </div>
+      <div class="actions">
+        <button id="btnMonthlyPdf" class="actionBtn">月報PDFを作成</button>
+      </div>
 
-    <div class="card" id="howtoCard">
-      <h1>使い方ガイド</h1>
-      <p class="muted">
-        1) 出発点呼・帰着点呼を送信 → 2) ここで日報/月報を出力。<br/>
-        接続確認は <code>#ping</code> を開くとOK。
-      </p>
-    </div>
-  </div>
+      <div class="hr"></div>
 
-  <script>
-    /************** ここだけ差し替えOK（新URL） **************/
-    const GAS_URL = "https://script.google.com/macros/s/AKfycbzCAAJB0yP8qj-6Mt0FO2wwbAfv9fOs7KdKD5zc7-I_C2vQQxSaf4z919e-RSCZH0s0lw/exec";
-    /**********************************************************/
+      <div class="sectionTitle">月CSV</div>
+      <div class="grid">
+        <div class="field">
+          <label>年月（YYYY-MM）</label>
+          <input id="repYm2" placeholder="2025-12" />
+        </div>
+        <div class="field">
+          <label>氏名（任意）</label>
+          <input id="repName3" placeholder="未入力なら全員" />
+        </div>
+      </div>
+      <div class="actions">
+        <button id="btnMonthlyCsv" class="actionBtn">月CSVを作成</button>
+      </div>
 
-    function setStatus(id, msg, ok){
-      const el = document.getElementById(id);
-      el.textContent = msg;
-      el.className = "status " + (ok ? "ok" : "ng");
-    }
+      <div id="repOut" class="result hidden">
+        <div><b id="repOutTitle"></b></div>
+        <div class="small"><a id="repOutUrl" target="_blank" rel="noopener"></a></div>
+        <div class="small">↑ このURLをLINEに貼れば共有できます</div>
+      </div>
+    </section>
+  </main>
 
-    // ping
-    async function doPing(){
-      setStatus("pingStatus", "ping中...", true);
-      try{
-        const res = await fetch(GAS_URL + "?ping=1", { method:"GET" });
-        const text = await res.text();
-        let json;
-        try{ json = JSON.parse(text); } catch { json = { ok:false, message:text }; }
-        if (json.ok){
-          setStatus("pingStatus", `✅ OK: ${json.message || "pong"}\n${json.time || ""}`, true);
-        } else {
-          setStatus("pingStatus", `❌ NG: ${json.message || "unknown"}`, false);
-        }
-      } catch(e){
-        setStatus("pingStatus", `❌ 通信エラー: ${String(e)}`, false);
-      }
-    }
-
-    document.getElementById("pingBtn").addEventListener("click", doPing);
-
-    // 日報PDF
-    document.getElementById("dailyBtn").addEventListener("click", () => {
-      const date = document.getElementById("dailyDate").value;
-      const name = document.getElementById("dailyName").value.trim();
-      if (!date){
-        setStatus("dailyStatus", "日付を選択してください", false);
-        return;
-      }
-      const url = new URL(GAS_URL);
-      url.searchParams.set("action", "dailyPdf");
-      url.searchParams.set("date", date);
-      if (name) url.searchParams.set("name", name);
-
-      setStatus("dailyStatus", "別タブで開きます...", true);
-      window.open(url.toString(), "_blank");
-    });
-
-    // 月報PDF
-    document.getElementById("monthlyBtn").addEventListener("click", () => {
-      const ym = document.getElementById("monthYm").value; // YYYY-MM
-      const name = document.getElementById("monthName").value.trim();
-      if (!ym){
-        setStatus("monthStatus", "年月を選択してください", false);
-        return;
-      }
-      const url = new URL(GAS_URL);
-      url.searchParams.set("action", "monthlyPdf");
-      url.searchParams.set("ym", ym);
-      if (name) url.searchParams.set("name", name);
-
-      setStatus("monthStatus", "別タブで開きます...", true);
-      window.open(url.toString(), "_blank");
-    });
-
-    // 月次CSV
-    document.getElementById("csvBtn").addEventListener("click", async () => {
-      const ym = document.getElementById("monthYm").value;
-      const name = document.getElementById("monthName").value.trim();
-      if (!ym){
-        setStatus("monthStatus", "年月を選択してください", false);
-        return;
-      }
-      const url = new URL(GAS_URL);
-      url.searchParams.set("action", "monthlyCsv");
-      url.searchParams.set("ym", ym);
-      if (name) url.searchParams.set("name", name);
-
-      setStatus("monthStatus", "CSVを取得中...", true);
-      try{
-        const res = await fetch(url.toString(), { method:"GET" });
-        const text = await res.text();
-
-        // ダウンロード
-        const blob = new Blob([text], { type: "text/csv;charset=utf-8" });
-        const a = document.createElement("a");
-        a.href = URL.createObjectURL(blob);
-        a.download = `ofa_${ym}_report.csv`;
-        a.click();
-        setStatus("monthStatus", "✅ CSVダウンロード開始", true);
-      }catch(e){
-        setStatus("monthStatus", `❌ CSV取得失敗: ${String(e)}`, false);
-      }
-    });
-
-    // ハッシュでカードへスクロール
-    function handleHash(){
-      if (location.hash === "#ping") {
-        document.getElementById("pingCard").scrollIntoView({behavior:"smooth"});
-        doPing();
-      }
-      if (location.hash === "#howto") {
-        document.getElementById("howtoCard").scrollIntoView({behavior:"smooth"});
-      }
-    }
-    window.addEventListener("hashchange", handleHash);
-    handleHash();
-
-    // 初期値
-    const today = new Date();
-    document.getElementById("dailyDate").valueAsDate = today;
-    document.getElementById("monthYm").value = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,"0")}`;
-  </script>
+  <div id="toast"></div>
+  <script src="app.js"></script>
 </body>
 </html>
