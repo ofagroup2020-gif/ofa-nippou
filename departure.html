@@ -2,56 +2,157 @@
 <html lang="ja">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>出発点呼｜OFA 点呼・点検</title>
-  <link rel="stylesheet" href="style.css" />
-</head>
-<body>
-  <main class="wrap">
-    <section class="card">
-      <header class="header">
-        <div class="logo">🚚</div>
-        <div>
-          <h1>出発点呼</h1>
-          <p class="sub">出発前の点呼・点検を記録します（スマホ最適）</p>
-        </div>
-      </header>
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <title>OFA 出発点呼</title>
 
-      <div class="form">
-        <label class="field">
-          <span>氏名（必須）</span>
-          <input id="name" type="text" inputmode="text" autocomplete="name" placeholder="例）森下 洸" />
-        </label>
+  <!-- ここだけあなたのGAS WebApp URL（必要なら差し替え） -->
+  <script>
+    window.GAS_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbyIDH-hK7hrDepgPMFtEfzgwXMQ6ml3fDEcQS0yxAszqdFy7Q8O-tpBQbWetbN212rfgw/exec";
+  </script>
 
-        <label class="field">
-          <span>車両番号 / 車番</span>
-          <input id="vehicle" type="text" inputmode="text" autocomplete="off" placeholder="例）鹿児島 480 あ 1234" />
-        </label>
-
-        <label class="field">
-          <span>メモ（体調・アルコール0確認・車両日常点検など）</span>
-          <textarea id="memo" rows="4" placeholder="例）体温36.5、体調良好、アルコール0、日常点検OK"></textarea>
-        </label>
-
-        <label class="field">
-          <span>写真（任意 / 複数OK）</span>
-          <input id="photo" type="file" accept="image/*" multiple />
-          <small class="hint">例：メーター、車両外観、点検箇所、アルコールチェッカーなど</small>
-        </label>
-
-        <div class="actions">
-          <button class="btn primary" onclick="submitTenko('departure')">送信（出発点呼）</button>
-          <button class="btn" onclick="location.href='index.html'">戻る</button>
-        </div>
-      </div>
-
-      <p class="note">
-        ※送信後は自動でトップへ戻ります。<br/>
-        ※写真が多いと送信に時間がかかる場合があります。
-      </p>
-    </section>
-  </main>
-
-  <script src="app.js"></script>
-</body>
-</html>
+  <style>
+    :root{
+      --bg:#f6f7fb;
+      --card:#ffffff;
+      --text:#111827;
+      --muted:#6b7280;
+      --line:#e5e7eb;
+      --ok:#10b981;
+      --ng:#ef4444;
+      --warn:#f59e0b;
+      --brand1:#ff7a18;
+      --brand2:#af002d;
+      --brand3:#319197;
+      --shadow:0 10px 30px rgba(17,24,39,.08);
+      --radius:18px;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family:-apple-system,BlinkMacSystemFont,"Hiragino Kaku Gothic ProN","Noto Sans JP",Meiryo,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+      background:linear-gradient(180deg,#ffffff 0%, var(--bg) 40%);
+      color:var(--text);
+    }
+    .wrap{
+      max-width:720px;
+      margin:0 auto;
+      padding:18px 14px 40px;
+    }
+    .top{
+      background:var(--card);
+      border:1px solid var(--line);
+      border-radius:var(--radius);
+      padding:18px 16px;
+      box-shadow:var(--shadow);
+    }
+    .badge{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      font-weight:700;
+      padding:8px 12px;
+      border-radius:999px;
+      background:#ecfeff;
+      border:1px solid #cffafe;
+      color:#0f766e;
+      font-size:14px;
+    }
+    h1{
+      margin:10px 0 6px;
+      font-size:22px;
+      letter-spacing:.2px;
+    }
+    .desc{color:var(--muted); font-size:13px; line-height:1.6; margin:0}
+    .grid{
+      display:grid;
+      gap:12px;
+      margin-top:14px;
+    }
+    .card{
+      background:var(--card);
+      border:1px solid var(--line);
+      border-radius:var(--radius);
+      padding:14px;
+      box-shadow:var(--shadow);
+    }
+    .section-title{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      margin:0 0 10px;
+      font-size:15px;
+      font-weight:800;
+    }
+    .section-sub{color:var(--muted); font-size:12px; margin:0 0 10px; line-height:1.6}
+    .row{display:grid; grid-template-columns:1fr; gap:10px}
+    @media (min-width:640px){
+      .row.two{grid-template-columns:1fr 1fr}
+      .row.three{grid-template-columns:1fr 1fr 1fr}
+    }
+    label{display:block; font-size:12px; color:var(--muted); margin:0 0 6px}
+    input,select,textarea{
+      width:100%;
+      padding:12px 12px;
+      border:1px solid var(--line);
+      border-radius:14px;
+      font-size:16px;
+      background:#fff;
+      outline:none;
+    }
+    textarea{min-height:90px; resize:vertical}
+    input:focus,select:focus,textarea:focus{border-color:#93c5fd; box-shadow:0 0 0 4px rgba(59,130,246,.12)}
+    .chips{display:flex; flex-wrap:wrap; gap:8px}
+    .chip{
+      display:inline-flex; align-items:center; gap:8px;
+      padding:10px 12px;
+      border-radius:999px;
+      border:1px solid var(--line);
+      background:#fff;
+      font-size:14px;
+      user-select:none;
+    }
+    .chip input{width:auto; transform:scale(1.15)}
+    .hr{height:1px; background:var(--line); margin:12px 0}
+    .btns{display:flex; gap:10px; flex-wrap:wrap; margin-top:12px}
+    .btn{
+      border:none;
+      padding:14px 14px;
+      border-radius:16px;
+      font-weight:900;
+      font-size:16px;
+      cursor:pointer;
+      width:100%;
+    }
+    .btn.primary{
+      background:linear-gradient(90deg,var(--brand1),#ff3d6a 55%, #6a5cff);
+      color:#fff;
+      box-shadow:0 12px 24px rgba(255,61,106,.18);
+    }
+    .btn.secondary{
+      background:#f3f4f6;
+      color:#111827;
+      border:1px solid var(--line);
+    }
+    .tiny{font-size:12px; color:var(--muted); line-height:1.6; margin-top:8px}
+    .req{color:#ef4444; font-weight:900; margin-left:4px}
+    .toast{
+      position:fixed; left:50%; transform:translateX(-50%);
+      bottom:18px;
+      background:#111827;
+      color:#fff;
+      padding:12px 14px;
+      border-radius:14px;
+      max-width:min(92vw,720px);
+      width:max-content;
+      box-shadow:0 20px 40px rgba(0,0,0,.2);
+      opacity:0; pointer-events:none;
+      transition:.18s ease;
+      font-size:14px;
+      z-index:9999;
+    }
+    .toast.show{opacity:1}
+    .toast[data-type="ok"]{background:#065f46}
+    .toast[data-type="ng"]{background:#7f1d1d}
+    .toast[data-type="warn"]{background:#7c2d12}
+    .
