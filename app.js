@@ -1,359 +1,361 @@
-/* =========================================================
- * OFA 点呼・点検 / 日報・月報・CSV（GitHub Pages側 app.js フル版）
- * - departure.html / arrival.html：doPost 保存（mode=departure/arrival）
- * - export.html（出力ページ）：doGet action=dailyPdf/monthlyPdf/monthlyCsv
- * ========================================================= */
-
-"use strict";
+/****************************************************
+ * OFA 点呼アプリ（GitHub Pages側）
+ * - departure.html / arrival.html 送信（doPost）
+ * - export.html 日報PDF / 月報PDF / 月次CSV（doGet action）
+ ****************************************************/
 
 /** ★あなたのGAS WebApp URL（最新） */
 const GAS_WEBAPP_URL =
-  "https://script.google.com/macros/s/AKfycbzvyQxtaHQzeqBTchiNsq6aR85mh6-rh8mfBrLWE820oF6gfdO8Zwpa6X3hfHcPbSdoJg/exec";
+  "https://script.google.com/macros/s/AKfycbz34bn7t9d4RQhyZLlxy1-VFcxZq_BJTQlQrkBNeDzU6NSPOtgX-nUh5ckIhIWb0WMg-Q/exec";
 
-/** アプリID（GAS側チェック用） */
-const APP_ID = "OFA_TENKO";
+/** アプリ識別（GAS側と一致） */
+const APP_KEY = "OFA_TENKO";
 
-/** 写真の自動圧縮設定（重いと送信失敗するので安全側） */
-const IMG_MAX_W = 1280;
-const IMG_JPEG_QUALITY = 0.72;
-const MAX_FILES_EACH = 6;
+/** ===== 共通ユーティリティ ===== */
+function $(id) {
+  return document.getElementById(id);
+}
 
-/* -------------------------------
- * 共通UI
- * ------------------------------- */
-function qs(sel) { return document.querySelector(sel); }
-function qsa(sel) { return Array.from(document.querySelectorAll(sel)); }
-
-function toast(msg, ms = 2500) {
-  let el = document.getElementById("toast");
+function toast(msg, ok = false) {
+  const el = $("toast");
   if (!el) {
-    el = document.createElement("div");
-    el.id = "toast";
-    el.style.cssText = `
-      position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%);
-      background: rgba(220, 38, 38, .95); color: #fff;
-      padding: 10px 14px; border-radius: 12px; font-size: 14px;
-      z-index: 99999; max-width: 90vw; text-align: center;
-      box-shadow: 0 10px 20px rgba(0,0,0,.25);
-    `;
-    document.body.appendChild(el);
+    alert(msg);
+    return;
   }
   el.textContent = msg;
+  el.className = "toast " + (ok ? "ok" : "ng");
   el.style.display = "block";
-  clearTimeout(el._t);
-  el._t = setTimeout(() => (el.style.display = "none"), ms);
+  setTimeout(() => (el.style.display = "none"), 2600);
 }
 
-function setBusy(isBusy) {
-  qsa("button").forEach(b => (b.disabled = !!isBusy));
-  document.body.style.opacity = isBusy ? "0.85" : "1";
+function toYMD(dateObj = new Date()) {
+  const y = dateObj.getFullYear();
+  const m = String(dateObj.getMonth() + 1).padStart(2, "0");
+  const d = String(dateObj.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
 }
 
-/* -------------------------------
- * 画像 -> dataURL（圧縮）
- * ------------------------------- */
-async function fileToDataUrlCompressed(file) {
-  const dataUrl = await readAsDataURL(file);
-  // 画像以外はそのまま
-  if (!/^data:image\//.test(dataUrl)) return dataUrl;
+function toHM(dateObj = new Date()) {
+  const h = String(dateObj.getHours()).padStart(2, "0");
+  const m = String(dateObj.getMinutes()).padStart(2, "0");
+  return `${h}:${m}`;
+}
 
-  // iOS Safari対策でImage decode
-  const img = await loadImage(dataUrl);
-  const { w, h } = fitSize(img.width, img.height, IMG_MAX_W);
+function normalizeYMD(input) {
+  // "2025/12/30" → "2025-12-30" , "2025-12-30"はそのまま
+  return String(input || "")
+    .trim()
+    .replace(/\//g, "-");
+}
+
+function safeStr(v) {
+  return (v === undefined || v === null) ? "" : String(v).trim();
+}
+
+function numOrBlank(v) {
+  const s = safeStr(v);
+  if (!s) return "";
+  const n = Number(s);
+  return Number.isFinite(n) ? n : "";
+}
+
+/** 画像を圧縮してDataURLに（スマホ送信重い対策） */
+async function fileToCompressedDataURL(file, maxW = 1280, quality = 0.75) {
+  if (!file) return null;
+  // 画像以外は除外
+  if (!file.type || !file.type.startsWith("image/")) return null;
+
+  const img = await new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file);
+    const im = new Image();
+    im.onload = () => resolve({ im, url });
+    im.onerror = reject;
+    im.src = url;
+  });
+
+  const { im, url } = img;
+  const w = im.naturalWidth || im.width;
+  const h = im.naturalHeight || im.height;
+
+  const scale = Math.min(1, maxW / w);
+  const cw = Math.round(w * scale);
+  const ch = Math.round(h * scale);
 
   const canvas = document.createElement("canvas");
-  canvas.width = w;
-  canvas.height = h;
+  canvas.width = cw;
+  canvas.height = ch;
   const ctx = canvas.getContext("2d");
-  ctx.drawImage(img, 0, 0, w, h);
+  ctx.drawImage(im, 0, 0, cw, ch);
 
-  // JPEGで再生成（容量削減）
-  const out = canvas.toDataURL("image/jpeg", IMG_JPEG_QUALITY);
-  return out;
+  URL.revokeObjectURL(url);
+
+  // JPEG固定（軽い）
+  return canvas.toDataURL("image/jpeg", quality);
 }
 
-function fitSize(w, h, maxW) {
-  if (!maxW || w <= maxW) return { w, h };
-  const r = maxW / w;
-  return { w: Math.round(w * r), h: Math.round(h * r) };
-}
-
-function readAsDataURL(file) {
-  return new Promise((res, rej) => {
-    const fr = new FileReader();
-    fr.onload = () => res(String(fr.result || ""));
-    fr.onerror = rej;
-    fr.readAsDataURL(file);
-  });
-}
-
-function loadImage(src) {
-  return new Promise((res, rej) => {
-    const img = new Image();
-    img.onload = () => res(img);
-    img.onerror = rej;
-    img.src = src;
-  });
-}
-
-async function inputFilesToDataUrls(inputEl) {
-  if (!inputEl || !inputEl.files) return [];
-  const files = Array.from(inputEl.files).slice(0, MAX_FILES_EACH);
+/** input[type=file] multiple → dataURL配列 */
+async function collectFilesAsDataURLs(inputId) {
+  const el = $(inputId);
+  if (!el || !el.files || !el.files.length) return [];
+  const files = Array.from(el.files);
   const out = [];
   for (const f of files) {
-    out.push(await fileToDataUrlCompressed(f));
+    const du = await fileToCompressedDataURL(f, 1280, 0.75);
+    if (du) out.push(du);
   }
   return out;
 }
 
-/* -------------------------------
- * GAS通信
- * ------------------------------- */
-async function gasPost(payload) {
-  const r = await fetch(GAS_WEBAPP_URL, {
-    method: "POST",
-    headers: { "Content-Type": "text/plain;charset=utf-8" },
-    body: JSON.stringify(payload),
-  });
-  const txt = await r.text();
-  try { return JSON.parse(txt); }
-  catch { return { ok: false, message: "bad json", raw: txt }; }
-}
-
-async function gasGet(params) {
-  const url = new URL(GAS_WEBAPP_URL);
-  Object.entries(params).forEach(([k, v]) => {
-    if (v === undefined || v === null) return;
-    const s = String(v).trim();
-    if (!s) return;
-    url.searchParams.set(k, s);
-  });
-
-  const r = await fetch(url.toString(), { method: "GET" });
-  const txt = await r.text();
-  try { return JSON.parse(txt); }
-  catch { return { ok: false, message: "bad json", raw: txt }; }
-}
-
-/* =========================================================
- * departure.html / arrival.html 用
- * ========================================================= */
-function bindTenkoForm(mode) {
-  // mode は "departure" or "arrival"
-  const form = qs("form");
-  if (!form) return;
-
-  form.addEventListener("submit", async (ev) => {
-    ev.preventDefault();
-
-    try {
-      setBusy(true);
-
-      // ---- 共通必須 ----
-      const data = collectCommonFields(mode);
-
-      // ---- 点検 ----
-      data.inspection = collectInspection();
-
-      // ---- 写真 ----
-      const tenkoPhotos = await inputFilesToDataUrls(qs("#tenkoPhotos"));
-      const reportPhotos = await inputFilesToDataUrls(qs("#reportPhotos"));   // arrivalのみ想定（無ければOK）
-      const licensePhotos = await inputFilesToDataUrls(qs("#licensePhotos"));
-
-      // ---- doPost payload ----
-      const payload = {
-        app: APP_ID,
-        mode,
-        data,
-        photos: tenkoPhotos,
-        reportPhotos,
-        licensePhotos
-      };
-
-      const res = await gasPost(payload);
-      if (!res || !res.ok) {
-        toast(res && res.message ? res.message : "送信に失敗しました");
-        return;
-      }
-
-      toast("保存しました ✅", 1800);
-
-      // indexに戻す（あなたの仕様）
-      setTimeout(() => {
-        location.href = "index.html";
-      }, 600);
-
-    } catch (e) {
-      toast("送信エラー: " + (e && e.message ? e.message : e));
-    } finally {
-      setBusy(false);
-    }
-  });
-}
-
-function collectCommonFields(mode) {
-  const date = (qs("#date")?.value || "").trim();
-  const time = (qs("#time")?.value || "").trim();
-
-  const driverName = (qs("#driverName")?.value || "").trim();
-  const vehicleNo = (qs("#vehicleNo")?.value || "").trim();
-  const managerName = (qs("#managerName")?.value || "").trim();
-  const method = (qs("#method")?.value || "").trim();
-  const place = (qs("#place")?.value || "").trim();
-
-  const alcoholValue = (qs("#alcoholValue")?.value || "").trim();
-  const alcoholBand = (qs("#alcoholBand")?.value || "").trim();
-  const memo = (qs("#memo")?.value || "").trim();
-
-  const odoStart = (qs("#odoStart")?.value || "").trim();
-  const odoEnd = (qs("#odoEnd")?.value || "").trim();
-  const odoTotal = (qs("#odoTotal")?.value || "").trim();
-
-  const licenseNo = (qs("#licenseNo")?.value || "").trim();
-
-  // arrival（日報）
-  const workType = (qs("#workType")?.value || "").trim();
-  const workArea = (qs("#workArea")?.value || "").trim();
-  const workHours = (qs("#workHours")?.value || "").trim();
-  const deliveryCount = (qs("#deliveryCount")?.value || "").trim();
-  const trouble = (qs("#trouble")?.value || "").trim();
-  const dailyNote = (qs("#dailyNote")?.value || "").trim();
-
-  // 最低必須チェック（軽く）
-  if (!date) throw new Error("日付が未入力です");
-  if (!time) throw new Error("時刻が未入力です");
-  if (!driverName) throw new Error("氏名が未入力です");
-  if (!vehicleNo) throw new Error("車両番号が未入力です");
-  if (!managerName) throw new Error("点呼実施者が未入力です");
-  if (!method) throw new Error("点呼方法が未入力です");
-  if (!alcoholValue) throw new Error("アルコール測定値が未入力です");
-  if (!alcoholBand) throw new Error("酒気帯び有無が未入力です");
-
-  const data = {
-    date, time,
-    driverName, vehicleNo, managerName,
-    method, place,
-    alcoholValue, alcoholBand, memo,
-    odoStart, odoEnd, odoTotal,
-    licenseNo,
-    workType, workArea, workHours, deliveryCount, trouble, dailyNote
-  };
-
-  // 出発/帰着で不足があっても落とさない（GAS側で必要なら弾く）
-  return data;
-}
-
+/** ===== 点検項目をまとめる ===== */
 function collectInspection() {
-  // inspection の select などを data-inspection="key" で拾う
+  // selectのID一覧（departure/arrival共通）
+  const keys = [
+    "insp_tire",
+    "insp_light",
+    "insp_brake",
+    "insp_wiper",
+    "insp_engineOil",
+    "insp_coolant",
+    "insp_damage",
+    "insp_cargo",
+  ];
+
   const obj = {};
-  qsa("[data-inspection]").forEach(el => {
-    const k = el.getAttribute("data-inspection");
-    if (!k) return;
-    obj[k] = (el.value || "").trim();
+  keys.forEach((id) => {
+    const el = $(id);
+    if (el) obj[id] = safeStr(el.value);
   });
-  const note = (qs("#inspectionNote")?.value || "").trim();
-  if (note) obj.note = note;
+
+  const note = $("insp_note");
+  if (note) obj.note = safeStr(note.value);
+
   return obj;
 }
 
-/* =========================================================
- * export.html（出力ページ）用
- * ここが今回の「invalid mode」の原因だったので完全に分離
- * ========================================================= */
-function bindExportPage() {
-  const btnDaily = qs("#btnDailyPdf");
-  const btnMonthly = qs("#btnMonthlyPdf");
-  const btnCsv = qs("#btnMonthlyCsv");
+/** ===== 出発/帰着 送信（doPost）===== */
+async function submitTenko(mode) {
+  try {
+    // mode: "departure" or "arrival"
+    if (mode !== "departure" && mode !== "arrival") {
+      toast("invalid mode");
+      return;
+    }
 
-  if (btnDaily) {
-    btnDaily.addEventListener("click", async () => {
-      try {
-        setBusy(true);
-        const date = (qs("#date")?.value || "").trim().replace(/\//g, "-");
-        const name = (qs("#name")?.value || "").trim();
-        if (!date) throw new Error("日付を入力してください");
-        const res = await gasGet({ action: "dailyPdf", date, name });
-        if (!res.ok) throw new Error(res.message || "日報PDF作成に失敗");
-        openOrShowLink(res.url);
-      } catch (e) {
-        toast(String(e && e.message ? e.message : e));
-      } finally {
-        setBusy(false);
-      }
-    });
-  }
+    const date = normalizeYMD(safeStr($("date")?.value));
+    const time = safeStr($("time")?.value);
+    const driverName = safeStr($("driverName")?.value);
+    const vehicleNo = safeStr($("vehicleNo")?.value);
+    const managerName = safeStr($("managerName")?.value);
+    const method = safeStr($("method")?.value);
+    const place = safeStr($("place")?.value);
+    const alcoholValue = safeStr($("alcoholValue")?.value);
+    const alcoholBand = safeStr($("alcoholBand")?.value);
+    const memo = safeStr($("memo")?.value);
 
-  if (btnMonthly) {
-    btnMonthly.addEventListener("click", async () => {
-      try {
-        setBusy(true);
-        const month = (qs("#month")?.value || "").trim();
-        const name = (qs("#name")?.value || "").trim();
-        if (!month) throw new Error("月(YYYY-MM)を入力してください");
-        const res = await gasGet({ action: "monthlyPdf", month, name });
-        if (!res.ok) throw new Error(res.message || "月報PDF作成に失敗");
-        openOrShowLink(res.url);
-      } catch (e) {
-        toast(String(e && e.message ? e.message : e));
-      } finally {
-        setBusy(false);
-      }
-    });
-  }
+    // 走行距離
+    const odoStart = numOrBlank($("odoStart")?.value);
+    const odoEnd = numOrBlank($("odoEnd")?.value);
+    let odoTotal = "";
+    if (odoStart !== "" && odoEnd !== "") odoTotal = Math.max(0, Number(odoEnd) - Number(odoStart));
 
-  if (btnCsv) {
-    btnCsv.addEventListener("click", async () => {
-      try {
-        setBusy(true);
-        const month = (qs("#month")?.value || "").trim();
-        const name = (qs("#name")?.value || "").trim();
-        if (!month) throw new Error("月(YYYY-MM)を入力してください");
-        const res = await gasGet({ action: "monthlyCsv", month, name });
-        if (!res.ok) throw new Error(res.message || "月次CSV作成に失敗");
-        openOrShowLink(res.url);
-      } catch (e) {
-        toast(String(e && e.message ? e.message : e));
-      } finally {
-        setBusy(false);
-      }
+    // 免許番号（任意）
+    const licenseNo = safeStr($("licenseNo")?.value);
+
+    // arrival only：日報
+    const workType = safeStr($("workType")?.value);
+    const workArea = safeStr($("workArea")?.value);
+    const workHours = safeStr($("workHours")?.value);
+    const deliveryCount = safeStr($("deliveryCount")?.value);
+    const trouble = safeStr($("trouble")?.value);
+    const dailyNote = safeStr($("dailyNote")?.value);
+
+    // 必須チェック（最低限）
+    const must = (v, name) => {
+      if (!v) throw new Error(`未入力: ${name}`);
+    };
+    must(date, "日付");
+    must(time, "時刻");
+    must(driverName, "運転者氏名");
+    must(vehicleNo, "車両番号");
+    must(managerName, "点呼実施者");
+    must(method, "点呼方法");
+    must(alcoholValue, "アルコール測定値");
+    must(alcoholBand, "酒気帯び");
+
+    // 点検
+    const inspection = collectInspection();
+
+    // 写真（任意）
+    const photos = await collectFilesAsDataURLs("tenkoPhotos");
+    const reportPhotos = await collectFilesAsDataURLs("reportPhotos");   // arrivalのみ想定だがあってもOK
+    const licensePhotos = await collectFilesAsDataURLs("licensePhotos");
+
+    const payload = {
+      app: APP_KEY,
+      mode,
+      data: {
+        date,
+        time,
+        driverName,
+        vehicleNo,
+        managerName,
+        method,
+        place,
+        alcoholValue,
+        alcoholBand,
+        memo,
+        odoStart,
+        odoEnd,
+        odoTotal,
+        licenseNo,
+        inspection,
+        workType,
+        workArea,
+        workHours,
+        deliveryCount,
+        trouble,
+        dailyNote,
+      },
+      photos,
+      reportPhotos,
+      licensePhotos,
+    };
+
+    // 送信
+    $("btnSubmit") && ($("btnSubmit").disabled = true);
+    toast("送信中…", true);
+
+    const res = await fetch(GAS_WEBAPP_URL, {
+      method: "POST",
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: JSON.stringify(payload),
     });
+
+    const json = await res.json().catch(() => null);
+    if (!json || !json.ok) {
+      const msg = json?.message || "送信失敗";
+      throw new Error(msg);
+    }
+
+    toast("送信OK（保存完了）", true);
+
+    // indexへ戻る
+    setTimeout(() => {
+      window.location.href = "index.html";
+    }, 650);
+  } catch (err) {
+    toast(err.message || String(err));
+    $("btnSubmit") && ($("btnSubmit").disabled = false);
   }
 }
 
-function openOrShowLink(url) {
-  if (!url) {
-    toast("URLが取得できませんでした");
-    return;
+/** ===== export（日報PDF / 月報PDF / 月次CSV） ===== */
+async function runExport(action) {
+  try {
+    // action: dailyPdf / monthlyPdf / monthlyCsv
+    const dateRaw = safeStr($("date")?.value);
+    const monthRaw = safeStr($("month")?.value);
+    const name = safeStr($("name")?.value);
+
+    const date = normalizeYMD(dateRaw);
+    const month = monthRaw; // YYYY-MM
+
+    let url = `${GAS_WEBAPP_URL}?action=${encodeURIComponent(action)}`;
+    if (action === "dailyPdf") {
+      if (!date) throw new Error("日付（YYYY-MM-DD）が必要です");
+      url += `&date=${encodeURIComponent(date)}`;
+      if (name) url += `&name=${encodeURIComponent(name)}`;
+    } else if (action === "monthlyPdf" || action === "monthlyCsv") {
+      if (!month) throw new Error("月（YYYY-MM）が必要です");
+      url += `&month=${encodeURIComponent(month)}`;
+      if (name) url += `&name=${encodeURIComponent(name)}`;
+    } else {
+      throw new Error("invalid mode");
+    }
+
+    toast("作成中…（数秒かかります）", true);
+
+    const res = await fetch(url, { method: "GET" });
+    const json = await res.json().catch(() => null);
+
+    if (!json || !json.ok) {
+      const msg = json?.message || "作成失敗";
+      throw new Error(msg);
+    }
+
+    const out = $("result");
+    if (out) {
+      out.innerHTML = `
+        <div class="resultBox">
+          <div class="resultTitle">✅ 作成完了</div>
+          <div class="resultLink"><a href="${json.url}" target="_blank" rel="noopener">ファイルを開く（Drive）</a></div>
+          <div class="resultSmall">※リンクを開けない場合は、Drive権限（リンク共有）設定を確認</div>
+        </div>
+      `;
+    }
+
+    toast("作成OK（リンクを表示）", true);
+  } catch (err) {
+    toast(err.message || String(err));
   }
-  // 画面にリンク表示
-  const out = qs("#result");
-  if (out) {
-    out.innerHTML = `<a href="${escapeHtmlAttr(url)}" target="_blank" rel="noopener">作成したファイルを開く</a><div style="font-size:12px;opacity:.8;margin-top:6px;">${escapeHtml(url)}</div>`;
-  }
-  // 新規タブで開く（iOSはブロックされる場合があるのでリンクも出す）
-  try { window.open(url, "_blank"); } catch (_) {}
-  toast("作成しました ✅");
 }
 
-function escapeHtml(s) {
-  return String(s ?? "")
-    .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+/** ===== ページ初期化 ===== */
+function initDeparturePage() {
+  // 初期値
+  if ($("date") && !$("date").value) $("date").value = toYMD();
+  if ($("time") && !$("time").value) $("time").value = toHM();
+
+  // odoTotal自動計算（入力のたび）
+  const calc = () => {
+    const s = numOrBlank($("odoStart")?.value);
+    const e = numOrBlank($("odoEnd")?.value);
+    if (s !== "" && e !== "") $("odoTotal").value = Math.max(0, Number(e) - Number(s));
+  };
+  $("odoStart")?.addEventListener("input", calc);
+  $("odoEnd")?.addEventListener("input", calc);
+
+  $("btnSubmit")?.addEventListener("click", () => submitTenko("departure"));
 }
-function escapeHtmlAttr(s) { return escapeHtml(s); }
 
-/* =========================================================
- * ページ側から呼ぶ初期化（各HTMLで1行呼べばOK）
- * 例:
- *  departure.html → initDeparture();
- *  arrival.html   → initArrival();
- *  export.html    → initExport();
- * ========================================================= */
-function initDeparture() { bindTenkoForm("departure"); }
-function initArrival() { bindTenkoForm("arrival"); }
-function initExport() { bindExportPage(); }
+function initArrivalPage() {
+  // 初期値
+  if ($("date") && !$("date").value) $("date").value = toYMD();
+  if ($("time") && !$("time").value) $("time").value = toHM();
 
-// グローバル公開（HTMLから呼べるように）
-window.initDeparture = initDeparture;
-window.initArrival = initArrival;
-window.initExport = initExport;
+  // odoTotal自動計算
+  const calc = () => {
+    const s = numOrBlank($("odoStart")?.value);
+    const e = numOrBlank($("odoEnd")?.value);
+    if (s !== "" && e !== "") $("odoTotal").value = Math.max(0, Number(e) - Number(s));
+  };
+  $("odoStart")?.addEventListener("input", calc);
+  $("odoEnd")?.addEventListener("input", calc);
+
+  $("btnSubmit")?.addEventListener("click", () => submitTenko("arrival"));
+}
+
+function initExportPage() {
+  // 日付はYYYY-MM-DDに統一（表示用はUI側でOK）
+  if ($("date") && !$("date").value) $("date").value = toYMD();
+
+  // 月の初期値：今月
+  if ($("month") && !$("month").value) {
+    const d = new Date();
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, "0");
+    $("month").value = `${y}-${m}`;
+  }
+
+  $("btnDailyPdf")?.addEventListener("click", () => runExport("dailyPdf"));
+  $("btnMonthlyPdf")?.addEventListener("click", () => runExport("monthlyPdf"));
+  $("btnMonthlyCsv")?.addEventListener("click", () => runExport("monthlyCsv"));
+}
+
+/** DOM Ready */
+window.addEventListener("DOMContentLoaded", () => {
+  const page = document.body?.dataset?.page || "";
+  if (page === "departure") initDeparturePage();
+  if (page === "arrival") initArrivalPage();
+  if (page === "export") initExportPage();
+});
