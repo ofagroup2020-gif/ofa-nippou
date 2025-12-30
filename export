@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>日報 / 月報 / 月次CSV</title>
+  <style>
+    :root{
+      --bg:#070b16;--card:#0c1632;--card2:#0b1226;--txt:#e9eefc;--muted:#a8b3d6;
+      --line:rgba(255,255,255,.10);--btn:#ffd400;--btn2:#2b3556;--input:#0b1736;
+      --ok:#22c55e;--ng:#ef4444;
+    }
+    body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Hiragino Kaku Gothic ProN","Noto Sans JP",Meiryo,sans-serif;background:var(--bg);color:var(--txt);}
+    .wrap{max-width:430px;margin:0 auto;padding:18px 14px 30px;}
+    .head{display:flex;align-items:center;justify-content:space-between;margin:6px 0 12px}
+    .title{font-weight:900;font-size:18px}
+    .back{background:transparent;border:1px solid var(--line);color:var(--txt);padding:10px 12px;border-radius:12px;font-weight:700}
+    .card{background:linear-gradient(180deg,var(--card),var(--card2));border:1px solid var(--line);border-radius:16px;padding:14px;margin:10px 0}
+    label{display:block;font-size:12px;color:var(--muted);margin:10px 0 6px}
+    input{
+      width:100%;box-sizing:border-box;background:var(--input);border:1px solid var(--line);
+      border-radius:12px;color:var(--txt);padding:12px;font-size:14px;outline:none;
+    }
+    .btn{display:block;width:100%;border:none;border-radius:14px;padding:14px 14px;font-weight:900;font-size:15px;margin-top:12px}
+    .btn.yellow{background:var(--btn);color:#101010}
+    .btn.gray{background:var(--btn2);color:var(--txt)}
+    .note{color:var(--muted);font-size:12px;line-height:1.45;margin-top:10px}
+    .toast{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);display:none;
+      padding:12px 14px;border-radius:14px;color:#fff;font-weight:800;max-width:92%;text-align:center}
+    .toast.ok{background:rgba(34,197,94,.95)}
+    .toast.ng{background:rgba(239,68,68,.95)}
+    .resultBox{margin-top:12px;border:1px solid var(--line);border-radius:14px;padding:12px;background:rgba(0,0,0,.15)}
+    .resultTitle{font-weight:900;margin-bottom:6px}
+    .resultLink a{color:#7dd3fc;text-decoration:none;font-weight:800}
+    .resultSmall{color:var(--muted);font-size:12px;margin-top:6px}
+  </style>
+</head>
+<body data-page="export">
+  <div class="wrap">
+    <div class="head">
+      <div class="title">📄 日報 / 月報 / 月次CSV</div>
+      <button class="back" onclick="location.href='index.html'">戻る</button>
+    </div>
+
+    <div class="card">
+      <div class="note">
+        日報PDF：<b>点呼全内容（走行距離・点検・免許・写真リンク）</b> を出力<br>
+        月報PDF：写真は <b>有/無</b> のみ表示（詳細は日報PDF）
+      </div>
+
+      <label>日付（日報PDF用）</label>
+      <input id="date" type="date" />
+
+      <label>月（YYYY-MM / 月報・CSV用）</label>
+      <input id="month" placeholder="例：2025-12" inputmode="numeric" />
+
+      <label>運転者名（任意：入れるとその人だけ）</label>
+      <input id="name" placeholder="未入力なら全員" />
+
+      <!-- ★ID完全一致（app.jsが探す） -->
+      <button id="btnDailyPdf" class="btn yellow">日報PDFを作成</button>
+      <button id="btnMonthlyPdf" class="btn gray">月報PDFを作成</button>
+      <button id="btnMonthlyCsv" class="btn gray">月次CSVを作成</button>
+
+      <div id="result"></div>
+
+      <div class="note">
+        ※作成ボタンを押すと、GASがDriveに保存し「リンク」を返します。<br>
+        ※「反応なし」対策：このページは <b>IDをapp.jsと完全一致</b> させています。
+      </div>
+    </div>
+  </div>
+
+  <div id="toast" class="toast"></div>
+  <script src="app.js"></script>
+</body>
+</html>
