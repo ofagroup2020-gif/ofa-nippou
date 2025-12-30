@@ -2,261 +2,227 @@
 <html lang="ja">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>OFA 帰着点呼 / 日報</title>
-  <link rel="stylesheet" href="./style.css" />
   <style>
-    :root { --card:#fff; --bg:#f4f6fb; --line:#e7ebf3; --txt:#0f172a; --muted:#64748b; }
-    body{ background:var(--bg); color:var(--txt); }
-    .wrap{ max-width:720px; margin:0 auto; padding:16px 14px 40px; }
-    .card{ background:var(--card); border:1px solid var(--line); border-radius:16px; padding:14px; box-shadow:0 6px 18px rgba(15,23,42,.06); }
-    .title{ font-size:22px; font-weight:800; display:flex; gap:10px; align-items:center; margin:4px 0 10px; }
-    .sub{ color:var(--muted); font-size:13px; margin:0 0 12px; line-height:1.5; }
-    .badge{ display:inline-flex; align-items:center; gap:8px; padding:8px 10px; background:#ecfeff; color:#155e75; border-radius:999px; font-size:12px; font-weight:700; }
-    .grid{ display:grid; grid-template-columns:1fr 1fr; gap:12px; }
-    @media (max-width:680px){ .grid{ grid-template-columns:1fr; } }
-    label{ display:block; font-size:12px; font-weight:700; margin:12px 0 6px; color:#1f2937; }
-    input, select, textarea{
-      width:100%; box-sizing:border-box; border:1px solid var(--line); border-radius:12px;
-      padding:12px 12px; font-size:16px; background:#fff; outline:none;
+    :root{
+      --bg:#0b1220;
+      --card:#0f1b33;
+      --text:#eaf2ff;
+      --muted:rgba(234,242,255,.75);
+      --line:rgba(234,242,255,.12);
+      --accent:#ffd400;
     }
-    textarea{ min-height:120px; resize:vertical; }
-    .hint{ font-size:12px; color:var(--muted); margin-top:6px; }
-    .hr{ height:1px; background:var(--line); margin:14px 0; }
-    .sectionTitle{ font-weight:900; font-size:14px; display:flex; align-items:center; gap:8px; margin:4px 0 0; }
-    .checks{ display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:10px; }
-    @media (max-width:680px){ .checks{ grid-template-columns:1fr; } }
-    .checkItem{
-      border:1px solid var(--line); border-radius:14px; padding:10px 12px; background:#fbfdff;
-      display:flex; align-items:center; justify-content:space-between; gap:10px;
+    body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Hiragino Kaku Gothic ProN","Noto Sans JP",Meiryo,sans-serif;background:linear-gradient(180deg,#050916,#0b1220);color:var(--text);}
+    .wrap{max-width:920px;margin:0 auto;padding:16px;}
+    .top{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:8px 0 12px;}
+    .brand{display:flex;flex-direction:column;gap:2px;}
+    .brand .t{font-weight:800;letter-spacing:.5px}
+    .brand .s{color:var(--muted);font-size:12px}
+    .btn{border:none;border-radius:14px;padding:12px 14px;font-weight:700;cursor:pointer}
+    .btn.primary{background:var(--accent);color:#111827}
+    .btn.ghost{background:transparent;color:var(--text);border:1px solid var(--line)}
+    .card{background:rgba(15,27,51,.9);border:1px solid var(--line);border-radius:18px;padding:14px;margin:10px 0;box-shadow:0 18px 50px rgba(0,0,0,.25);}
+    h2{margin:0 0 10px;font-size:16px}
+    .grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    @media (max-width:720px){.grid{grid-template-columns:1fr}}
+    label{display:block;font-size:12px;color:var(--muted);margin:2px 0 6px}
+    input,select,textarea{
+      width:100%;box-sizing:border-box;border-radius:12px;border:1px solid var(--line);
+      background:rgba(255,255,255,.04);color:var(--text);
+      padding:12px 12px;font-size:15px;outline:none;
     }
-    .checkItem .k{ font-weight:800; font-size:13px; }
-    .checkItem select{ width:140px; padding:10px; font-size:14px; }
-    .actions{ display:flex; gap:10px; margin-top:14px; }
-    .btn{
-      flex:1; border:none; border-radius:14px; padding:14px 12px; font-size:16px; font-weight:900; cursor:pointer;
-    }
-    .btnPrimary{
-      background:linear-gradient(90deg,#ff8a00,#ff3d81,#6a5cff);
-      color:#fff;
-    }
-    .btnGhost{ background:#fff; border:1px solid var(--line); }
-    .distanceBox{
-      border:1px solid var(--line); border-radius:14px; padding:10px 12px; background:#fff;
-      display:flex; align-items:center; justify-content:space-between; margin-top:10px;
-    }
-    .distanceBox .k{ font-weight:900; font-size:13px; color:#1f2937; }
-    .distanceBox .v{ font-weight:900; font-size:18px; }
-    #toast{
-      position:fixed; left:50%; bottom:18px; transform:translateX(-50%);
-      background:#111827; color:#fff; padding:12px 14px; border-radius:999px;
-      font-size:13px; opacity:0; pointer-events:none; transition:.2s;
-      max-width:92vw; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
-    }
-    #toast.show{ opacity:1; }
-    #toast[data-type="ok"]{ background:#065f46; }
-    #toast[data-type="err"]{ background:#991b1b; }
-    .mini{ font-size:12px; color:var(--muted); margin-top:10px; line-height:1.6; }
+    textarea{min-height:90px;resize:vertical}
+    .row{display:flex;gap:10px}
+    .row > *{flex:1}
+    .hint{color:var(--muted);font-size:12px;margin-top:6px}
+    .sep{height:1px;background:var(--line);margin:12px 0}
+    .foot{display:flex;gap:10px;align-items:center;justify-content:space-between;margin-top:10px}
+    .pill{display:inline-flex;gap:6px;align-items:center;background:rgba(255,212,0,.14);border:1px solid rgba(255,212,0,.35);
+      padding:6px 10px;border-radius:999px;font-size:12px;color:var(--accent);}
   </style>
 </head>
 
-<body>
+<body data-mode="arrival">
   <div class="wrap">
+    <div class="top">
+      <div class="brand">
+        <div class="t">OFA GROUP｜帰着点呼 / 日報</div>
+        <div class="s">帰着点呼＋業務内容まで1回で保存</div>
+      </div>
+      <a class="btn ghost" href="index.html">戻る</a>
+    </div>
+
     <div class="card">
-      <div class="title">✅ 帰着点呼 / 日報</div>
-      <p class="sub">業務終了後の点呼と日報を記録します（スマホ最適）／送信後は自動でトップへ戻ります。</p>
-      <div class="badge">📌 点呼＋日報＋点検をここで完結</div>
+      <div class="pill">📄 日報PDFに「全内容」が出る仕様</div>
+      <div class="sep"></div>
 
-      <div class="hr"></div>
-
-      <!-- 共通（必須） -->
+      <h2>基本情報</h2>
       <div class="grid">
         <div>
-          <label>日付（必須）</label>
+          <label>日付（YYYY-MM-DD）</label>
           <input id="date" type="date" />
         </div>
         <div>
-          <label>時刻（必須）</label>
+          <label>時刻（HH:mm）</label>
           <input id="time" type="time" />
         </div>
-      </div>
 
-      <label>運転者氏名（必須）</label>
-      <input id="driverName" placeholder="例）森下 洸" />
-
-      <label>車両番号 / 車番（必須）</label>
-      <input id="vehicleNo" placeholder="例）鹿児島480 あ 1234 / OFA-01" />
-
-      <label>点呼実施者（必須）</label>
-      <input id="managerName" placeholder="例）運行管理者名" />
-
-      <div class="grid">
         <div>
-          <label>点呼方法（必須）</label>
+          <label>運転者名</label>
+          <input id="driverName" placeholder="例：森下 洸" />
+        </div>
+        <div>
+          <label>車両番号</label>
+          <input id="vehicleNo" placeholder="例：鹿児島 480 あ 12-34" />
+        </div>
+
+        <div>
+          <label>点呼実施者</label>
+          <input id="managerName" placeholder="例：管理者 太田" />
+        </div>
+        <div>
+          <label>点呼方法</label>
           <select id="method">
-            <option value="">選択</option>
+            <option value="">選択してください</option>
             <option>対面</option>
             <option>電話</option>
-            <option>IT点呼</option>
-            <option>その他</option>
+            <option>ビデオ通話</option>
+            <option>チャット</option>
           </select>
         </div>
+
         <div>
-          <label>点呼場所（任意）</label>
-          <input id="place" placeholder="例）営業所 / 車庫 / 自宅" />
+          <label>点呼場所</label>
+          <input id="place" placeholder="例：倉庫 / 自宅 / 車内" />
+        </div>
+        <div>
+          <label>メモ（任意）</label>
+          <input id="memo" placeholder="例：無事故 / 眠気なし" />
         </div>
       </div>
 
+      <div class="sep"></div>
+
+      <h2>アルコールチェック</h2>
       <div class="grid">
         <div>
-          <label>アルコール測定値（必須）</label>
-          <input id="alcoholValue" inputmode="decimal" placeholder="例）0.00" />
-          <div class="hint">小数OK（例：0.00）</div>
+          <label>測定値</label>
+          <input id="alcoholValue" inputmode="decimal" placeholder="例：0.00" />
         </div>
         <div>
-          <label>酒気帯び（必須）</label>
+          <label>酒気帯び判定</label>
           <select id="alcoholBand">
-            <option value="">選択</option>
-            <option>なし</option>
-            <option>あり</option>
+            <option value="">選択してください</option>
+            <option>無</option>
+            <option>有</option>
           </select>
         </div>
       </div>
 
-      <label>安全運行に支障の恐れ（任意）</label>
-      <select id="healthRisk">
-        <option value="">選択</option>
-        <option>なし</option>
-        <option>あり（軽度）</option>
-        <option>あり（要休務）</option>
-      </select>
+      <div class="sep"></div>
 
+      <h2>走行距離（自動計算）</h2>
+      <div class="row">
+        <div>
+          <label>出発時メーター（odoStart）</label>
+          <input id="odoStart" inputmode="numeric" placeholder="例：120345" />
+        </div>
+        <div>
+          <label>帰着時メーター（odoEnd）</label>
+          <input id="odoEnd" inputmode="numeric" placeholder="例：120456" />
+        </div>
+      </div>
+      <div style="margin-top:10px">
+        <label>走行距離（odoTotal）※自動で入ります</label>
+        <input id="odoTotal" inputmode="numeric" placeholder="例：111" />
+      </div>
+
+      <div class="sep"></div>
+
+      <h2>車両点検（増量版）</h2>
+      <div class="grid">
+        <div><label>エンジンオイル</label><select id="insp_engineOil"><option value="">選択</option><option>OK</option><option>注意</option><option>NG</option></select></div>
+        <div><label>ブレーキ</label><select id="insp_brake"><option value="">選択</option><option>OK</option><option>注意</option><option>NG</option></select></div>
+        <div><label>タイヤ（空気圧/摩耗）</label><select id="insp_tire"><option value="">選択</option><option>OK</option><option>注意</option><option>NG</option></select></div>
+        <div><label>灯火類（ライト/ウインカー）</label><select id="insp_light"><option value="">選択</option><option>OK</option><option>注意</option><option>NG</option></select></div>
+        <div><label>ミラー/視界</label><select id="insp_mirror"><option value="">選択</option><option>OK</option><option>注意</option><option>NG</option></select></div>
+        <div><label>ワイパー/ウォッシャー</label><select id="insp_wiper"><option value="">選択</option><option>OK</option><option>注意</option><option>NG</option></select></div>
+        <div><label>ホーン</label><select id="insp_horn"><option value="">選択</option><option>OK</option><option>注意</option><option>NG</option></select></div>
+        <div><label>積荷/施錠</label><select id="insp_loadLock"><option value="">選択</option><option>OK</option><option>注意</option><option>NG</option></select></div>
+        <div><label>外装損傷/異音</label><select id="insp_damage"><option value="">選択</option><option>なし</option><option>軽微</option><option>要確認</option></select></div>
+        <div><label>点検メモ</label><input id="insp_note" placeholder="例：左前ライト要確認" /></div>
+      </div>
+
+      <div class="sep"></div>
+
+      <h2>免許（番号 or 写真）</h2>
       <div class="grid">
         <div>
-          <label>開始走行距離（任意）</label>
-          <input id="odoStart" inputmode="numeric" placeholder="例）123456（出発時）" />
+          <label>運転免許証番号（任意）</label>
+          <input id="licenseNo" placeholder="例：第123456789012" />
         </div>
         <div>
-          <label>終了走行距離（必須）</label>
-          <input id="odoEnd" inputmode="numeric" placeholder="例）123890（帰着時）" />
+          <label>免許写真（任意・最大6枚）</label>
+          <input id="licensePhotos" type="file" accept="image/*" multiple />
         </div>
       </div>
 
-      <div class="distanceBox">
-        <div class="k">自動計算 走行距離</div>
-        <div class="v"><span id="distanceAuto"></span><span style="font-size:12px;color:#64748b;margin-left:6px;">km</span></div>
-      </div>
-      <div class="hint">開始と終了の両方を入れると自動表示します（未入力でも送信可）。</div>
+      <div class="sep"></div>
 
+      <h2>日報（業務内容）</h2>
       <div class="grid">
         <div>
-          <label>運転免許番号（任意）</label>
-          <input id="licenseNo" placeholder="例）第XXXXXXXXXXXX号" />
+          <label>業務内容（例：Amazon / ヤマト / チャーター）</label>
+          <input id="workType" placeholder="例：Amazonデリプロ" />
         </div>
         <div>
-          <label>その他必要事項（必須）</label>
-          <input id="memo" placeholder="例）体調良好／異常なし／引継ぎ事項あり等" />
+          <label>配送エリア</label>
+          <input id="workArea" placeholder="例：薩摩川内市" />
+        </div>
+        <div>
+          <label>稼働時間</label>
+          <input id="workHours" placeholder="例：9:00-18:00" />
+        </div>
+        <div>
+          <label>配送個数</label>
+          <input id="deliveryCount" inputmode="numeric" placeholder="例：120" />
         </div>
       </div>
 
-      <div class="hr"></div>
+      <div style="margin-top:10px">
+        <label>トラブル/事故（あれば）</label>
+        <input id="trouble" placeholder="例：クレーム1件 / 事故なし" />
+      </div>
+      <div style="margin-top:10px">
+        <label>日報メモ（詳細）</label>
+        <textarea id="dailyNote" placeholder="例：再配達少なめ。渋滞で遅れたが挽回。"></textarea>
+      </div>
 
-      <!-- 日報（必須） -->
-      <div class="sectionTitle">📄 日報（業務内容）</div>
+      <div class="sep"></div>
 
-      <label>業務内容（必須）</label>
-      <select id="workType">
-        <option value="">選択</option>
-        <option>Amazon宅配</option>
-        <option>企業配</option>
-        <option>スポット便</option>
-        <option>チャーター</option>
-        <option>拠点横持ち</option>
-        <option>その他</option>
-      </select>
-
+      <h2>写真（任意）</h2>
       <div class="grid">
         <div>
-          <label>配送エリア（任意）</label>
-          <input id="area" placeholder="例）鹿児島市中央区 / 世田谷区" />
+          <label>点呼写真（アルコール計測器など）最大6枚</label>
+          <input id="tenkoPhotos" type="file" accept="image/*" multiple />
         </div>
         <div>
-          <label>稼働時間（任意）</label>
-          <input id="workTime" placeholder="例）9:00〜18:00" />
+          <label>日報添付写真（配達完了/破損/現場）最大6枚</label>
+          <input id="reportPhotos" type="file" accept="image/*" multiple />
         </div>
       </div>
+      <div class="hint">写真は自動で圧縮してGASへ送ります。</div>
 
-      <div class="grid">
-        <div>
-          <label>配送個数（任意）</label>
-          <input id="countDelivered" inputmode="numeric" placeholder="例）120" />
-        </div>
-        <div>
-          <label>持戻り / 不在（任意）</label>
-          <input id="countReturn" inputmode="numeric" placeholder="例）8" />
-        </div>
-      </div>
+      <input type="hidden" id="backUrl" value="index.html" />
 
-      <label>本日の業務内容（必須）</label>
-      <textarea id="dailyNote" placeholder="例）Amazon宅配：置き配中心。再配達少。クレームなし。注意事項：○○マンションは入口暗証あり。"></textarea>
-
-      <div class="hr"></div>
-
-      <!-- 車両点検（増量） -->
-      <div class="sectionTitle">🛠 車両点検（帰着後）</div>
-      <div class="checks">
-        <div class="checkItem"><div class="k">タイヤ</div>
-          <select id="insp_tire"><option>OK</option><option>注意</option><option>NG</option></select></div>
-        <div class="checkItem"><div class="k">ブレーキ</div>
-          <select id="insp_brake"><option>OK</option><option>注意</option><option>NG</option></select></div>
-        <div class="checkItem"><div class="k">ライト</div>
-          <select id="insp_light"><option>OK</option><option>注意</option><option>NG</option></select></div>
-        <div class="checkItem"><div class="k">ウィンカー</div>
-          <select id="insp_blinker"><option>OK</option><option>注意</option><option>NG</option></select></div>
-        <div class="checkItem"><div class="k">ワイパー</div>
-          <select id="insp_wiper"><option>OK</option><option>注意</option><option>NG</option></select></div>
-        <div class="checkItem"><div class="k">エンジンオイル</div>
-          <select id="insp_oil"><option>OK</option><option>注意</option><option>NG</option></select></div>
-        <div class="checkItem"><div class="k">冷却水</div>
-          <select id="insp_coolant"><option>OK</option><option>注意</option><option>NG</option></select></div>
-        <div class="checkItem"><div class="k">外傷/破損</div>
-          <select id="insp_damage"><option>なし</option><option>あり</option></select></div>
-        <div class="checkItem"><div class="k">荷崩れ/車内整理</div>
-          <select id="insp_loadSecure"><option>OK</option><option>注意</option><option>NG</option></select></div>
-      </div>
-
-      <label>点検メモ（任意）</label>
-      <input id="insp_other" placeholder="例）左ミラー擦り傷（報告済）" />
-
-      <div class="hr"></div>
-
-      <!-- 写真 -->
-      <div class="sectionTitle">📷 写真（任意／複数OK）</div>
-      <label>点呼・メーター・チェック器など</label>
-      <input id="photos" type="file" accept="image/*" multiple />
-
-      <label>日報添付写真（任意／複数OK）</label>
-      <input id="reportPhotos" type="file" accept="image/*" multiple />
-      <div class="hint">月次PDFでは写真は「有/無」だけにします（GAS側で）。</div>
-
-      <label>免許証写真（任意）</label>
-      <input id="licensePhotos" type="file" accept="image/*" multiple />
-
-      <!-- actions -->
-      <div class="actions">
-        <button class="btn btnGhost" onclick="location.href='./index.html'">戻る</button>
-        <button id="submitArrival" class="btn btnPrimary">送信（帰着点呼 / 日報）</button>
-      </div>
-
-      <div class="mini">
-        ※送信後は自動でトップへ戻ります。<br>
-        ※保存先：Google Drive / Spreadsheet（GAS側で保管）
+      <div class="foot">
+        <button id="submitBtn" class="btn primary" type="button">送信（arrival）</button>
+        <a class="btn ghost" href="reports.html">日報/月報へ</a>
       </div>
     </div>
   </div>
 
-  <div id="toast"></div>
-
-  <script src="./app.js"></script>
+  <script src="app.js"></script>
 </body>
 </html>
