@@ -2,228 +2,182 @@
 <html lang="ja">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>OFA 出発点呼</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>出発点呼</title>
   <style>
     :root{
-      --bg:#0b1220;
-      --card:#0f1b33;
-      --text:#eaf2ff;
-      --muted:rgba(234,242,255,.75);
-      --line:rgba(234,242,255,.12);
-      --accent:#ffd400; /* OFAっぽい */
-      --ok:#16a34a;
-      --danger:#dc2626;
+      --bg:#070b16;--card:#0c1632;--card2:#0b1226;--txt:#e9eefc;--muted:#a8b3d6;
+      --line:rgba(255,255,255,.10);--btn:#ff8a00;--btn2:#2b3556;
+      --ok:#22c55e;--ng:#ef4444;
+      --input:#0b1736;
     }
-    body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Hiragino Kaku Gothic ProN","Noto Sans JP",Meiryo,sans-serif;background:linear-gradient(180deg,#050916,#0b1220);color:var(--text);}
-    .wrap{max-width:920px;margin:0 auto;padding:16px;}
-    .top{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:8px 0 12px;}
-    .brand{display:flex;flex-direction:column;gap:2px;}
-    .brand .t{font-weight:800;letter-spacing:.5px}
-    .brand .s{color:var(--muted);font-size:12px}
-    .btn{border:none;border-radius:14px;padding:12px 14px;font-weight:700;cursor:pointer}
-    .btn.primary{background:var(--accent);color:#111827}
-    .btn.ghost{background:transparent;color:var(--text);border:1px solid var(--line)}
-    .card{background:rgba(15,27,51,.9);border:1px solid var(--line);border-radius:18px;padding:14px;margin:10px 0;box-shadow:0 18px 50px rgba(0,0,0,.25);}
-    h2{margin:0 0 10px;font-size:16px}
-    .grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-    @media (max-width:720px){.grid{grid-template-columns:1fr}}
-    label{display:block;font-size:12px;color:var(--muted);margin:2px 0 6px}
+    body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Hiragino Kaku Gothic ProN","Noto Sans JP",Meiryo,sans-serif;background:var(--bg);color:var(--txt);}
+    .wrap{max-width:430px;margin:0 auto;padding:18px 14px 30px;}
+    .head{display:flex;align-items:center;justify-content:space-between;margin:6px 0 12px}
+    .title{font-weight:900;font-size:18px}
+    .back{background:transparent;border:1px solid var(--line);color:var(--txt);padding:10px 12px;border-radius:12px;font-weight:700}
+    .card{background:linear-gradient(180deg,var(--card),var(--card2));border:1px solid var(--line);border-radius:16px;padding:14px;margin:10px 0}
+    .h2{font-weight:900;margin:0 0 10px;font-size:14px}
+    label{display:block;font-size:12px;color:var(--muted);margin:10px 0 6px}
     input,select,textarea{
-      width:100%;box-sizing:border-box;border-radius:12px;border:1px solid var(--line);
-      background:rgba(255,255,255,.04);color:var(--text);
-      padding:12px 12px;font-size:15px;outline:none;
+      width:100%;box-sizing:border-box;background:var(--input);border:1px solid var(--line);
+      border-radius:12px;color:var(--txt);padding:12px;font-size:14px;outline:none;
     }
-    textarea{min-height:90px;resize:vertical}
-    .row{display:flex;gap:10px}
-    .row > *{flex:1}
-    .hint{color:var(--muted);font-size:12px;margin-top:6px}
-    .sep{height:1px;background:var(--line);margin:12px 0}
-    .foot{display:flex;gap:10px;align-items:center;justify-content:space-between;margin-top:10px}
-    .pill{display:inline-flex;gap:6px;align-items:center;background:rgba(255,212,0,.14);border:1px solid rgba(255,212,0,.35);
-      padding:6px 10px;border-radius:999px;font-size:12px;color:var(--accent);}
+    textarea{min-height:70px;resize:vertical}
+    .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    .btn{width:100%;border:none;border-radius:14px;padding:14px 14px;font-weight:900;font-size:15px;background:linear-gradient(90deg,#ff8a00,#a855f7);color:#fff}
+    .small{color:var(--muted);font-size:12px;line-height:1.4}
+    .toast{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);display:none;
+      padding:12px 14px;border-radius:14px;color:#fff;font-weight:800;max-width:92%;text-align:center}
+    .toast.ok{background:rgba(34,197,94,.95)}
+    .toast.ng{background:rgba(239,68,68,.95)}
+    .hr{height:1px;background:var(--line);margin:12px 0}
+    .inline{display:flex;gap:10px}
   </style>
 </head>
-
-<body data-mode="departure">
+<body data-page="departure">
   <div class="wrap">
-    <div class="top">
-      <div class="brand">
-        <div class="t">OFA GROUP｜出発点呼</div>
-        <div class="s">点呼・点検・免許・写真までここで完結</div>
-      </div>
-      <a class="btn ghost" href="index.html">戻る</a>
+    <div class="head">
+      <div class="title">✅ 出発点呼</div>
+      <button class="back" onclick="location.href='index.html'">戻る</button>
     </div>
 
     <div class="card">
-      <div class="pill">⚡ 入力しやすい / 速い / 実用フル版</div>
-      <div class="sep"></div>
+      <div class="h2">点呼（必須）</div>
 
-      <h2>基本情報</h2>
-      <div class="grid">
+      <div class="grid2">
         <div>
-          <label>日付（YYYY-MM-DD）</label>
+          <label>日付（必須）</label>
           <input id="date" type="date" />
         </div>
         <div>
-          <label>時刻（HH:mm）</label>
+          <label>時刻（必須）</label>
           <input id="time" type="time" />
         </div>
+      </div>
 
-        <div>
-          <label>運転者名</label>
-          <input id="driverName" placeholder="例：森下 洸" />
-        </div>
-        <div>
-          <label>車両番号</label>
-          <input id="vehicleNo" placeholder="例：鹿児島 480 あ 12-34" />
-        </div>
+      <label>運転者氏名（必須）</label>
+      <input id="driverName" placeholder="例：森下洸" />
 
+      <label>車両番号（必須）</label>
+      <input id="vehicleNo" placeholder="例：鹿児島480 あ 1234" />
+
+      <label>点呼実施者（必須）</label>
+      <input id="managerName" placeholder="例：管理者 太田" />
+
+      <div class="grid2">
         <div>
-          <label>点呼実施者</label>
-          <input id="managerName" placeholder="例：管理者 太田" />
-        </div>
-        <div>
-          <label>点呼方法</label>
+          <label>点呼方法（必須）</label>
           <select id="method">
-            <option value="">選択してください</option>
-            <option>対面</option>
-            <option>電話</option>
-            <option>ビデオ通話</option>
-            <option>チャット</option>
+            <option value="対面">対面</option>
+            <option value="電話">電話</option>
+            <option value="ビデオ通話">ビデオ通話</option>
+            <option value="その他">その他</option>
           </select>
         </div>
-
         <div>
           <label>点呼場所</label>
-          <input id="place" placeholder="例：倉庫 / 自宅 / 車内" />
-        </div>
-        <div>
-          <label>メモ（任意）</label>
-          <input id="memo" placeholder="例：体調良好 / 眠気注意" />
+          <input id="place" placeholder="例：営業所 / 車庫 / その他" />
         </div>
       </div>
 
-      <div class="sep"></div>
-
-      <h2>アルコールチェック</h2>
-      <div class="grid">
+      <div class="grid2">
         <div>
-          <label>測定値</label>
-          <input id="alcoholValue" inputmode="decimal" placeholder="例：0.00" />
+          <label>アルコール測定値（必須）</label>
+          <input id="alcoholValue" placeholder="例：0.00" inputmode="decimal" />
         </div>
         <div>
-          <label>酒気帯び判定</label>
+          <label>酒気帯び（必須）</label>
           <select id="alcoholBand">
-            <option value="">選択してください</option>
-            <option>無</option>
-            <option>有</option>
+            <option value="なし">なし</option>
+            <option value="あり">あり</option>
           </select>
         </div>
       </div>
-      <div class="hint">※測定値と判定は必須です。</div>
 
-      <div class="sep"></div>
+      <label>メモ（任意）</label>
+      <textarea id="memo" placeholder="体調、注意事項など"></textarea>
 
-      <h2>走行距離（自動計算）</h2>
-      <div class="row">
+      <div class="hr"></div>
+
+      <div class="h2">走行距離（任意・日報PDFに出ます）</div>
+      <div class="grid2">
         <div>
-          <label>出発時メーター（odoStart）</label>
-          <input id="odoStart" inputmode="numeric" placeholder="例：120345" />
+          <label>メーター開始</label>
+          <input id="odoStart" placeholder="例：12345" inputmode="numeric" />
         </div>
         <div>
-          <label>帰着時メーター（odoEnd）※出発は空でOK</label>
-          <input id="odoEnd" inputmode="numeric" placeholder="例：120456" />
+          <label>メーター終了</label>
+          <input id="odoEnd" placeholder="例：12410" inputmode="numeric" />
         </div>
       </div>
-      <div style="margin-top:10px">
-        <label>走行距離（odoTotal）※自動で入ります</label>
-        <input id="odoTotal" inputmode="numeric" placeholder="例：111" />
-      </div>
+      <label>走行距離（自動計算）</label>
+      <input id="odoTotal" placeholder="自動" readonly />
 
-      <div class="sep"></div>
+      <div class="hr"></div>
 
-      <h2>車両点検（増量版）</h2>
-      <div class="grid">
+      <div class="h2">車両点検（任意・日報PDFに出ます）</div>
+      <div class="grid2">
         <div>
-          <label>エンジンオイル</label>
-          <select id="insp_engineOil"><option value="">選択</option><option>OK</option><option>注意</option><option>NG</option></select>
+          <label>タイヤ</label>
+          <select id="insp_tire"><option>OK</option><option>注意</option><option>NG</option></select>
+        </div>
+        <div>
+          <label>灯火類</label>
+          <select id="insp_light"><option>OK</option><option>注意</option><option>NG</option></select>
         </div>
         <div>
           <label>ブレーキ</label>
-          <select id="insp_brake"><option value="">選択</option><option>OK</option><option>注意</option><option>NG</option></select>
+          <select id="insp_brake"><option>OK</option><option>注意</option><option>NG</option></select>
         </div>
         <div>
-          <label>タイヤ（空気圧/摩耗）</label>
-          <select id="insp_tire"><option value="">選択</option><option>OK</option><option>注意</option><option>NG</option></select>
+          <label>ワイパー</label>
+          <select id="insp_wiper"><option>OK</option><option>注意</option><option>NG</option></select>
         </div>
         <div>
-          <label>灯火類（ライト/ウインカー）</label>
-          <select id="insp_light"><option value="">選択</option><option>OK</option><option>注意</option><option>NG</option></select>
+          <label>エンジンオイル</label>
+          <select id="insp_engineOil"><option>OK</option><option>注意</option><option>NG</option></select>
         </div>
         <div>
-          <label>ミラー/視界</label>
-          <select id="insp_mirror"><option value="">選択</option><option>OK</option><option>注意</option><option>NG</option></select>
+          <label>冷却水</label>
+          <select id="insp_coolant"><option>OK</option><option>注意</option><option>NG</option></select>
         </div>
         <div>
-          <label>ワイパー/ウォッシャー</label>
-          <select id="insp_wiper"><option value="">選択</option><option>OK</option><option>注意</option><option>NG</option></select>
+          <label>外傷/破損</label>
+          <select id="insp_damage"><option value="なし">なし</option><option value="あり">あり</option></select>
         </div>
         <div>
-          <label>ホーン</label>
-          <select id="insp_horn"><option value="">選択</option><option>OK</option><option>注意</option><option>NG</option></select>
-        </div>
-        <div>
-          <label>積荷/施錠</label>
-          <select id="insp_loadLock"><option value="">選択</option><option>OK</option><option>注意</option><option>NG</option></select>
-        </div>
-        <div>
-          <label>外装損傷/異音</label>
-          <select id="insp_damage"><option value="">選択</option><option>なし</option><option>軽微</option><option>要確認</option></select>
-        </div>
-        <div>
-          <label>点検メモ</label>
-          <input id="insp_note" placeholder="例：右後タイヤ空気圧注意" />
+          <label>荷崩れ/車内整理</label>
+          <select id="insp_cargo"><option>OK</option><option>注意</option><option>NG</option></select>
         </div>
       </div>
+      <label>点検メモ（任意）</label>
+      <input id="insp_note" placeholder="例：右後輪空気圧少し低め→補充" />
 
-      <div class="sep"></div>
+      <div class="hr"></div>
 
-      <h2>免許（番号 or 写真）</h2>
-      <div class="grid">
-        <div>
-          <label>運転免許証番号（任意）</label>
-          <input id="licenseNo" placeholder="例：第123456789012" />
-        </div>
-        <div>
-          <label>免許写真（任意・最大6枚）</label>
-          <input id="licensePhotos" type="file" accept="image/*" multiple />
-        </div>
-      </div>
+      <div class="h2">免許（任意・日報PDFに出ます）</div>
+      <label>免許番号（任意）</label>
+      <input id="licenseNo" placeholder="番号入力が難しければ写真だけでもOK" />
+      <label>免許写真（任意/複数OK）</label>
+      <input id="licensePhotos" type="file" accept="image/*" multiple />
 
-      <div class="sep"></div>
+      <div class="hr"></div>
 
-      <h2>写真（任意）</h2>
-      <div class="grid">
-        <div>
-          <label>点呼写真（アルコール計測器など）最大6枚</label>
-          <input id="tenkoPhotos" type="file" accept="image/*" multiple />
-        </div>
-        <div>
-          <label>日報写真（出発では未使用でもOK）</label>
-          <input id="reportPhotos" type="file" accept="image/*" multiple />
-        </div>
-      </div>
-      <div class="hint">写真は自動で圧縮してGASへ送ります。</div>
+      <div class="h2">写真（任意/複数OK）</div>
+      <div class="small">点呼・メーター・チェック器など</div>
+      <label>点呼写真</label>
+      <input id="tenkoPhotos" type="file" accept="image/*" multiple />
 
-      <input type="hidden" id="backUrl" value="index.html" />
+      <div style="height:14px"></div>
+      <button id="btnSubmit" class="btn">送信（出発点呼）</button>
 
-      <div class="foot">
-        <button id="submitBtn" class="btn primary" type="button">送信（departure）</button>
-        <a class="btn ghost" href="reports.html">日報/月報へ</a>
-      </div>
+      <div style="height:10px"></div>
+      <div class="small">※送信後は index に戻ります / 写真は自動で軽くして送ります</div>
     </div>
   </div>
+
+  <div id="toast" class="toast"></div>
 
   <script src="app.js"></script>
 </body>
