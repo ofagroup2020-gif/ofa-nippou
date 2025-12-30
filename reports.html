@@ -2,79 +2,100 @@
 <html lang="ja">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>日報・月報 | OFA</title>
-  <link rel="stylesheet" href="style.css" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>OFA 日報 / 月報 / CSV</title>
+  <style>
+    :root{
+      --bg:#0b1220;
+      --card:#0f1b33;
+      --text:#eaf2ff;
+      --muted:rgba(234,242,255,.75);
+      --line:rgba(234,242,255,.12);
+      --accent:#ffd400;
+    }
+    body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Hiragino Kaku Gothic ProN","Noto Sans JP",Meiryo,sans-serif;background:linear-gradient(180deg,#050916,#0b1220);color:var(--text);}
+    .wrap{max-width:920px;margin:0 auto;padding:16px;}
+    .top{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:8px 0 12px;}
+    .brand{display:flex;flex-direction:column;gap:2px;}
+    .brand .t{font-weight:800;letter-spacing:.5px}
+    .brand .s{color:var(--muted);font-size:12px}
+    .btn{border:none;border-radius:14px;padding:12px 14px;font-weight:800;cursor:pointer}
+    .btn.primary{background:var(--accent);color:#111827}
+    .btn.ghost{background:transparent;color:var(--text);border:1px solid var(--line)}
+    .btn.small{padding:10px 12px;border-radius:12px;font-weight:800}
+    .card{background:rgba(15,27,51,.9);border:1px solid var(--line);border-radius:18px;padding:14px;margin:10px 0;box-shadow:0 18px 50px rgba(0,0,0,.25);}
+    label{display:block;font-size:12px;color:var(--muted);margin:2px 0 6px}
+    input{
+      width:100%;box-sizing:border-box;border-radius:12px;border:1px solid var(--line);
+      background:rgba(255,255,255,.04);color:var(--text);
+      padding:12px 12px;font-size:15px;outline:none;
+    }
+    .grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    @media (max-width:720px){.grid{grid-template-columns:1fr}}
+    .row{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
+    .row .btn{flex:1;min-width:210px}
+    .hint{color:var(--muted);font-size:12px;margin-top:8px}
+    .sep{height:1px;background:var(--line);margin:12px 0}
+    .result{padding:12px;border-radius:16px;background:rgba(255,255,255,.03);border:1px solid var(--line)}
+    .hidden{display:none}
+    a{color:#7dd3fc}
+  </style>
 </head>
+
 <body data-page="reports">
-  <main class="wrap">
-    <section class="card">
-      <div class="header">
+  <div class="wrap">
+    <div class="top">
+      <div class="brand">
+        <div class="t">OFA GROUP｜日報 / 月報 / 月次CSV</div>
+        <div class="s">日報PDFは「点呼全内容」出力 / 月報は写真「有無」表示</div>
+      </div>
+      <a class="btn ghost" href="index.html">戻る</a>
+    </div>
+
+    <div class="card">
+      <div class="grid">
         <div>
-          <h1 class="title">📄 日報 / 月報 出力</h1>
-          <p class="sub">Driveに保存 → URLが出る（LINE共有OK）</p>
+          <label>日付（日報PDF用）</label>
+          <input id="rep_date" type="date" />
+        </div>
+        <div>
+          <label>月（YYYY-MM / 月報・CSV用）</label>
+          <input id="rep_month" placeholder="例：2025-12" />
+        </div>
+
+        <div>
+          <label>運転者名（任意：入れるとその人だけ）</label>
+          <input id="rep_name" placeholder="例：森下 洸（空なら全員）" />
+        </div>
+        <div>
+          <label>使い方</label>
+          <input value="①日報PDF→②必要ならLINE共有" disabled />
         </div>
       </div>
 
-      <div class="sectionTitle">日報PDF</div>
-      <div class="grid">
-        <div class="field">
-          <label>日付</label>
-          <input id="repDate" type="date" />
-        </div>
-        <div class="field">
-          <label>氏名（任意）</label>
-          <input id="repName" placeholder="未入力なら全員" />
-        </div>
-      </div>
-      <div class="actions">
-        <button class="backBtn" onclick="location.href='index.html'">戻る</button>
-        <button id="btnDailyPdf" class="actionBtn">日報PDFを作成</button>
+      <div class="sep"></div>
+
+      <div class="row">
+        <button class="btn primary" id="btnDaily" type="button">日報PDFを作成</button>
+        <button class="btn ghost" id="btnMonthlyPdf" type="button">月報PDFを作成</button>
+        <button class="btn ghost" id="btnMonthlyCsv" type="button">月次CSVを作成</button>
       </div>
 
-      <div class="hr"></div>
+      <div class="hint">※作成ボタンを押すと、GASがDriveに保存し「リンク」を返します。</div>
 
-      <div class="sectionTitle">月報PDF</div>
-      <div class="grid">
-        <div class="field">
-          <label>年月（YYYY-MM）</label>
-          <input id="repYm" placeholder="2025-12" />
+      <div id="resultBox" class="result hidden" style="margin-top:14px;">
+        <div style="font-weight:800;margin-bottom:8px;">✅ 作成完了リンク</div>
+        <div style="word-break:break-all;">
+          <a id="resultUrl" href="#" target="_blank" rel="noopener">URL</a>
+          <div id="resultUrlText" style="display:none;"></div>
         </div>
-        <div class="field">
-          <label>氏名（任意）</label>
-          <input id="repName2" placeholder="未入力なら全員" />
-        </div>
+        <div class="sep"></div>
+        <a id="lineShare" class="btn small primary" target="_blank" rel="noopener">LINEで共有</a>
+        <div class="hint">※月報PDFは写真「有/無」だけ、日報PDFは写真リンクも出ます。</div>
       </div>
-      <div class="actions">
-        <button id="btnMonthlyPdf" class="actionBtn">月報PDFを作成</button>
-      </div>
+    </div>
+  </div>
 
-      <div class="hr"></div>
-
-      <div class="sectionTitle">月CSV</div>
-      <div class="grid">
-        <div class="field">
-          <label>年月（YYYY-MM）</label>
-          <input id="repYm2" placeholder="2025-12" />
-        </div>
-        <div class="field">
-          <label>氏名（任意）</label>
-          <input id="repName3" placeholder="未入力なら全員" />
-        </div>
-      </div>
-      <div class="actions">
-        <button id="btnMonthlyCsv" class="actionBtn">月CSVを作成</button>
-      </div>
-
-      <div id="repOut" class="result hidden">
-        <div><b id="repOutTitle"></b></div>
-        <div class="small"><a id="repOutUrl" target="_blank" rel="noopener"></a></div>
-        <div class="small">↑ このURLをLINEに貼れば共有できます</div>
-      </div>
-    </section>
-  </main>
-
-  <div id="toast"></div>
   <script src="app.js"></script>
 </body>
 </html>
