@@ -3,30 +3,44 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>OFA 点呼・点検</title>
-  <link rel="stylesheet" href="style.css" />
+  <title>OFA 点呼ポータル</title>
+  <style>
+    :root{
+      --bg:#070b16;--card:#0c1632;--card2:#0b1226;--txt:#e9eefc;--muted:#a8b3d6;
+      --line:rgba(255,255,255,.10);--btn:#ffd400;--btn2:#2b3556;
+    }
+    body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Hiragino Kaku Gothic ProN","Noto Sans JP",Meiryo,sans-serif;background:var(--bg);color:var(--txt);}
+    .wrap{max-width:430px;margin:0 auto;padding:18px 14px 28px;}
+    .title{font-weight:800;letter-spacing:.5px;margin:8px 0 4px;font-size:18px}
+    .sub{color:var(--muted);font-size:12px;margin:0 0 14px}
+    .card{background:linear-gradient(180deg,var(--card),var(--card2));border:1px solid var(--line);border-radius:16px;padding:14px;margin:10px 0}
+    .btn{display:block;width:100%;border:none;border-radius:14px;padding:14px 14px;font-weight:800;font-size:15px}
+    .btn.yellow{background:var(--btn);color:#101010}
+    .btn.gray{background:var(--btn2);color:var(--txt)}
+    .row{display:flex;gap:10px}
+    .row .btn{flex:1}
+    .note{color:var(--muted);font-size:12px;line-height:1.4}
+    a{color:inherit;text-decoration:none}
+  </style>
 </head>
 <body>
-  <main class="wrap">
-    <section class="card">
-      <div class="header">
-        <div>
-          <h1 class="title">🚚 OFA 点呼・点検</h1>
-          <p class="sub">出発点呼 / 帰着点呼 / 日報・月報（スマホ最適）</p>
-        </div>
-      </div>
+  <div class="wrap">
+    <div class="title">OFA GROUP｜点呼ポータル</div>
+    <div class="sub">出発点呼 / 帰着点呼 / 日報・月報・月次CSV</div>
 
-      <div class="btns">
-        <a class="btn main" href="departure.html">出発点呼をする</a>
-        <a class="btn sub2" href="arrival.html">帰着点呼をする</a>
-        <a class="btn gray" href="reports.html">日報 / 月報を出力</a>
+    <div class="card">
+      <div class="row">
+        <a class="btn yellow" href="departure.html">出発点呼</a>
+        <a class="btn gray" href="arrival.html">帰着点呼 / 日報</a>
       </div>
-
-      <div class="hr"></div>
-      <p class="small">※ボタンが反応しない時：ページ更新（再読み込み）してください。</p>
-    </section>
-  </main>
-  <div id="toast"></div>
-  <script src="app.js"></script>
+      <div style="height:10px"></div>
+      <a class="btn gray" href="export.html">日報 / 月報 / 月次CSV</a>
+      <div style="height:10px"></div>
+      <div class="note">
+        ・送信するとGASが Drive と スプレッドシートに保存します<br>
+        ・日報PDFは「点呼全内容」出力、月報PDFは「写真 有/無」表示のみ
+      </div>
+    </div>
+  </div>
 </body>
 </html>
