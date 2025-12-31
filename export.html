@@ -11,7 +11,7 @@
       --ok:#22c55e;--ng:#ef4444;
     }
     body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Hiragino Kaku Gothic ProN","Noto Sans JP",Meiryo,sans-serif;background:var(--bg);color:var(--txt);}
-    .wrap{max-width:430px;margin:0 auto;padding:18px 14px 30px;}
+    .wrap{max-width:450px;margin:0 auto;padding:18px 14px 36px;}
     .head{display:flex;align-items:center;justify-content:space-between;margin:6px 0 12px}
     .title{font-weight:900;font-size:18px}
     .back{background:transparent;border:1px solid var(--line);color:var(--txt);padding:10px 12px;border-radius:12px;font-weight:700}
@@ -21,57 +21,221 @@
       width:100%;box-sizing:border-box;background:var(--input);border:1px solid var(--line);
       border-radius:12px;color:var(--txt);padding:12px;font-size:14px;outline:none;
     }
+    .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
     .btn{display:block;width:100%;border:none;border-radius:14px;padding:14px 14px;font-weight:900;font-size:15px;margin-top:12px}
     .btn.yellow{background:var(--btn);color:#101010}
     .btn.gray{background:var(--btn2);color:var(--txt)}
     .note{color:var(--muted);font-size:12px;line-height:1.45;margin-top:10px}
     .toast{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);display:none;
-      padding:12px 14px;border-radius:14px;color:#fff;font-weight:800;max-width:92%;text-align:center}
+      padding:12px 14px;border-radius:14px;color:#fff;font-weight:800;max-width:92%;text-align:center;z-index:9999}
     .toast.ok{background:rgba(34,197,94,.95)}
     .toast.ng{background:rgba(239,68,68,.95)}
     .resultBox{margin-top:12px;border:1px solid var(--line);border-radius:14px;padding:12px;background:rgba(0,0,0,.15)}
     .resultTitle{font-weight:900;margin-bottom:6px}
     .resultLink a{color:#7dd3fc;text-decoration:none;font-weight:800}
     .resultSmall{color:var(--muted);font-size:12px;margin-top:6px}
+    .list{margin-top:10px}
+    .row{
+      display:flex;align-items:center;justify-content:space-between;gap:10px;
+      border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin:8px 0;background:rgba(0,0,0,.12)
+    }
+    .row .d{font-weight:900}
+    .row .s{color:var(--muted);font-size:12px;margin-top:2px}
+    .row button{
+      border:none;border-radius:10px;padding:10px 12px;font-weight:900;background:linear-gradient(90deg,#ff8a00,#a855f7);color:#fff
+    }
+    .hr{height:1px;background:var(--line);margin:14px 0}
   </style>
 </head>
-<body data-page="export">
+<body>
   <div class="wrap">
     <div class="head">
-      <div class="title">📄 日報 / 月報 / 月次CSV</div>
+      <div class="title">📄 OFA｜日報 / 月報 / CSV</div>
       <button class="back" onclick="location.href='index.html'">戻る</button>
     </div>
 
     <div class="card">
       <div class="note">
-        日報PDF：<b>点呼全内容（走行距離・点検・免許・写真リンク）</b> を出力<br>
-        月報PDF：写真は <b>有/無</b> のみ表示（詳細は日報PDF）
+        ✅ 日報PDF：点呼の<b>全内容</b>（走行距離・点検・免許・写真リンク）<br>
+        ✅ 月報PDF：写真は<b>有/無のみ</b>（詳細は日報PDF）<br>
+        ✅ CSV：<b>日付範囲</b>で出力可能
       </div>
-
-      <label>日付（日報PDF用）</label>
-      <input id="date" type="date" />
-
-      <label>月（YYYY-MM / 月報・CSV用）</label>
-      <input id="month" placeholder="例：2025-12" inputmode="numeric" />
 
       <label>運転者名（任意：入れるとその人だけ）</label>
       <input id="name" placeholder="未入力なら全員" />
 
-      <!-- ★ID完全一致（app.jsが探す） -->
-      <button id="btnDailyPdf" class="btn yellow">日報PDFを作成</button>
-      <button id="btnMonthlyPdf" class="btn gray">月報PDFを作成</button>
-      <button id="btnMonthlyCsv" class="btn gray">月次CSVを作成</button>
+      <div class="hr"></div>
+
+      <div class="grid2">
+        <div>
+          <label>日付（日報PDF用）</label>
+          <input id="date" type="date" />
+        </div>
+        <div>
+          <label>月（YYYY-MM / 月報・履歴用）</label>
+          <input id="month" placeholder="例：2025-12" inputmode="numeric" />
+        </div>
+      </div>
+
+      <button class="btn yellow" onclick="makeDailyPdf()">日報PDFを作成</button>
+      <button class="btn gray" onclick="makeMonthlyPdf()">月報PDFを作成</button>
+
+      <div class="hr"></div>
+
+      <div class="h3" style="font-weight:900;margin:0 0 6px">CSV（日付指定）</div>
+      <div class="grid2">
+        <div>
+          <label>開始日</label>
+          <input id="from" type="date" />
+        </div>
+        <div>
+          <label>終了日</label>
+          <input id="to" type="date" />
+        </div>
+      </div>
+      <button class="btn gray" onclick="makeCsvRange()">CSVを作成（範囲）</button>
 
       <div id="result"></div>
 
+      <div class="hr"></div>
+
+      <div class="h3" style="font-weight:900;margin:0 0 6px">日報PDF 履歴（指定月）</div>
+      <div class="note">月を入れて「履歴を読み込む」→ 日別にワンタップでPDF生成できます。</div>
+      <button class="btn gray" onclick="loadHistory()">履歴を読み込む（指定月）</button>
+      <div id="history" class="list"></div>
+
       <div class="note">
-        ※作成ボタンを押すと、GASがDriveに保存し「リンク」を返します。<br>
-        ※「反応なし」対策：このページは <b>IDをapp.jsと完全一致</b> させています。
+        ※PDFはDrive上のPDFなので、そのまま印刷できます（共有リンクが表示されます）
       </div>
     </div>
   </div>
 
   <div id="toast" class="toast"></div>
-  <script src="app.js"></script>
+
+<script>
+/** ★あなたの最新GAS WebApp URL（ここだけ合わせればOK） */
+const GAS_WEBAPP_URL =
+  "https://script.google.com/macros/s/AKfycbz34bn7t9d4RQhyZLlxy1-VFcxZq_BJTQlQrkBNeDzU6NSPOtgX-nUh5ckIhIWb0WMg-Q/exec";
+
+function $(id){ return document.getElementById(id); }
+
+function toast(msg, ok=false){
+  const el = $("toast");
+  el.textContent = msg;
+  el.className = "toast " + (ok ? "ok" : "ng");
+  el.style.display = "block";
+  setTimeout(()=> el.style.display="none", 2600);
+}
+
+function normalizeYMD(v){
+  return String(v||"").trim().replace(/\//g,"-");
+}
+
+function nowMonth(){
+  const d=new Date();
+  const y=d.getFullYear();
+  const m=String(d.getMonth()+1).padStart(2,"0");
+  return `${y}-${m}`;
+}
+
+function init(){
+  if ($("date") && !$("date").value) $("date").value = new Date().toISOString().slice(0,10);
+  if ($("from") && !$("from").value) $("from").value = new Date().toISOString().slice(0,10);
+  if ($("to") && !$("to").value) $("to").value = new Date().toISOString().slice(0,10);
+  if ($("month") && !$("month").value) $("month").value = nowMonth();
+}
+init();
+
+async function callApi(params){
+  const url = GAS_WEBAPP_URL + "?" + new URLSearchParams(params).toString();
+  const res = await fetch(url, { method:"GET" });
+  const json = await res.json().catch(()=>null);
+  if (!json || !json.ok) throw new Error(json?.message || "処理に失敗しました");
+  return json;
+}
+
+function showResult(kind, url){
+  const out = $("result");
+  out.innerHTML = `
+    <div class="resultBox">
+      <div class="resultTitle">✅ 作成完了（${kind}）</div>
+      <div class="resultLink"><a href="${url}" target="_blank" rel="noopener">ファイルを開く（Drive）</a></div>
+      <div class="resultSmall">※リンクを開けない場合：Drive共有（リンク閲覧）設定を確認</div>
+    </div>`;
+}
+
+async function makeDailyPdf(){
+  try{
+    const date = normalizeYMD($("date").value);
+    const name = ($("name").value||"").trim();
+    if (!date) throw new Error("日付が必要です");
+    toast("日報PDFを作成中…", true);
+    const json = await callApi({ action:"dailyPdf", date, name });
+    showResult("日報PDF", json.url);
+    toast("作成OK", true);
+  }catch(e){ toast(e.message || String(e)); }
+}
+
+async function makeMonthlyPdf(){
+  try{
+    const month = ($("month").value||"").trim();
+    const name = ($("name").value||"").trim();
+    if (!/^\d{4}-\d{2}$/.test(month)) throw new Error("月は YYYY-MM で入力してください（例：2025-12）");
+    toast("月報PDFを作成中…", true);
+    const json = await callApi({ action:"monthlyPdf", month, name });
+    showResult("月報PDF", json.url);
+    toast("作成OK", true);
+  }catch(e){ toast(e.message || String(e)); }
+}
+
+async function makeCsvRange(){
+  try{
+    const from = normalizeYMD($("from").value);
+    const to = normalizeYMD($("to").value);
+    const name = ($("name").value||"").trim();
+    if (!from || !to) throw new Error("開始日・終了日を入れてください");
+    toast("CSVを作成中…", true);
+    // ※GAS側に action=csvRange を追加します（下にコードあり）
+    const json = await callApi({ action:"csvRange", from, to, name });
+    showResult("CSV（範囲）", json.url);
+    toast("作成OK", true);
+  }catch(e){ toast(e.message || String(e)); }
+}
+
+async function loadHistory(){
+  try{
+    const month = ($("month").value||"").trim();
+    const name = ($("name").value||"").trim();
+    if (!/^\d{4}-\d{2}$/.test(month)) throw new Error("月は YYYY-MM で入力してください（例：2025-12）");
+    toast("履歴読込中…", true);
+    // ※GAS側に action=historyDays を追加します（下にコードあり）
+    const json = await callApi({ action:"historyDays", month, name });
+    renderHistory(json.days || []);
+    toast("履歴OK", true);
+  }catch(e){ toast(e.message || String(e)); }
+}
+
+function renderHistory(days){
+  const box = $("history");
+  if (!days.length){
+    box.innerHTML = `<div class="note" style="margin-top:8px">データがありません</div>`;
+    return;
+  }
+  box.innerHTML = days.map(d => `
+    <div class="row">
+      <div>
+        <div class="d">${d}</div>
+        <div class="s">この日の日報PDFを生成</div>
+      </div>
+      <button onclick="makeDailyPdfFrom('${d}')">PDF</button>
+    </div>
+  `).join("");
+}
+
+async function makeDailyPdfFrom(d){
+  $("date").value = d;
+  await makeDailyPdf();
+}
+</script>
 </body>
 </html>
