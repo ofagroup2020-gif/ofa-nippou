@@ -2,240 +2,493 @@
 <html lang="ja">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>日報 / 月報 / 月次CSV</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <title>OFA GROUP | 日報 / 月報 / 月次CSV</title>
   <style>
     :root{
-      --bg:#070b16;--card:#0c1632;--card2:#0b1226;--txt:#e9eefc;--muted:#a8b3d6;
-      --line:rgba(255,255,255,.10);--btn:#ffd400;--btn2:#2b3556;--input:#0b1736;
-      --ok:#22c55e;--ng:#ef4444;
+      --bg:#050914;
+      --card: rgba(255,255,255,.06);
+      --card2: rgba(255,255,255,.08);
+      --border: rgba(255,255,255,.10);
+      --text:#e9eefc;
+      --muted: rgba(233,238,252,.65);
+      --shadow: 0 14px 40px rgba(0,0,0,.45);
+      --yellow:#f6c700;
+      --btn:#11192f;
+      --danger:#ff4b4b;
     }
-    body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Hiragino Kaku Gothic ProN","Noto Sans JP",Meiryo,sans-serif;background:var(--bg);color:var(--txt);}
-    .wrap{max-width:450px;margin:0 auto;padding:18px 14px 36px;}
-    .head{display:flex;align-items:center;justify-content:space-between;margin:6px 0 12px}
-    .title{font-weight:900;font-size:18px}
-    .back{background:transparent;border:1px solid var(--line);color:var(--txt);padding:10px 12px;border-radius:12px;font-weight:700}
-    .card{background:linear-gradient(180deg,var(--card),var(--card2));border:1px solid var(--line);border-radius:16px;padding:14px;margin:10px 0}
-    label{display:block;font-size:12px;color:var(--muted);margin:10px 0 6px}
-    input{
-      width:100%;box-sizing:border-box;background:var(--input);border:1px solid var(--line);
-      border-radius:12px;color:var(--txt);padding:12px;font-size:14px;outline:none;
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family: system-ui, -apple-system, "Hiragino Kaku Gothic ProN", "Noto Sans JP", Meiryo, sans-serif;
+      background:
+        radial-gradient(1000px 600px at 20% 0%, rgba(40,120,255,.20), transparent 60%),
+        radial-gradient(900px 500px at 95% 10%, rgba(246,199,0,.16), transparent 60%),
+        radial-gradient(900px 700px at 50% 100%, rgba(185,60,255,.18), transparent 60%),
+        var(--bg);
+      color:var(--text);
+      min-height:100svh;
+      padding: 18px 14px 40px;
     }
-    .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-    .btn{display:block;width:100%;border:none;border-radius:14px;padding:14px 14px;font-weight:900;font-size:15px;margin-top:12px}
-    .btn.yellow{background:var(--btn);color:#101010}
-    .btn.gray{background:var(--btn2);color:var(--txt)}
-    .note{color:var(--muted);font-size:12px;line-height:1.45;margin-top:10px}
-    .toast{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);display:none;
-      padding:12px 14px;border-radius:14px;color:#fff;font-weight:800;max-width:92%;text-align:center;z-index:9999}
-    .toast.ok{background:rgba(34,197,94,.95)}
-    .toast.ng{background:rgba(239,68,68,.95)}
-    .resultBox{margin-top:12px;border:1px solid var(--line);border-radius:14px;padding:12px;background:rgba(0,0,0,.15)}
-    .resultTitle{font-weight:900;margin-bottom:6px}
-    .resultLink a{color:#7dd3fc;text-decoration:none;font-weight:800}
-    .resultSmall{color:var(--muted);font-size:12px;margin-top:6px}
-    .list{margin-top:10px}
-    .row{
+    .wrap{max-width:820px;margin:0 auto;}
+    .topbar{
       display:flex;align-items:center;justify-content:space-between;gap:10px;
-      border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin:8px 0;background:rgba(0,0,0,.12)
+      margin-bottom:10px;
     }
-    .row .d{font-weight:900}
-    .row .s{color:var(--muted);font-size:12px;margin-top:2px}
-    .row button{
-      border:none;border-radius:10px;padding:10px 12px;font-weight:900;background:linear-gradient(90deg,#ff8a00,#a855f7);color:#fff
+    .title{
+      font-weight:800;
+      letter-spacing:.4px;
+      font-size:18px;
     }
-    .hr{height:1px;background:var(--line);margin:14px 0}
+    .subtitle{
+      margin-top:6px;
+      font-size:12px;
+      color:var(--muted);
+      line-height:1.4;
+    }
+    .btn-back{
+      appearance:none;border:1px solid var(--border);
+      background: rgba(255,255,255,.06);
+      color:var(--text);
+      padding:10px 14px;
+      border-radius:12px;
+      font-weight:700;
+      cursor:pointer;
+    }
+    .card{
+      margin-top:14px;
+      background: linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.05));
+      border:1px solid var(--border);
+      border-radius:18px;
+      box-shadow: var(--shadow);
+      padding:16px;
+      backdrop-filter: blur(8px);
+    }
+    label{
+      display:block;
+      font-size:12px;
+      color:var(--muted);
+      margin:12px 0 8px;
+    }
+    input, select{
+      width:100%;
+      padding:14px 14px;
+      border-radius:14px;
+      border:1px solid var(--border);
+      background: rgba(0,0,0,.28);
+      color:var(--text);
+      outline:none;
+      font-size:16px;
+    }
+    input::placeholder{color:rgba(233,238,252,.45)}
+    .row{display:flex;gap:10px;flex-wrap:wrap}
+    .row > *{flex:1 1 240px}
+    .help{
+      margin-top:10px;
+      padding:12px 12px;
+      border-radius:14px;
+      border:1px dashed rgba(255,255,255,.16);
+      color:rgba(233,238,252,.75);
+      font-size:12px;
+      line-height:1.5;
+      background: rgba(255,255,255,.04);
+    }
+    .actions{
+      display:flex;gap:10px;flex-wrap:wrap;
+      margin-top:14px;
+    }
+    .btn{
+      appearance:none;
+      border:none;
+      cursor:pointer;
+      border-radius:14px;
+      padding:14px 14px;
+      font-weight:900;
+      width:100%;
+      background: rgba(255,255,255,.08);
+      color:var(--text);
+      border:1px solid var(--border);
+    }
+    .btn.primary{
+      background: var(--yellow);
+      color: #1a1400;
+      border: none;
+    }
+    .btn.small{
+      width:auto;
+      padding:10px 12px;
+      font-weight:800;
+      font-size:13px;
+    }
+    .btn.ghost{
+      background: rgba(255,255,255,.06);
+    }
+    .btn:disabled{
+      opacity:.55;cursor:not-allowed;
+    }
+
+    .section-title{
+      margin:18px 0 10px;
+      font-weight:900;
+      font-size:14px;
+      color:rgba(233,238,252,.92);
+    }
+
+    .history{
+      margin-top:10px;
+      border:1px solid var(--border);
+      border-radius:14px;
+      background: rgba(255,255,255,.04);
+      overflow:hidden;
+    }
+    .history .head{
+      display:flex;align-items:center;justify-content:space-between;gap:10px;
+      padding:12px 12px;
+      border-bottom:1px solid rgba(255,255,255,.08);
+      background: rgba(255,255,255,.05);
+      font-size:12px;color:var(--muted);
+    }
+    .list{
+      padding:10px 10px 12px;
+      display:flex;flex-direction:column;gap:8px;
+    }
+    .item{
+      display:flex;align-items:center;justify-content:space-between;gap:10px;
+      padding:10px 10px;
+      border:1px solid rgba(255,255,255,.10);
+      border-radius:12px;
+      background: rgba(0,0,0,.24);
+    }
+    .item .d{font-weight:900}
+    .item .meta{font-size:12px;color:var(--muted)}
+    .item .right{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+
+    .toast{
+      position:fixed;
+      left:50%;
+      bottom:18px;
+      transform:translateX(-50%);
+      background: rgba(0,0,0,.78);
+      border:1px solid rgba(255,255,255,.18);
+      color:var(--text);
+      padding:12px 14px;
+      border-radius:14px;
+      max-width: 92vw;
+      box-shadow: 0 10px 30px rgba(0,0,0,.45);
+      opacity:0;
+      pointer-events:none;
+      transition: opacity .18s ease;
+      font-weight:800;
+    }
+    .toast.show{opacity:1}
+    .toast.danger{
+      background: rgba(255,75,75,.16);
+      border-color: rgba(255,75,75,.35);
+      color: #ffd8d8;
+    }
+    .linkbox{
+      margin-top:12px;
+      padding:12px;
+      border-radius:14px;
+      border:1px solid rgba(255,255,255,.12);
+      background: rgba(255,255,255,.04);
+      font-size:12px;
+      color:var(--muted);
+      word-break:break-all;
+    }
+    a{color:#8ab4ff}
   </style>
 </head>
+
 <body>
   <div class="wrap">
-    <div class="head">
-      <div class="title">📄 OFA｜日報 / 月報 / CSV</div>
-      <button class="back" onclick="location.href='index.html'">戻る</button>
+    <div class="topbar">
+      <div>
+        <div class="title">OFA GROUP｜日報 / 月報 / 月次CSV</div>
+        <div class="subtitle">
+          日報PDFは「点呼全内容」出力 / 月報は写真「有無」表示 / CSVは月・範囲で出力できます。
+        </div>
+      </div>
+      <button class="btn-back" id="backBtn">戻る</button>
     </div>
 
     <div class="card">
-      <div class="note">
-        ✅ 日報PDF：点呼の<b>全内容</b>（走行距離・点検・免許・写真リンク）<br>
-        ✅ 月報PDF：写真は<b>有/無のみ</b>（詳細は日報PDF）<br>
-        ✅ CSV：<b>日付範囲</b>で出力可能
+      <div class="row">
+        <div>
+          <label>日付（日報PDF用）</label>
+          <input id="dateDaily" type="date" />
+        </div>
+        <div>
+          <label>月（YYYY-MM / 月報・月CSV・履歴用）</label>
+          <input id="month" type="month" />
+        </div>
       </div>
 
       <label>運転者名（任意：入れるとその人だけ）</label>
-      <input id="name" placeholder="未入力なら全員" />
+      <input id="name" type="text" placeholder="未入力なら全員" />
 
-      <div class="hr"></div>
+      <div class="help">
+        使い方：<br>
+        ① 日報PDF → 必要ならリンクをLINE共有（PDFは印刷OK）<br>
+        ② 月報PDF → 月単位でまとまった一覧（写真は有/無）<br>
+        ③ CSV → 月 or 日付範囲で出力
+      </div>
 
-      <div class="grid2">
+      <div class="actions">
+        <button class="btn primary" id="btnDailyPdf">日報PDFを作成</button>
+        <button class="btn" id="btnMonthlyPdf">月報PDFを作成</button>
+        <button class="btn" id="btnMonthlyCsv">月次CSVを作成</button>
+      </div>
+
+      <div class="section-title">CSV（日付範囲）</div>
+      <div class="row">
         <div>
-          <label>日付（日報PDF用）</label>
-          <input id="date" type="date" />
+          <label>開始日（from）</label>
+          <input id="fromDate" type="date" />
         </div>
         <div>
-          <label>月（YYYY-MM / 月報・履歴用）</label>
-          <input id="month" placeholder="例：2025-12" inputmode="numeric" />
+          <label>終了日（to）</label>
+          <input id="toDate" type="date" />
+        </div>
+      </div>
+      <div class="actions">
+        <button class="btn ghost" id="btnCsvRange">範囲CSVを作成</button>
+      </div>
+
+      <div class="section-title">日報PDF 履歴（一覧）</div>
+      <div class="row">
+        <div>
+          <label>履歴対象月（YYYY-MM）</label>
+          <input id="historyMonth" type="month" />
+        </div>
+        <div style="display:flex;align-items:flex-end;gap:10px;">
+          <button class="btn small ghost" id="btnLoadHistory" style="width:100%;">履歴を読み込む</button>
         </div>
       </div>
 
-      <button class="btn yellow" onclick="makeDailyPdf()">日報PDFを作成</button>
-      <button class="btn gray" onclick="makeMonthlyPdf()">月報PDFを作成</button>
-
-      <div class="hr"></div>
-
-      <div class="h3" style="font-weight:900;margin:0 0 6px">CSV（日付指定）</div>
-      <div class="grid2">
-        <div>
-          <label>開始日</label>
-          <input id="from" type="date" />
+      <div class="history" id="historyBox" style="display:none;">
+        <div class="head">
+          <div>記録がある日付を表示（タップで日報PDFを作成）</div>
+          <div id="historyCount">0件</div>
         </div>
-        <div>
-          <label>終了日</label>
-          <input id="to" type="date" />
-        </div>
+        <div class="list" id="historyList"></div>
       </div>
-      <button class="btn gray" onclick="makeCsvRange()">CSVを作成（範囲）</button>
 
-      <div id="result"></div>
-
-      <div class="hr"></div>
-
-      <div class="h3" style="font-weight:900;margin:0 0 6px">日報PDF 履歴（指定月）</div>
-      <div class="note">月を入れて「履歴を読み込む」→ 日別にワンタップでPDF生成できます。</div>
-      <button class="btn gray" onclick="loadHistory()">履歴を読み込む（指定月）</button>
-      <div id="history" class="list"></div>
-
-      <div class="note">
-        ※PDFはDrive上のPDFなので、そのまま印刷できます（共有リンクが表示されます）
+      <div class="linkbox" id="resultBox" style="display:none;"></div>
+      <div class="linkbox" style="margin-top:10px;">
+        GAS: <span id="gasUrlView"></span>
       </div>
     </div>
   </div>
 
-  <div id="toast" class="toast"></div>
+  <div class="toast" id="toast"></div>
 
 <script>
-/** ★あなたの最新GAS WebApp URL（ここだけ合わせればOK） */
-const GAS_WEBAPP_URL =
-  "https://script.google.com/macros/s/AKfycbz34bn7t9d4RQhyZLlxy1-VFcxZq_BJTQlQrkBNeDzU6NSPOtgX-nUh5ckIhIWb0WMg-Q/exec";
+  // ✅ あなたのGAS URL（貼り込み済み）
+  const GAS_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbyODZ_4fnYVkIMKCbVJZvIEwIEP20KMbbMqGdC1_ZmF9l9BE6ZxEGKs7ilmNpCb316Wiw/exec";
 
-function $(id){ return document.getElementById(id); }
+  const $ = (id) => document.getElementById(id);
 
-function toast(msg, ok=false){
-  const el = $("toast");
-  el.textContent = msg;
-  el.className = "toast " + (ok ? "ok" : "ng");
-  el.style.display = "block";
-  setTimeout(()=> el.style.display="none", 2600);
-}
-
-function normalizeYMD(v){
-  return String(v||"").trim().replace(/\//g,"-");
-}
-
-function nowMonth(){
-  const d=new Date();
-  const y=d.getFullYear();
-  const m=String(d.getMonth()+1).padStart(2,"0");
-  return `${y}-${m}`;
-}
-
-function init(){
-  if ($("date") && !$("date").value) $("date").value = new Date().toISOString().slice(0,10);
-  if ($("from") && !$("from").value) $("from").value = new Date().toISOString().slice(0,10);
-  if ($("to") && !$("to").value) $("to").value = new Date().toISOString().slice(0,10);
-  if ($("month") && !$("month").value) $("month").value = nowMonth();
-}
-init();
-
-async function callApi(params){
-  const url = GAS_WEBAPP_URL + "?" + new URLSearchParams(params).toString();
-  const res = await fetch(url, { method:"GET" });
-  const json = await res.json().catch(()=>null);
-  if (!json || !json.ok) throw new Error(json?.message || "処理に失敗しました");
-  return json;
-}
-
-function showResult(kind, url){
-  const out = $("result");
-  out.innerHTML = `
-    <div class="resultBox">
-      <div class="resultTitle">✅ 作成完了（${kind}）</div>
-      <div class="resultLink"><a href="${url}" target="_blank" rel="noopener">ファイルを開く（Drive）</a></div>
-      <div class="resultSmall">※リンクを開けない場合：Drive共有（リンク閲覧）設定を確認</div>
-    </div>`;
-}
-
-async function makeDailyPdf(){
-  try{
-    const date = normalizeYMD($("date").value);
-    const name = ($("name").value||"").trim();
-    if (!date) throw new Error("日付が必要です");
-    toast("日報PDFを作成中…", true);
-    const json = await callApi({ action:"dailyPdf", date, name });
-    showResult("日報PDF", json.url);
-    toast("作成OK", true);
-  }catch(e){ toast(e.message || String(e)); }
-}
-
-async function makeMonthlyPdf(){
-  try{
-    const month = ($("month").value||"").trim();
-    const name = ($("name").value||"").trim();
-    if (!/^\d{4}-\d{2}$/.test(month)) throw new Error("月は YYYY-MM で入力してください（例：2025-12）");
-    toast("月報PDFを作成中…", true);
-    const json = await callApi({ action:"monthlyPdf", month, name });
-    showResult("月報PDF", json.url);
-    toast("作成OK", true);
-  }catch(e){ toast(e.message || String(e)); }
-}
-
-async function makeCsvRange(){
-  try{
-    const from = normalizeYMD($("from").value);
-    const to = normalizeYMD($("to").value);
-    const name = ($("name").value||"").trim();
-    if (!from || !to) throw new Error("開始日・終了日を入れてください");
-    toast("CSVを作成中…", true);
-    // ※GAS側に action=csvRange を追加します（下にコードあり）
-    const json = await callApi({ action:"csvRange", from, to, name });
-    showResult("CSV（範囲）", json.url);
-    toast("作成OK", true);
-  }catch(e){ toast(e.message || String(e)); }
-}
-
-async function loadHistory(){
-  try{
-    const month = ($("month").value||"").trim();
-    const name = ($("name").value||"").trim();
-    if (!/^\d{4}-\d{2}$/.test(month)) throw new Error("月は YYYY-MM で入力してください（例：2025-12）");
-    toast("履歴読込中…", true);
-    // ※GAS側に action=historyDays を追加します（下にコードあり）
-    const json = await callApi({ action:"historyDays", month, name });
-    renderHistory(json.days || []);
-    toast("履歴OK", true);
-  }catch(e){ toast(e.message || String(e)); }
-}
-
-function renderHistory(days){
-  const box = $("history");
-  if (!days.length){
-    box.innerHTML = `<div class="note" style="margin-top:8px">データがありません</div>`;
-    return;
+  function toast(msg, danger=false){
+    const t = $("toast");
+    t.textContent = msg;
+    t.classList.toggle("danger", !!danger);
+    t.classList.add("show");
+    setTimeout(()=>t.classList.remove("show"), 1800);
   }
-  box.innerHTML = days.map(d => `
-    <div class="row">
-      <div>
-        <div class="d">${d}</div>
-        <div class="s">この日の日報PDFを生成</div>
-      </div>
-      <button onclick="makeDailyPdfFrom('${d}')">PDF</button>
-    </div>
-  `).join("");
-}
 
-async function makeDailyPdfFrom(d){
-  $("date").value = d;
-  await makeDailyPdf();
-}
+  function setResult(url, label){
+    const box = $("resultBox");
+    box.style.display = "block";
+    box.innerHTML = `
+      <div style="font-weight:900;color:rgba(233,238,252,.92);margin-bottom:6px;">${label}</div>
+      <div style="margin-bottom:8px;">リンク：<a href="${url}" target="_blank" rel="noopener">${url}</a></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn small primary" onclick="window.open('${url}','_blank')">開く</button>
+        <button class="btn small" onclick="navigator.clipboard.writeText('${url}');">コピー</button>
+      </div>
+    `;
+  }
+
+  function buildUrl(action, params){
+    const u = new URL(GAS_WEBAPP_URL);
+    u.searchParams.set("action", action);
+    Object.entries(params || {}).forEach(([k,v])=>{
+      if(v !== undefined && v !== null && String(v).trim() !== ""){
+        u.searchParams.set(k, String(v).trim());
+      }
+    });
+    return u.toString();
+  }
+
+  async function callApi(action, params){
+    const url = buildUrl(action, params);
+    // ※Apps Script のCORS環境によっては fetch がブロックされる場合があります。
+    // その場合は「新しいタブで開いてURLを確認する」フォールバックへ。
+    try{
+      const res = await fetch(url, { method:"GET", cache:"no-store" });
+      const json = await res.json();
+      return { ok:true, json, url };
+    }catch(err){
+      return { ok:false, err, url };
+    }
+  }
+
+  function todayISO(){
+    const d = new Date();
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth()+1).padStart(2,"0");
+    const dd = String(d.getDate()).padStart(2,"0");
+    return `${yyyy}-${mm}-${dd}`;
+  }
+  function monthISO(){
+    const d = new Date();
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth()+1).padStart(2,"0");
+    return `${yyyy}-${mm}`;
+  }
+
+  async function createDailyPdf(date, name){
+    if(!date){ toast("日付を入れてください", true); return; }
+    toast("日報PDFを作成中...");
+    const r = await callApi("dailyPdf", { date, name });
+    if(r.ok && r.json && r.json.ok && r.json.url){
+      toast("作成しました");
+      setResult(r.json.url, `日報PDF（${date}${name? " / "+name:""}）`);
+      window.open(r.json.url, "_blank");
+      return;
+    }
+    // フォールバック：新しいタブでJSONを開く（そこにurlが出ます）
+    toast("取得に失敗。別タブで確認します", true);
+    window.open(r.url, "_blank");
+  }
+
+  async function createMonthlyPdf(month, name){
+    if(!month){ toast("月（YYYY-MM）を入れてください", true); return; }
+    toast("月報PDFを作成中...");
+    const r = await callApi("monthlyPdf", { month, name });
+    if(r.ok && r.json && r.json.ok && r.json.url){
+      toast("作成しました");
+      setResult(r.json.url, `月報PDF（${month}${name? " / "+name:""}）`);
+      window.open(r.json.url, "_blank");
+      return;
+    }
+    toast("取得に失敗。別タブで確認します", true);
+    window.open(r.url, "_blank");
+  }
+
+  async function createMonthlyCsv(month, name){
+    if(!month){ toast("月（YYYY-MM）を入れてください", true); return; }
+    toast("月次CSVを作成中...");
+    const r = await callApi("monthlyCsv", { month, name });
+    if(r.ok && r.json && r.json.ok && r.json.url){
+      toast("作成しました");
+      setResult(r.json.url, `月次CSV（${month}${name? " / "+name:""}）`);
+      window.open(r.json.url, "_blank");
+      return;
+    }
+    toast("取得に失敗。別タブで確認します", true);
+    window.open(r.url, "_blank");
+  }
+
+  async function createCsvRange(from, to, name){
+    if(!from || !to){ toast("開始日・終了日を入れてください", true); return; }
+    if(from > to){ toast("開始日が終了日より後です", true); return; }
+    toast("範囲CSVを作成中...");
+    const r = await callApi("csvRange", { from, to, name });
+    if(r.ok && r.json && r.json.ok && r.json.url){
+      toast("作成しました");
+      setResult(r.json.url, `範囲CSV（${from}〜${to}${name? " / "+name:""}）`);
+      window.open(r.json.url, "_blank");
+      return;
+    }
+    toast("取得に失敗。別タブで確認します", true);
+    window.open(r.url, "_blank");
+  }
+
+  async function loadHistory(month, name){
+    if(!month){ toast("履歴の月（YYYY-MM）を入れてください", true); return; }
+    toast("履歴を取得中...");
+    const r = await callApi("historyDays", { month, name });
+    if(r.ok && r.json && r.json.ok && Array.isArray(r.json.days)){
+      const days = r.json.days;
+      $("historyBox").style.display = "block";
+      $("historyCount").textContent = `${days.length}件`;
+      const list = $("historyList");
+      list.innerHTML = "";
+      if(days.length === 0){
+        list.innerHTML = `<div style="color:rgba(233,238,252,.65);font-size:12px;padding:6px 2px;">データなし</div>`;
+      }else{
+        days.slice().reverse().forEach(d=>{
+          const div = document.createElement("div");
+          div.className = "item";
+          div.innerHTML = `
+            <div>
+              <div class="d">${d}</div>
+              <div class="meta">${name? ("運転者: "+escapeHtml(name)) : "全員"} / 日報PDF</div>
+            </div>
+            <div class="right">
+              <button class="btn small primary">日報PDF</button>
+              <button class="btn small">リンク</button>
+            </div>
+          `;
+          const btnPdf = div.querySelectorAll("button")[0];
+          const btnLink = div.querySelectorAll("button")[1];
+          btnPdf.addEventListener("click", ()=>createDailyPdf(d, name));
+          btnLink.addEventListener("click", ()=>{
+            const u = buildUrl("dailyPdf", { date:d, name });
+            navigator.clipboard.writeText(u);
+            toast("APIリンクをコピーしました");
+          });
+          list.appendChild(div);
+        });
+      }
+      toast("履歴を表示しました");
+      return;
+    }
+    toast("取得に失敗。別タブで確認します", true);
+    window.open(r.url, "_blank");
+  }
+
+  function escapeHtml(s){
+    return String(s??"")
+      .replace(/&/g,"&amp;")
+      .replace(/</g,"&lt;")
+      .replace(/>/g,"&gt;")
+      .replace(/"/g,"&quot;")
+      .replace(/'/g,"&#39;");
+  }
+
+  // 初期値
+  $("gasUrlView").textContent = GAS_WEBAPP_URL;
+
+  $("dateDaily").value = todayISO();
+  $("month").value = monthISO();
+  $("historyMonth").value = monthISO();
+
+  // 戻る
+  $("backBtn").addEventListener("click", ()=>{
+    // 前のページに戻る（なければルートへ）
+    if(history.length > 1) history.back();
+    else location.href = "./";
+  });
+
+  // ボタン
+  $("btnDailyPdf").addEventListener("click", ()=>{
+    createDailyPdf($("dateDaily").value, $("name").value);
+  });
+  $("btnMonthlyPdf").addEventListener("click", ()=>{
+    createMonthlyPdf($("month").value, $("name").value);
+  });
+  $("btnMonthlyCsv").addEventListener("click", ()=>{
+    createMonthlyCsv($("month").value, $("name").value);
+  });
+  $("btnCsvRange").addEventListener("click", ()=>{
+    createCsvRange($("fromDate").value, $("toDate").value, $("name").value);
+  });
+  $("btnLoadHistory").addEventListener("click", ()=>{
+    loadHistory($("historyMonth").value, $("name").value);
+  });
 </script>
 </body>
 </html>
