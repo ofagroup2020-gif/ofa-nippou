@@ -1,12 +1,13 @@
 /****************************************************
- * OFA 点呼アプリ（GitHub Pages側）
+ * OFA 点呼アプリ（GitHub Pages側）完全版
  * - departure.html / arrival.html 送信（doPost）
- * - export.html 日報PDF / 月報PDF / 月次CSV（doGet action）
+ * - export.html
+ *    日報PDF / 月報PDF / 月次CSV / 範囲CSV / 日報PDF履歴一覧（doGet action）
  ****************************************************/
 
-/** ★あなたのGAS WebApp URL（最新） */
+/** ★あなたのGAS WebApp URL（最新）※ここ超重要 */
 const GAS_WEBAPP_URL =
-  "https://script.google.com/macros/s/AKfycbz34bn7t9d4RQhyZLlxy1-VFcxZq_BJTQlQrkBNeDzU6NSPOtgX-nUh5ckIhIWb0WMg-Q/exec";
+  "https://script.google.com/macros/s/AKfycbxa7fmk0rDDNmZ2p2GTEmE8g6yVaVJxy97J2vpw_NUuYr8lR3QbDNg6EDifoSoSFrKq9Q/exec";
 
 /** アプリ識別（GAS側と一致） */
 const APP_KEY = "OFA_TENKO";
@@ -59,10 +60,16 @@ function numOrBlank(v) {
   return Number.isFinite(n) ? n : "";
 }
 
+/** yyyy-mm 用に整形 */
+function normalizeYM(input) {
+  const s = safeStr(input).replace(/\//g, "-");
+  // "2025-12" 想定。 "2025" が来たらそのまま返す（GAS側で対応してるならOK）
+  return s;
+}
+
 /** 画像を圧縮してDataURLに（スマホ送信重い対策） */
 async function fileToCompressedDataURL(file, maxW = 1280, quality = 0.75) {
   if (!file) return null;
-  // 画像以外は除外
   if (!file.type || !file.type.startsWith("image/")) return null;
 
   const img = await new Promise((resolve, reject) => {
@@ -135,7 +142,6 @@ function collectInspection() {
 /** ===== 出発/帰着 送信（doPost）===== */
 async function submitTenko(mode) {
   try {
-    // mode: "departure" or "arrival"
     if (mode !== "departure" && mode !== "arrival") {
       toast("invalid mode");
       return;
@@ -156,7 +162,9 @@ async function submitTenko(mode) {
     const odoStart = numOrBlank($("odoStart")?.value);
     const odoEnd = numOrBlank($("odoEnd")?.value);
     let odoTotal = "";
-    if (odoStart !== "" && odoEnd !== "") odoTotal = Math.max(0, Number(odoEnd) - Number(odoStart));
+    if (odoStart !== "" && odoEnd !== "") {
+      odoTotal = Math.max(0, Number(odoEnd) - Number(odoStart));
+    }
 
     // 免許番号（任意）
     const licenseNo = safeStr($("licenseNo")?.value);
@@ -187,7 +195,7 @@ async function submitTenko(mode) {
 
     // 写真（任意）
     const photos = await collectFilesAsDataURLs("tenkoPhotos");
-    const reportPhotos = await collectFilesAsDataURLs("reportPhotos");   // arrivalのみ想定だがあってもOK
+    const reportPhotos = await collectFilesAsDataURLs("reportPhotos"); // arrival想定だがあってもOK
     const licensePhotos = await collectFilesAsDataURLs("licensePhotos");
 
     const payload = {
@@ -221,7 +229,6 @@ async function submitTenko(mode) {
       licensePhotos,
     };
 
-    // 送信
     $("btnSubmit") && ($("btnSubmit").disabled = true);
     toast("送信中…", true);
 
@@ -239,7 +246,6 @@ async function submitTenko(mode) {
 
     toast("送信OK（保存完了）", true);
 
-    // indexへ戻る
     setTimeout(() => {
       window.location.href = "index.html";
     }, 650);
@@ -249,18 +255,42 @@ async function submitTenko(mode) {
   }
 }
 
-/** ===== export（日報PDF / 月報PDF / 月次CSV） ===== */
+/** ===== export 共通（doGet action）===== */
+async function callExportApi(url) {
+  const res = await fetch(url, { method: "GET" });
+  const json = await res.json().catch(() => null);
+  if (!json || !json.ok) {
+    const msg = json?.message || "作成失敗";
+    throw new Error(msg);
+  }
+  return json;
+}
+
+function renderResultLink(title, url) {
+  const out = $("result");
+  if (!out) return;
+
+  out.innerHTML = `
+    <div class="resultBox">
+      <div class="resultTitle">✅ ${title}</div>
+      <div class="resultLink"><a href="${url}" target="_blank" rel="noopener">ファイルを開く（Drive）</a></div>
+      <div class="resultSmall">※印刷は「共有→印刷」またはDriveの印刷機能でOK</div>
+    </div>
+  `;
+}
+
+/** ===== 日報PDF / 月報PDF / 月次CSV ===== */
 async function runExport(action) {
   try {
-    // action: dailyPdf / monthlyPdf / monthlyCsv
     const dateRaw = safeStr($("date")?.value);
     const monthRaw = safeStr($("month")?.value);
     const name = safeStr($("name")?.value);
 
     const date = normalizeYMD(dateRaw);
-    const month = monthRaw; // YYYY-MM
+    const month = normalizeYM(monthRaw);
 
     let url = `${GAS_WEBAPP_URL}?action=${encodeURIComponent(action)}`;
+
     if (action === "dailyPdf") {
       if (!date) throw new Error("日付（YYYY-MM-DD）が必要です");
       url += `&date=${encodeURIComponent(date)}`;
@@ -270,31 +300,97 @@ async function runExport(action) {
       url += `&month=${encodeURIComponent(month)}`;
       if (name) url += `&name=${encodeURIComponent(name)}`;
     } else {
-      throw new Error("invalid mode");
+      throw new Error("invalid action");
     }
 
     toast("作成中…（数秒かかります）", true);
+    const json = await callExportApi(url);
 
-    const res = await fetch(url, { method: "GET" });
-    const json = await res.json().catch(() => null);
+    const title =
+      action === "dailyPdf" ? "日報PDF 作成完了" :
+      action === "monthlyPdf" ? "月報PDF 作成完了" :
+      "月次CSV 作成完了";
 
-    if (!json || !json.ok) {
-      const msg = json?.message || "作成失敗";
-      throw new Error(msg);
-    }
-
-    const out = $("result");
-    if (out) {
-      out.innerHTML = `
-        <div class="resultBox">
-          <div class="resultTitle">✅ 作成完了</div>
-          <div class="resultLink"><a href="${json.url}" target="_blank" rel="noopener">ファイルを開く（Drive）</a></div>
-          <div class="resultSmall">※リンクを開けない場合は、Drive権限（リンク共有）設定を確認</div>
-        </div>
-      `;
-    }
-
+    renderResultLink(title, json.url);
     toast("作成OK（リンクを表示）", true);
+  } catch (err) {
+    toast(err.message || String(err));
+  }
+}
+
+/** ===== 範囲CSV（from/to）===== */
+async function runRangeCsv() {
+  try {
+    const fromRaw = safeStr($("from")?.value);
+    const toRaw = safeStr($("to")?.value);
+    const name = safeStr($("name")?.value);
+
+    const from = normalizeYMD(fromRaw);
+    const to = normalizeYMD(toRaw);
+    if (!from || !to) throw new Error("開始日(from) / 終了日(to) を入力してください");
+
+    let url = `${GAS_WEBAPP_URL}?action=rangeCsv&from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`;
+    if (name) url += `&name=${encodeURIComponent(name)}`;
+
+    toast("CSV作成中…", true);
+    const json = await callExportApi(url);
+    renderResultLink("範囲CSV 作成完了", json.url);
+    toast("作成OK（リンクを表示）", true);
+  } catch (err) {
+    toast(err.message || String(err));
+  }
+}
+
+/** ===== 日報PDF 履歴（一覧）===== */
+async function loadDailyHistory() {
+  try {
+    const monthRaw = safeStr($("histMonth")?.value); // YYYY-MM
+    const name = safeStr($("name")?.value);
+
+    const month = normalizeYM(monthRaw);
+    if (!month) throw new Error("履歴対象月（YYYY-MM）を入れてください");
+
+    let url = `${GAS_WEBAPP_URL}?action=dailyList&month=${encodeURIComponent(month)}`;
+    if (name) url += `&name=${encodeURIComponent(name)}`;
+
+    toast("履歴読み込み中…", true);
+    const json = await callExportApi(url);
+
+    const list = Array.isArray(json.items) ? json.items : [];
+    const box = $("history");
+    if (!box) return;
+
+    if (!list.length) {
+      box.innerHTML = `<div class="historyEmpty">データなし</div>`;
+      toast("履歴: 0件", true);
+      return;
+    }
+
+    // クリックでその日のPDFを作る
+    const html = list.map(it => {
+      const d = safeStr(it.date);
+      const label = safeStr(it.label) || d;
+      return `
+        <button class="historyItem" data-date="${d}">
+          <div class="historyDate">${label}</div>
+          <div class="historySub">タップで日報PDFを作成</div>
+        </button>
+      `;
+    }).join("");
+
+    box.innerHTML = html;
+
+    box.querySelectorAll(".historyItem").forEach(btn => {
+      btn.addEventListener("click", async () => {
+        const d = btn.getAttribute("data-date");
+        if (!d) return;
+        // 作成→リンク表示
+        $("date") && ($("date").value = d);
+        await runExport("dailyPdf");
+      });
+    });
+
+    toast(`履歴: ${list.length}件`, true);
   } catch (err) {
     toast(err.message || String(err));
   }
@@ -302,15 +398,16 @@ async function runExport(action) {
 
 /** ===== ページ初期化 ===== */
 function initDeparturePage() {
-  // 初期値
   if ($("date") && !$("date").value) $("date").value = toYMD();
   if ($("time") && !$("time").value) $("time").value = toHM();
 
-  // odoTotal自動計算（入力のたび）
   const calc = () => {
     const s = numOrBlank($("odoStart")?.value);
     const e = numOrBlank($("odoEnd")?.value);
-    if (s !== "" && e !== "") $("odoTotal").value = Math.max(0, Number(e) - Number(s));
+    if ($("odoTotal")) {
+      if (s !== "" && e !== "") $("odoTotal").value = Math.max(0, Number(e) - Number(s));
+      else $("odoTotal").value = "";
+    }
   };
   $("odoStart")?.addEventListener("input", calc);
   $("odoEnd")?.addEventListener("input", calc);
@@ -319,15 +416,16 @@ function initDeparturePage() {
 }
 
 function initArrivalPage() {
-  // 初期値
   if ($("date") && !$("date").value) $("date").value = toYMD();
   if ($("time") && !$("time").value) $("time").value = toHM();
 
-  // odoTotal自動計算
   const calc = () => {
     const s = numOrBlank($("odoStart")?.value);
     const e = numOrBlank($("odoEnd")?.value);
-    if (s !== "" && e !== "") $("odoTotal").value = Math.max(0, Number(e) - Number(s));
+    if ($("odoTotal")) {
+      if (s !== "" && e !== "") $("odoTotal").value = Math.max(0, Number(e) - Number(s));
+      else $("odoTotal").value = "";
+    }
   };
   $("odoStart")?.addEventListener("input", calc);
   $("odoEnd")?.addEventListener("input", calc);
@@ -336,10 +434,8 @@ function initArrivalPage() {
 }
 
 function initExportPage() {
-  // 日付はYYYY-MM-DDに統一（表示用はUI側でOK）
   if ($("date") && !$("date").value) $("date").value = toYMD();
 
-  // 月の初期値：今月
   if ($("month") && !$("month").value) {
     const d = new Date();
     const y = d.getFullYear();
@@ -347,9 +443,19 @@ function initExportPage() {
     $("month").value = `${y}-${m}`;
   }
 
+  if ($("histMonth") && !$("histMonth").value) {
+    const d = new Date();
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, "0");
+    $("histMonth").value = `${y}-${m}`;
+  }
+
   $("btnDailyPdf")?.addEventListener("click", () => runExport("dailyPdf"));
   $("btnMonthlyPdf")?.addEventListener("click", () => runExport("monthlyPdf"));
   $("btnMonthlyCsv")?.addEventListener("click", () => runExport("monthlyCsv"));
+
+  $("btnRangeCsv")?.addEventListener("click", () => runRangeCsv());
+  $("btnLoadHistory")?.addEventListener("click", () => loadDailyHistory());
 }
 
 /** DOM Ready */
