@@ -3,497 +3,99 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-  <title>OFA GROUP | 日報 / 月報 / CSV</title>
-
-  <style>
-    :root{
-      --txt:#0f172a;
-      --muted:#64748b;
-      --card:#ffffff;
-      --line:#e5e7eb;
-
-      --yellow:#ffd400;
-      --pink:#ff2d8d;
-      --orange:#ff7a00;
-      --green:#22c55e;
-      --blue:#2563eb;
-      --purple:#7c3aed;
-
-      --rainbow: linear-gradient(90deg,
-        #ff2d8d 0%,
-        #ff7a00 18%,
-        #ffd400 36%,
-        #22c55e 54%,
-        #2563eb 72%,
-        #7c3aed 100%
-      );
-    }
-    *{box-sizing:border-box}
-    body{
-      margin:0;
-      font-family: system-ui, -apple-system, "Hiragino Kaku Gothic ProN", "Noto Sans JP", Meiryo, sans-serif;
-      color:var(--txt);
-      background:
-        radial-gradient(1200px 400px at 20% -10%, rgba(255,45,141,.12), transparent 60%),
-        radial-gradient(1200px 400px at 80% 0%, rgba(37,99,235,.12), transparent 60%),
-        radial-gradient(1200px 400px at 50% 110%, rgba(34,197,94,.10), transparent 60%),
-        #ffffff;
-      min-height:100svh;
-      padding: 16px 14px 40px;
-    }
-    .wrap{max-width:860px;margin:0 auto;}
-    .topbar{
-      display:flex;align-items:center;justify-content:space-between;gap:10px;
-      margin: 8px 0 12px;
-    }
-    .title{font-weight:900;letter-spacing:.2px;font-size:18px;margin:0}
-    .subtitle{margin:6px 0 0;font-size:12px;color:var(--muted);line-height:1.5}
-    .btn-back{
-      appearance:none;border:1px solid var(--line);
-      background:#f1f5f9;color:var(--txt);
-      padding:10px 14px;border-radius:14px;font-weight:900;cursor:pointer;
-    }
-    .rainbowLine{
-      height:4px;border-radius:999px;background:var(--rainbow);
-      margin: 12px 0 14px;
-    }
-    .card{
-      background:var(--card);
-      border:1px solid var(--line);
-      border-radius:18px;
-      padding:16px;
-      box-shadow: 0 10px 30px rgba(15,23,42,.06);
-      position:relative;
-      overflow:hidden;
-    }
-    .card.rainbowBorder::before{
-      content:"";
-      position:absolute; inset:0;
-      padding:2px;
-      border-radius:18px;
-      background: var(--rainbow);
-      -webkit-mask:
-        linear-gradient(#fff 0 0) content-box,
-        linear-gradient(#fff 0 0);
-      -webkit-mask-composite: xor;
-              mask-composite: exclude;
-      pointer-events:none;
-    }
-    label{display:block;font-size:12px;color:var(--muted);margin:12px 0 8px;}
-    input{
-      width:100%;
-      padding:14px 14px;
-      border-radius:14px;
-      border:1px solid var(--line);
-      background:#fff;
-      outline:none;
-      font-size:16px;
-    }
-    input:focus{
-      border-color: rgba(124,58,237,.55);
-      box-shadow: 0 0 0 4px rgba(124,58,237,.15);
-    }
-    .row{display:flex;gap:10px;flex-wrap:wrap}
-    .row > *{flex:1 1 240px}
-    .help{
-      margin-top:10px;
-      padding:12px 12px;
-      border-radius:16px;
-      border:1px dashed rgba(15,23,42,.15);
-      color:rgba(15,23,42,.70);
-      font-size:12px;
-      line-height:1.5;
-      background: rgba(15,23,42,.02);
-    }
-    .actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px;}
-    .btn{
-      appearance:none;
-      cursor:pointer;
-      border-radius:14px;
-      padding:14px 14px;
-      font-weight:900;
-      width:100%;
-      border:1px solid var(--line);
-      background:#f1f5f9;
-      color:var(--txt);
-      transition: transform .06s ease;
-    }
-    .btn:active{ transform: scale(.98); }
-    .btn.primary{
-      background: var(--yellow);
-      border:none;
-      box-shadow: 0 10px 18px rgba(255,212,0,.25);
-    }
-    .btn.rainbow{
-      background: var(--rainbow);
-      border:none;
-      color:#fff;
-      box-shadow: 0 10px 18px rgba(124,58,237,.20);
-    }
-    .btn.small{
-      width:auto;
-      padding:10px 12px;
-      font-weight:900;
-      font-size:13px;
-    }
-
-    .section-title{
-      margin:18px 0 10px;
-      font-weight:900;
-      font-size:14px;
-      color: rgba(15,23,42,.85);
-    }
-
-    .history{
-      margin-top:10px;
-      border:1px solid var(--line);
-      border-radius:16px;
-      background:#fff;
-      overflow:hidden;
-    }
-    .history .head{
-      display:flex;align-items:center;justify-content:space-between;gap:10px;
-      padding:12px 12px;
-      border-bottom:1px solid var(--line);
-      background: rgba(15,23,42,.02);
-      font-size:12px;color:var(--muted);
-    }
-    .list{
-      padding:10px 10px 12px;
-      display:flex;flex-direction:column;gap:10px;
-    }
-    .item{
-      display:flex;align-items:center;justify-content:space-between;gap:10px;
-      padding:12px 12px;
-      border:1px solid var(--line);
-      border-radius:16px;
-      background:#fff;
-      position:relative;
-      overflow:hidden;
-    }
-    .item::before{
-      content:"";
-      position:absolute; left:0; top:0; bottom:0;
-      width:6px;
-      background: var(--rainbow);
-    }
-    .item .d{font-weight:900}
-    .item .meta{font-size:12px;color:var(--muted);margin-top:4px;}
-    .item .right{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
-
-    .linkbox{
-      margin-top:12px;
-      padding:12px;
-      border-radius:16px;
-      border:1px solid var(--line);
-      background:#fff;
-      font-size:12px;
-      color:var(--muted);
-      word-break:break-all;
-    }
-    .linkbox a{color:#2563eb;text-decoration:none;font-weight:900}
-
-    .toast{
-      position:fixed;
-      left:50%;
-      bottom:18px;
-      transform:translateX(-50%);
-      padding:12px 14px;
-      border-radius:999px;
-      max-width:92vw;
-      font-weight:900;
-      box-shadow: 0 10px 24px rgba(0,0,0,.18);
-      display:none;
-      color:#fff;
-      background: rgba(34,197,94,.95);
-    }
-    .toast.ng{
-      background: rgba(239,68,68,.95);
-    }
-  </style>
+  <title>OFA｜日報 / 月報 / CSV</title>
+  <link rel="stylesheet" href="./style.css" />
 </head>
-
-<body>
+<body data-page="export" data-needlogin="1">
   <div class="wrap">
     <div class="topbar">
-      <div>
-        <div class="title">OFA GROUP｜日報 / 月報 / CSV</div>
-        <div class="subtitle">
-          日報PDFは「点呼＋日報入力」そのまま出力 / 月報は月単位でまとまった一覧 / CSVは月・範囲で出力
-        </div>
+      <div class="brand">
+        <div class="t">日報 / 月報 / 月次CSV</div>
+        <div class="s">ログイン必須｜ドライバーは本人分のみ</div>
       </div>
-      <button class="btn-back" id="backBtn">戻る</button>
+      <button class="btn small" id="backBtn">戻る</button>
     </div>
 
-    <div class="rainbowLine"></div>
+    <div class="card" id="needLoginGate" style="display:none;">
+      <div class="cardTitle">ログインしてください</div>
+      <div class="note">トップページでGmailログイン後に再度お試しください。</div>
+      <button class="btn primary" onclick="location.href='index.html'">トップへ</button>
+    </div>
 
-    <div class="card rainbowBorder">
-      <div class="row">
-        <div>
-          <label>日付（日報PDF用）</label>
-          <input id="dateDaily" type="date" />
+    <div class="grid">
+      <div class="card half">
+        <div class="cardTitle"><span>出力</span><span class="pill">PDFは印刷OK</span></div>
+        <p class="cardSub">
+          日報PDF＝点呼全内容＋日報内容が“そのまま記載”。<br>
+          月報PDF＝詳細版（出発/帰着内容を日別に記載＋集計）。
+        </p>
+
+        <div class="row">
+          <div>
+            <label>日付（日報PDF）</label>
+            <input id="dateDaily" type="date" />
+          </div>
+          <div>
+            <label>月（YYYY-MM / 月報・月次CSV・履歴）</label>
+            <input id="month" type="month" />
+          </div>
         </div>
-        <div>
-          <label>月（YYYY-MM / 月報・月CSV・履歴用）</label>
-          <input id="month" type="month" />
+
+        <label>運転者名（任意：管理者のみ有効）</label>
+        <input id="name" type="text" placeholder="通常は未入力（本人のみ出力）" />
+
+        <div class="pills" style="margin-top:10px;">
+          <button class="btn primary" id="btnDailyPdf">日報PDF</button>
+          <button class="btn rain" id="btnMonthlyPdf">月報PDF（詳細）</button>
+          <button class="btn" id="btnMonthlyCsv">月次CSV</button>
         </div>
-      </div>
 
-      <label>運転者名（任意：入れるとその人だけ）</label>
-      <input id="name" type="text" placeholder="未入力なら全員" />
+        <div class="result" id="resultBox" style="display:none;"></div>
 
-      <div class="help">
-        使い方：<br>
-        ① 日報PDF → 作成後、DriveリンクをLINE共有（印刷OK）<br>
-        ② 月報PDF → 月単位でまとまった一覧（写真は有/無）<br>
-        ③ CSV → 月 or 日付範囲で出力
-      </div>
-
-      <div class="actions">
-        <button class="btn primary" id="btnDailyPdf">日報PDFを作成</button>
-        <button class="btn rainbow" id="btnMonthlyPdf">月報PDFを作成</button>
-        <button class="btn" id="btnMonthlyCsv">月次CSVを作成</button>
-      </div>
-
-      <div class="section-title">CSV（日付範囲）</div>
-      <div class="row">
-        <div>
-          <label>開始日（from）</label>
-          <input id="fromDate" type="date" />
-        </div>
-        <div>
-          <label>終了日（to）</label>
-          <input id="toDate" type="date" />
-        </div>
-      </div>
-      <div class="actions">
-        <button class="btn" id="btnRangeCsv">範囲CSVを作成</button>
-      </div>
-
-      <div class="section-title">日報PDF 履歴（一覧）</div>
-      <div class="row">
-        <div>
-          <label>履歴対象月（YYYY-MM）</label>
-          <input id="histMonth" type="month" />
-        </div>
-        <div style="display:flex;align-items:flex-end;gap:10px;">
-          <button class="btn small" id="btnLoadHistory" style="width:100%;">履歴を読み込む</button>
+        <div class="hr"></div>
+        <div class="note">
+          ※管理者は adminKey を入れると「全員分」出力が可能（名前で絞り込みも可）。
         </div>
       </div>
 
-      <div class="history" id="historyBox" style="display:none;">
-        <div class="head">
-          <div>記録がある日付（タップで日報PDFを作成）</div>
-          <div id="historyCount">0件</div>
+      <div class="card half">
+        <div class="cardTitle"><span>CSV（日付範囲）</span><span class="pill">from-to</span></div>
+        <div class="row">
+          <div>
+            <label>開始日（from）</label>
+            <input id="fromDate" type="date" />
+          </div>
+          <div>
+            <label>終了日（to）</label>
+            <input id="toDate" type="date" />
+          </div>
         </div>
-        <div class="list" id="history"></div>
-      </div>
 
-      <div class="linkbox" id="result" style="display:none;"></div>
-      <div class="linkbox" style="margin-top:10px;">
-        GAS: <span id="gasUrlView"></span>
+        <button class="btn primary" id="btnCsvRange" style="margin-top:10px;">範囲CSVを作成</button>
+
+        <div class="hr"></div>
+
+        <div class="cardTitle"><span>日報PDF 履歴（一覧）</span><span class="pill">月</span></div>
+        <label>履歴対象月（YYYY-MM）</label>
+        <input id="historyMonth" type="month" />
+
+        <button class="btn rain" id="btnLoadHistory" style="margin-top:10px;">履歴を読み込む</button>
+
+        <div class="card" id="historyBox" style="display:none;margin-top:12px;">
+          <div class="cardTitle">
+            <span>履歴</span>
+            <span class="pill" id="historyCount">0件</span>
+          </div>
+          <div id="historyList"></div>
+        </div>
+
+        <div class="hr"></div>
+        <div class="note">GAS: <span id="gasUrlView"></span></div>
       </div>
     </div>
   </div>
 
   <div class="toast" id="toast"></div>
-
-<script>
-  /** ✅ 最新GASに統一（ここだけ見ればOK） */
-  const GAS_WEBAPP_URL =
-    "https://script.google.com/macros/s/AKfycbxa7fmk0rDDNmZ2p2GTEmE8g6yVaVJxy97J2vpw_NUuYr8lR3QbDNg6EDifoSoSFrKq9Q/exec";
-
-  const $ = (id) => document.getElementById(id);
-
-  function toast(msg, ok=true){
-    const t = $("toast");
-    t.textContent = msg;
-    t.className = "toast " + (ok ? "" : "ng");
-    t.style.display = "block";
-    setTimeout(()=>t.style.display="none", 2000);
-  }
-
-  function setResult(url, label){
-    const box = $("result");
-    box.style.display = "block";
-    box.innerHTML = `
-      <div style="font-weight:900;color:rgba(15,23,42,.92);margin-bottom:6px;">${label}</div>
-      <div style="margin-bottom:8px;">リンク：<a href="${url}" target="_blank" rel="noopener">${url}</a></div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap">
-        <button class="btn small primary" id="openBtn">開く</button>
-        <button class="btn small" id="copyBtn">コピー</button>
-      </div>
-    `;
-    $("openBtn").addEventListener("click", ()=>window.open(url,"_blank"));
-    $("copyBtn").addEventListener("click", async ()=>{
-      await navigator.clipboard.writeText(url);
-      toast("リンクをコピーしました");
-    });
-  }
-
-  function buildUrl(action, params){
-    const u = new URL(GAS_WEBAPP_URL);
-    u.searchParams.set("action", action);
-    Object.entries(params || {}).forEach(([k,v])=>{
-      if(v !== undefined && v !== null && String(v).trim() !== ""){
-        u.searchParams.set(k, String(v).trim());
-      }
-    });
-    return u.toString();
-  }
-
-  async function callApi(url){
-    const res = await fetch(url, { method:"GET", cache:"no-store" });
-    const json = await res.json().catch(()=>null);
-    if(!json) throw new Error("JSON取得失敗（GAS側の返却を確認）");
-    if(!json.ok) throw new Error(json.message || "作成失敗");
-    return json;
-  }
-
-  function todayISO(){
-    const d = new Date();
-    const yyyy = d.getFullYear();
-    const mm = String(d.getMonth()+1).padStart(2,"0");
-    const dd = String(d.getDate()).padStart(2,"0");
-    return `${yyyy}-${mm}-${dd}`;
-  }
-  function monthISO(){
-    const d = new Date();
-    const yyyy = d.getFullYear();
-    const mm = String(d.getMonth()+1).padStart(2,"0");
-    return `${yyyy}-${mm}`;
-  }
-
-  async function createDailyPdf(){
-    const date = $("dateDaily").value;
-    const name = $("name").value;
-    if(!date){ toast("日付を入れてください", false); return; }
-    toast("日報PDFを作成中…");
-    const url = buildUrl("dailyPdf", { date, name });
-    const json = await callApi(url);
-    setResult(json.url, `日報PDF（${date}${name? " / "+name:""}）`);
-    toast("作成しました");
-    window.open(json.url, "_blank");
-  }
-
-  async function createMonthlyPdf(){
-    const month = $("month").value;
-    const name = $("name").value;
-    if(!month){ toast("月（YYYY-MM）を入れてください", false); return; }
-    toast("月報PDFを作成中…");
-    const url = buildUrl("monthlyPdf", { month, name });
-    const json = await callApi(url);
-    setResult(json.url, `月報PDF（${month}${name? " / "+name:""}）`);
-    toast("作成しました");
-    window.open(json.url, "_blank");
-  }
-
-  async function createMonthlyCsv(){
-    const month = $("month").value;
-    const name = $("name").value;
-    if(!month){ toast("月（YYYY-MM）を入れてください", false); return; }
-    toast("月次CSVを作成中…");
-    const url = buildUrl("monthlyCsv", { month, name });
-    const json = await callApi(url);
-    setResult(json.url, `月次CSV（${month}${name? " / "+name:""}）`);
-    toast("作成しました");
-    window.open(json.url, "_blank");
-  }
-
-  async function createRangeCsv(){
-    const from = $("fromDate").value;
-    const to = $("toDate").value;
-    const name = $("name").value;
-    if(!from || !to){ toast("開始日・終了日を入れてください", false); return; }
-    if(from > to){ toast("開始日が終了日より後です", false); return; }
-    toast("範囲CSVを作成中…");
-    const url = buildUrl("rangeCsv", { from, to, name });
-    const json = await callApi(url);
-    setResult(json.url, `範囲CSV（${from}〜${to}${name? " / "+name:""}）`);
-    toast("作成しました");
-    window.open(json.url, "_blank");
-  }
-
-  async function loadHistory(){
-    const month = $("histMonth").value;
-    const name = $("name").value;
-    if(!month){ toast("履歴の月（YYYY-MM）を入れてください", false); return; }
-
-    toast("履歴を取得中…");
-    const url = buildUrl("dailyList", { month, name });
-    const json = await callApi(url);
-
-    const items = Array.isArray(json.items) ? json.items : [];
-    $("historyBox").style.display = "block";
-    $("historyCount").textContent = `${items.length}件`;
-    const list = $("history");
-    list.innerHTML = "";
-
-    if(items.length === 0){
-      list.innerHTML = `<div style="color:rgba(15,23,42,.55);font-size:12px;padding:6px 2px;">データなし</div>`;
-      toast("0件です");
-      return;
-    }
-
-    // 新しい順に表示
-    items.slice().sort((a,b)=>String(b.date).localeCompare(String(a.date))).forEach(it=>{
-      const d = String(it.date || "");
-      const div = document.createElement("div");
-      div.className = "item";
-      div.innerHTML = `
-        <div style="padding-left:6px">
-          <div class="d">${d}</div>
-          <div class="meta">${name? ("運転者: "+escapeHtml(name)) : "全員"} / タップで日報PDF作成</div>
-        </div>
-        <div class="right">
-          <button class="btn small primary">日報PDF</button>
-          <button class="btn small">APIコピー</button>
-        </div>
-      `;
-      const btnPdf = div.querySelectorAll("button")[0];
-      const btnApi = div.querySelectorAll("button")[1];
-      btnPdf.addEventListener("click", async ()=>{
-        $("dateDaily").value = d;
-        await createDailyPdf();
-      });
-      btnApi.addEventListener("click", async ()=>{
-        const api = buildUrl("dailyPdf", { date:d, name });
-        await navigator.clipboard.writeText(api);
-        toast("APIリンクをコピーしました");
-      });
-      list.appendChild(div);
-    });
-
-    toast("履歴を表示しました");
-  }
-
-  function escapeHtml(s){
-    return String(s??"")
-      .replace(/&/g,"&amp;")
-      .replace(/</g,"&lt;")
-      .replace(/>/g,"&gt;")
-      .replace(/"/g,"&quot;")
-      .replace(/'/g,"&#39;");
-  }
-
-  // 初期値
-  $("gasUrlView").textContent = GAS_WEBAPP_URL;
-  $("dateDaily").value = todayISO();
-  $("month").value = monthISO();
-  $("histMonth").value = monthISO();
-
-  // 戻る
-  $("backBtn").addEventListener("click", ()=>{
-    if(history.length > 1) history.back();
-    else location.href = "./";
-  });
-
-  // ボタン
-  $("btnDailyPdf").addEventListener("click", ()=>createDailyPdf().catch(e=>toast(e.message,false)));
-  $("btnMonthlyPdf").addEventListener("click", ()=>createMonthlyPdf().catch(e=>toast(e.message,false)));
-  $("btnMonthlyCsv").addEventListener("click", ()=>createMonthlyCsv().catch(e=>toast(e.message,false)));
-  $("btnRangeCsv").addEventListener("click", ()=>createRangeCsv().catch(e=>toast(e.message,false)));
-  $("btnLoadHistory").addEventListener("click", ()=>loadHistory().catch(e=>toast(e.message,false)));
-</script>
+  <script src="./app.js"></script>
 </body>
 </html>
