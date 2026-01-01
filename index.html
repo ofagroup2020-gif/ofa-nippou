@@ -2,45 +2,112 @@
 <html lang="ja">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>OFA 点呼ポータル</title>
-  <style>
-    :root{
-      --bg:#070b16;--card:#0c1632;--card2:#0b1226;--txt:#e9eefc;--muted:#a8b3d6;
-      --line:rgba(255,255,255,.10);--btn:#ffd400;--btn2:#2b3556;
-    }
-    body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Hiragino Kaku Gothic ProN","Noto Sans JP",Meiryo,sans-serif;background:var(--bg);color:var(--txt);}
-    .wrap{max-width:430px;margin:0 auto;padding:18px 14px 28px;}
-    .title{font-weight:800;letter-spacing:.5px;margin:8px 0 4px;font-size:18px}
-    .sub{color:var(--muted);font-size:12px;margin:0 0 14px}
-    .card{background:linear-gradient(180deg,var(--card),var(--card2));border:1px solid var(--line);border-radius:16px;padding:14px;margin:10px 0}
-    .btn{display:block;width:100%;border:none;border-radius:14px;padding:14px 14px;font-weight:800;font-size:15px}
-    .btn.yellow{background:var(--btn);color:#101010}
-    .btn.gray{background:var(--btn2);color:var(--txt)}
-    .row{display:flex;gap:10px}
-    .row .btn{flex:1}
-    .note{color:var(--muted);font-size:12px;line-height:1.4}
-    a{color:inherit;text-decoration:none}
-  </style>
-</head>
-<body>
-  <div class="wrap">
-    <div class="title">OFA GROUP｜点呼ポータル</div>
-    <div class="sub">出発点呼 / 帰着点呼 / 日報・月報・月次CSV</div>
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <title>OFA GROUP｜点呼ポータル</title>
+  <link rel="stylesheet" href="./style.css" />
 
-    <div class="card">
-      <div class="row">
-        <a class="btn yellow" href="departure.html">出発点呼</a>
-        <a class="btn gray" href="arrival.html">帰着点呼 / 日報</a>
+  <!-- ✅ Google Identity Services -->
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+</head>
+<body data-page="index">
+  <div class="wrap">
+    <div class="topbar">
+      <div class="brand">
+        <div class="t">OFA GROUP｜点呼ポータル</div>
+        <div class="s">出発点呼 / 帰着点呼・日報 / 日報PDF・月報PDF・CSV / 管理者検索</div>
       </div>
-      <div style="height:10px"></div>
-      <a class="btn gray" href="export.html">日報 / 月報 / 月次CSV</a>
-      <div style="height:10px"></div>
+      <div class="pills">
+        <div class="badge" id="loginBadge"><span class="dot ng"></span>未ログイン</div>
+        <button class="btn small" id="btnLogout" style="display:none;">ログアウト</button>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="card half">
+        <div class="cardTitle">
+          <span>ログイン（Gmail）</span>
+          <span class="pill">自動ログイン対応</span>
+        </div>
+        <p class="cardSub">
+          ドライバーはログイン後、本人の点呼データだけ送信・出力できます。<br>
+          管理者は adminKey で全データ検索・出力が可能です。
+        </p>
+
+        <div class="note">
+          現在：<b id="loginMail">ログインしてください</b>
+        </div>
+
+        <!-- ▼ Googleログインボタン（未ログイン時に表示） -->
+        <div id="loginButtonWrap" style="margin-top:10px;">
+          <div id="g_id_onload"
+            data-client_id="YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com"
+            data-callback="onGoogleCredential"
+            data-auto_select="true"
+            data-itp_support="true">
+          </div>
+          <div class="g_id_signin"
+            data-type="standard"
+            data-size="large"
+            data-theme="outline"
+            data-text="signin_with"
+            data-shape="pill"
+            data-logo_alignment="left">
+          </div>
+
+          <div class="note" style="margin-top:10px;">
+            ※Google CloudでOAuth Client IDを作成し、GitHub PagesのURLを許可してください。
+          </div>
+        </div>
+
+        <div class="hr"></div>
+
+        <label>管理者パスワード（adminKey）</label>
+        <input id="adminKey" type="password" placeholder="管理者のみ入力（保存されます）" />
+        <div class="note" style="margin-top:10px;">
+          管理者は adminKey を入れると「全データ検索/全出力」が使えます。
+        </div>
+      </div>
+
+      <div class="card half">
+        <div class="cardTitle">
+          <span>メニュー</span>
+          <span class="pill">白背景＋OFAポップ</span>
+        </div>
+        <p class="cardSub">ボタンは虹グラ枠・OFAイエローを採用。Instagramのようにカラー重視。</p>
+
+        <div class="pills" style="margin-top:10px;">
+          <button class="btn primary" onclick="location.href='departure.html'">出発点呼</button>
+          <button class="btn rain" onclick="location.href='arrival.html'">帰着点呼 / 日報</button>
+          <button class="btn" onclick="location.href='export.html'">日報 / 月報 / CSV</button>
+          <button class="btn ghost" onclick="location.href='admin.html'">管理者（検索）</button>
+        </div>
+
+        <div class="hr"></div>
+
+        <div class="note">
+          ・送信するとGASが Drive と スプレッドシートに保存します。<br>
+          ・日報PDFは「点呼全内容」出力（LINE転送用にそのまま記載）。<br>
+          ・月報PDFは「詳細版」で日別に出発/帰着の入力内容を記載＋集計。<br>
+          ・CSVは「月」または「日付範囲」で出力可能。
+        </div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:12px;">
+      <div class="cardTitle">
+        <span>よくあるエラー</span>
+        <span class="pill">対策込み</span>
+      </div>
       <div class="note">
-        ・送信するとGASが Drive と スプレッドシートに保存します<br>
-        ・日報PDFは「点呼全内容」出力、月報PDFは「写真 有/無」表示のみ
+        ✅ ボタンが反応しない → “未ログイン” が原因のことが多いです（まずGmailログイン）。<br>
+        ✅ PDFが空 → 点呼/日報の入力→送信が完了しているか確認（帰着で日報項目を入力）。<br>
+        ✅ iPhoneで別タブが開かない → Safari設定/ポップアップ許可、またはリンクをコピーして開く。
       </div>
     </div>
   </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script src="./app.js"></script>
 </body>
 </html>
