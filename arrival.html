@@ -3,30 +3,34 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-  <title>OFA｜帰着点呼 / 日報</title>
+  <title>OFA | 帰着点呼 / 日報</title>
   <link rel="stylesheet" href="./style.css" />
 </head>
-<body data-page="arrival" data-needlogin="1">
+<body data-page="arrival">
   <div class="wrap">
     <div class="topbar">
       <div class="brand">
-        <div class="t">帰着点呼 / 日報</div>
-        <div class="s">業務終了後に提出｜PDFに“内容がそのまま記載”</div>
+        <div class="logoMark"></div>
+        <div>
+          <div class="h1">帰着点呼 / 日報</div>
+          <div class="sub">業務終了後：点呼＋日報を提出</div>
+        </div>
       </div>
-      <button class="btn small" id="backBtn">戻る</button>
+      <button class="btnBack" id="backBtn">戻る</button>
     </div>
 
-    <div class="card" id="needLoginGate" style="display:none;">
-      <div class="cardTitle">ログインしてください</div>
-      <div class="note">トップページでGmailログイン後に再度お試しください。</div>
-      <button class="btn primary" onclick="location.href='index.html'">トップへ</button>
-    </div>
+    <div class="rainbowLine"></div>
 
-    <div class="grid">
-      <div class="card half">
-        <div class="cardTitle"><span>基本情報</span><span class="pill">必須</span></div>
+    <div id="loginBox"></div>
+    <div id="loginInfo"></div>
 
-        <div class="row">
+    <div class="card" style="margin-top:14px;">
+      <div class="cardHead">
+        <div style="font-weight:1000;">入力</div>
+        <div class="sub">日報PDFはこの入力内容がそのまま記載されます（GAS側が対応している前提）</div>
+      </div>
+      <div class="cardBody">
+        <div class="grid grid2">
           <div>
             <label>日付</label>
             <input id="date" type="date" />
@@ -35,38 +39,39 @@
             <label>時刻</label>
             <input id="time" type="time" />
           </div>
-        </div>
 
-        <label>運転者氏名</label>
-        <input id="driverName" type="text" placeholder="例：森下洸" />
+          <div>
+            <label>運転者氏名</label>
+            <input id="driverName" type="text" placeholder="例：森下洸" />
+          </div>
+          <div>
+            <label>車両番号（ナンバー等）</label>
+            <input id="vehicleNo" type="text" placeholder="例：鹿児島 480 あ 1234" />
+          </div>
 
-        <label>電話番号</label>
-        <input id="driverPhone" type="tel" placeholder="例：090..." />
-
-        <label>車両番号（ナンバー/管理番号）</label>
-        <input id="vehicleNo" type="text" placeholder="例：鹿児島 480 あ 1234 / OFA-001" />
-
-        <label>点呼実施者</label>
-        <input id="managerName" type="text" placeholder="例：管理者名" />
-
-        <div class="row">
+          <div>
+            <label>点呼実施者</label>
+            <input id="managerName" type="text" placeholder="例：管理者名" />
+          </div>
           <div>
             <label>点呼方法</label>
             <select id="method">
               <option value="">選択</option>
               <option>対面</option>
               <option>電話</option>
-              <option>ビデオ通話</option>
-              <option>アプリ</option>
+              <option>Web</option>
             </select>
           </div>
-          <div>
-            <label>点呼場所</label>
-            <input id="place" type="text" placeholder="例：鹿児島倉庫/自宅" />
-          </div>
-        </div>
 
-        <div class="row">
+          <div>
+            <label>場所（任意）</label>
+            <input id="place" type="text" placeholder="例：倉庫 / 自宅" />
+          </div>
+          <div>
+            <label>免許番号（任意）</label>
+            <input id="licenseNo" type="text" placeholder="任意" />
+          </div>
+
           <div>
             <label>アルコール測定値</label>
             <input id="alcoholValue" type="text" placeholder="例：0.00" />
@@ -79,99 +84,90 @@
               <option>あり</option>
             </select>
           </div>
+
+          <div>
+            <label>走行距離：開始</label>
+            <input id="odoStart" type="number" inputmode="decimal" placeholder="任意" />
+          </div>
+          <div>
+            <label>走行距離：終了</label>
+            <input id="odoEnd" type="number" inputmode="decimal" placeholder="任意" />
+          </div>
+          <div>
+            <label>走行距離：合計（自動）</label>
+            <input id="odoTotal" type="number" disabled />
+          </div>
+          <div></div>
         </div>
+
+        <div class="hr"></div>
+
+        <div style="font-weight:1000;">車両点検</div>
+        <div class="grid grid2">
+          <div><label>タイヤ</label><select id="insp_tire"><option value="">選択</option><option>OK</option><option>NG</option></select></div>
+          <div><label>ライト</label><select id="insp_light"><option value="">選択</option><option>OK</option><option>NG</option></select></div>
+          <div><label>ブレーキ</label><select id="insp_brake"><option value="">選択</option><option>OK</option><option>NG</option></select></div>
+          <div><label>ワイパー</label><select id="insp_wiper"><option value="">選択</option><option>OK</option><option>NG</option></select></div>
+          <div><label>エンジンオイル</label><select id="insp_engineOil"><option value="">選択</option><option>OK</option><option>NG</option></select></div>
+          <div><label>冷却水</label><select id="insp_coolant"><option value="">選択</option><option>OK</option><option>NG</option></select></div>
+          <div><label>外装・損傷</label><select id="insp_damage"><option value="">選択</option><option>OK</option><option>NG</option></select></div>
+          <div><label>積載</label><select id="insp_cargo"><option value="">選択</option><option>OK</option><option>NG</option></select></div>
+        </div>
+
+        <label>点検メモ（任意）</label>
+        <textarea id="insp_note" placeholder="例：左前輪空気圧低め"></textarea>
+
+        <div class="hr"></div>
+
+        <div style="font-weight:1000;">日報（業務内容）</div>
+        <div class="grid grid2">
+          <div>
+            <label>案件種別（例：Amazon / ユニクロ / チャーター）</label>
+            <input id="workType" type="text" placeholder="例：Amazon" />
+          </div>
+          <div>
+            <label>稼働エリア</label>
+            <input id="workArea" type="text" placeholder="例：鹿児島市" />
+          </div>
+          <div>
+            <label>稼働時間（例：9:00-19:00）</label>
+            <input id="workHours" type="text" placeholder="例：9:00-19:00" />
+          </div>
+          <div>
+            <label>配達個数 / 件数</label>
+            <input id="deliveryCount" type="text" placeholder="例：120" />
+          </div>
+        </div>
+
+        <label>トラブル（あれば）</label>
+        <textarea id="trouble" placeholder="例：不在多め、誤配疑いなど"></textarea>
+
+        <label>日報メモ（1日のまとめ）</label>
+        <textarea id="dailyNote" placeholder="今日の反省・共有・改善点など"></textarea>
+
+        <label>日報写真（任意）</label>
+        <input id="reportPhotos" type="file" accept="image/*" multiple />
+
+        <label>点呼写真（任意）</label>
+        <input id="tenkoPhotos" type="file" accept="image/*" multiple />
+
+        <label>免許写真（任意）</label>
+        <input id="licensePhotos" type="file" accept="image/*" multiple />
 
         <label>メモ（任意）</label>
         <textarea id="memo" placeholder="連絡事項など"></textarea>
-      </div>
 
-      <div class="card half">
-        <div class="cardTitle"><span>日報（ここがPDFにそのまま載る）</span><span class="pill">重要</span></div>
-
-        <label>業務内容（例：Amazon/ユニクロ/チャーター等）</label>
-        <input id="workType" type="text" placeholder="例：Amazon デリプロ" />
-
-        <label>配送エリア</label>
-        <input id="workArea" type="text" placeholder="例：薩摩川内市" />
-
-        <div class="row">
-          <div>
-            <label>稼働時間</label>
-            <input id="workHours" type="text" placeholder="例：8:00〜18:30" />
-          </div>
-          <div>
-            <label>配送個数</label>
-            <input id="deliveryCount" type="number" inputmode="numeric" placeholder="例：120" />
-          </div>
-        </div>
-
-        <label>トラブル/事故（なければ「なし」）</label>
-        <textarea id="trouble" placeholder="例：クレーム対応 / 再配達 / 事故など"></textarea>
-
-        <label>日報メモ（学び/改善/報告）</label>
-        <textarea id="dailyNote" placeholder="例：不在が多いエリアの対策…"></textarea>
-
-        <div class="hr"></div>
-
-        <div class="row">
-          <div>
-            <label>走行距離（開始）</label>
-            <input id="odoStart" type="number" inputmode="numeric" placeholder="例：10234" />
-          </div>
-          <div>
-            <label>走行距離（終了）</label>
-            <input id="odoEnd" type="number" inputmode="numeric" placeholder="例：10410" />
-          </div>
-        </div>
-        <label>走行距離（自動計算）</label>
-        <input id="odoTotal" type="number" readonly placeholder="自動計算" />
-
-        <div class="hr"></div>
-
-        <div class="cardTitle"><span>点検（必要運用なら入力）</span><span class="pill">任意</span></div>
-        <div class="row">
-          <div><label>タイヤ</label><select id="insp_tire"><option value="">選択</option><option>OK</option><option>NG</option></select></div>
-          <div><label>ライト</label><select id="insp_light"><option value="">選択</option><option>OK</option><option>NG</option></select></div>
-        </div>
-        <div class="row">
-          <div><label>ブレーキ</label><select id="insp_brake"><option value="">選択</option><option>OK</option><option>NG</option></select></div>
-          <div><label>ワイパー</label><select id="insp_wiper"><option value="">選択</option><option>OK</option><option>NG</option></select></div>
-        </div>
-        <div class="row">
-          <div><label>エンジンオイル</label><select id="insp_engineOil"><option value="">選択</option><option>OK</option><option>NG</option></select></div>
-          <div><label>冷却水</label><select id="insp_coolant"><option value="">選択</option><option>OK</option><option>NG</option></select></div>
-        </div>
-        <div class="row">
-          <div><label>外装/損傷</label><select id="insp_damage"><option value="">選択</option><option>OK</option><option>NG</option></select></div>
-          <div><label>積載/荷崩れ</label><select id="insp_cargo"><option value="">選択</option><option>OK</option><option>NG</option></select></div>
-        </div>
-        <label>点検メモ</label>
-        <textarea id="insp_note" placeholder="異常があれば記載"></textarea>
-
-        <div class="hr"></div>
-
-        <label>点呼写真（任意 / 最大6枚）</label>
-        <input id="tenkoPhotos" type="file" accept="image/*" multiple />
-
-        <label>日報添付写真（任意 / 最大6枚）</label>
-        <input id="reportPhotos" type="file" accept="image/*" multiple />
-
-        <label>免許写真（任意 / 最大6枚）</label>
-        <input id="licensePhotos" type="file" accept="image/*" multiple />
-        <label>免許番号（任意）</label>
-        <input id="licenseNo" type="text" placeholder="例：第123456..." />
-
-        <div class="hr"></div>
-
-        <button class="btn primary" id="btnSubmit">帰着点呼 / 日報を送信</button>
-        <div class="note" style="margin-top:10px;">
-          この入力内容が「日報PDF」にそのまま記載されます（LINE転送前のレポート用）。
+        <div class="actions">
+          <button class="btn rainbow" id="btnSubmit">送信（帰着点呼＋日報）</button>
         </div>
       </div>
     </div>
   </div>
 
   <div class="toast" id="toast"></div>
+
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+  <script src="./auth.js"></script>
   <script src="./app.js"></script>
 </body>
 </html>
