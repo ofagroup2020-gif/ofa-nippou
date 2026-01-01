@@ -4,62 +4,271 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
   <title>OFA GROUP | 点呼ポータル</title>
-  <link rel="stylesheet" href="./style.css" />
+
+  <link rel="preconnect" href="https://accounts.google.com" />
+  <style>
+    :root{
+      --bg:#ffffff;
+      --text:#0b1020;
+      --muted:#5c667a;
+      --card:#ffffff;
+      --shadow: 0 14px 40px rgba(10,16,32,.12);
+      --line: rgba(10,16,32,.10);
+      --black:#0b1020;
+      --yellow:#ffd400;
+      --pink:#ff3ea5;
+      --blue:#3b82f6;
+      --green:#10b981;
+      --purple:#8b5cf6;
+      --orange:#fb923c;
+      --radius:20px;
+    }
+
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family: system-ui, -apple-system, "Hiragino Kaku Gothic ProN","Noto Sans JP", Meiryo, sans-serif;
+      color:var(--text);
+      background:
+        radial-gradient(900px 500px at 10% 0%, rgba(255, 212, 0, .20), transparent 55%),
+        radial-gradient(900px 500px at 90% 0%, rgba(59, 130, 246, .18), transparent 55%),
+        radial-gradient(900px 600px at 50% 110%, rgba(255, 62, 165, .16), transparent 55%),
+        var(--bg);
+      min-height:100svh;
+      padding: 18px 14px 40px;
+    }
+    .wrap{max-width:860px;margin:0 auto;}
+    .top{
+      display:flex;align-items:center;justify-content:space-between;gap:12px;
+      margin-bottom:14px;
+    }
+    .brand{
+      display:flex;flex-direction:column;gap:4px;
+    }
+    .brand .h{
+      font-weight:1000;
+      letter-spacing:.4px;
+      font-size:18px;
+    }
+    .brand .s{
+      font-size:12px;color:var(--muted);line-height:1.35;
+    }
+
+    .pill{
+      display:inline-flex;align-items:center;gap:8px;
+      padding:10px 12px;
+      border-radius:999px;
+      border:1px solid var(--line);
+      background:rgba(255,255,255,.75);
+      box-shadow: 0 8px 20px rgba(10,16,32,.06);
+      font-weight:800;
+      font-size:12px;
+    }
+
+    .card{
+      background:var(--card);
+      border:1px solid var(--line);
+      border-radius:var(--radius);
+      box-shadow:var(--shadow);
+      overflow:hidden;
+    }
+    .cardHead{
+      padding:14px 16px;
+      border-bottom:1px solid rgba(10,16,32,.08);
+      background: linear-gradient(90deg, rgba(255,212,0,.18), rgba(59,130,246,.12), rgba(255,62,165,.12));
+    }
+    .cardHead .t{font-weight:1000;font-size:14px;}
+    .cardHead .d{color:var(--muted);font-size:12px;margin-top:4px;line-height:1.4}
+
+    .section{
+      padding:14px 14px 6px;
+      display:flex;flex-direction:column;gap:12px;
+    }
+
+    .menuItem{
+      border:1px solid rgba(10,16,32,.10);
+      border-radius:18px;
+      padding:14px;
+      background: #fff;
+      box-shadow: 0 10px 24px rgba(10,16,32,.06);
+    }
+    .row{
+      display:flex;align-items:flex-start;justify-content:space-between;gap:12px;
+    }
+    .left{
+      display:flex;gap:10px;align-items:flex-start;
+    }
+    .icon{
+      width:42px;height:42px;border-radius:14px;
+      display:grid;place-items:center;
+      background:rgba(10,16,32,.04);
+      border:1px solid rgba(10,16,32,.08);
+      font-size:20px;
+    }
+    .name{
+      font-weight:1000;font-size:16px;line-height:1.2;
+    }
+    .tag{
+      display:inline-flex;align-items:center;
+      font-size:11px;font-weight:900;
+      padding:6px 10px;border-radius:999px;
+      border:1px solid rgba(10,16,32,.12);
+      background:rgba(10,16,32,.03);
+      color:rgba(10,16,32,.78);
+      margin-left:8px;
+      white-space:nowrap;
+    }
+    .desc{
+      color:var(--muted);
+      font-size:12px;line-height:1.45;
+      margin-top:6px;
+    }
+
+    .btnRow{margin-top:12px;}
+    .btnLink{
+      display:flex;align-items:center;justify-content:center;
+      width:100%;
+      border-radius:16px;
+      padding:14px 14px;
+      font-weight:1000;
+      text-decoration:none;
+      color:#0b1020;
+      border:1px solid rgba(10,16,32,.12);
+      background: #fff;
+    }
+    .btnRainbow{
+      background: linear-gradient(90deg,
+        #ff4d4d, #ffb84d, #ffe24d, #4dff88, #4dd6ff, #5b7bff, #c84dff);
+      color:#0b1020;
+      border:none;
+      box-shadow: 0 12px 28px rgba(10,16,32,.12);
+    }
+    .btnDark{
+      background: #0b1020;
+      color:#fff;
+      border:none;
+      box-shadow: 0 12px 28px rgba(10,16,32,.16);
+    }
+
+    .note{
+      margin-top:12px;
+      padding:12px 12px;
+      border-radius:16px;
+      border:1px dashed rgba(10,16,32,.18);
+      background: rgba(255,255,255,.8);
+      color: rgba(10,16,32,.72);
+      font-size:12px;
+      line-height:1.55;
+    }
+
+    /* login ui placeholders */
+    #loginBox, #loginInfo{
+      margin-top:12px;
+      padding:12px 12px;
+      border-radius:16px;
+      border:1px solid rgba(10,16,32,.10);
+      background: rgba(255,255,255,.85);
+      box-shadow: 0 10px 24px rgba(10,16,32,.06);
+    }
+    .small{font-size:12px;color:rgba(10,16,32,.65);line-height:1.5}
+
+    .toast{
+      position:fixed;left:50%;bottom:16px;transform:translateX(-50%);
+      background: rgba(11,16,32,.92);
+      color:#fff;
+      padding:12px 14px;border-radius:14px;
+      font-weight:900;
+      opacity:0;pointer-events:none;
+      transition:opacity .18s ease;
+      max-width:92vw;
+    }
+    .toast.show{opacity:1}
+    .toast.danger{background: rgba(220,38,38,.92)}
+  </style>
 </head>
-<body data-page="index">
+
+<body>
   <div class="wrap">
-    <div class="topbar">
+
+    <div class="top">
       <div class="brand">
-        <div class="logoMark"></div>
-        <div>
-          <div class="h1">OFA GROUP｜点呼ポータル</div>
-          <div class="sub">出発点呼 / 帰着点呼（日報） / 日報・月報・CSV出力</div>
-        </div>
+        <div class="h">OFA GROUP｜点呼ポータル</div>
+        <div class="s">業務開始（出発点呼）/ 業務終了（帰着点呼） / 日報・月報・CSV出力</div>
       </div>
+      <div class="pill">🌈 OFA POP</div>
     </div>
 
-    <div class="rainbowLine"></div>
-
-    <!-- ログインUI（auth.jsが描画） -->
-    <div id="loginBox"></div>
-    <div id="loginInfo"></div>
-
-    <div class="card" style="margin-top:14px;">
+    <div class="card">
       <div class="cardHead">
-        <div style="font-weight:1000;">メニュー</div>
-        <div class="sub">ログイン後に各ページを利用してください。</div>
+        <div class="t">ログイン</div>
+        <div class="d">ログイン後、ドライバーは自分のデータのみ。管理者（admin）は全データ検索・出力。</div>
       </div>
-      <div class="cardBody">
-        <div class="tiles">
-          <div class="tile">
-            <div class="tileTitle">🚚 出発点呼 <span class="badge">出庫前</span></div>
-            <div class="sub">点呼・車両点検・アルコール・写真</div>
-            <div style="height:10px;"></div>
-            <button class="btn rainbow" id="goDeparture">出発点呼へ</button>
-          </div>
 
-          <div class="tile">
-            <div class="tileTitle">📦 帰着点呼 / 日報 <span class="badge">業務終了</span></div>
-            <div class="sub">帰庫後の点呼＋日報（業務内容）</div>
-            <div style="height:10px;"></div>
-            <button class="btn rainbow" id="goArrival">帰着点呼へ</button>
-          </div>
+      <div class="section">
+        <!-- auth.js がここにGoogleログインボタンを描画 -->
+        <div id="loginBox">
+          <div class="small">Googleログインボタンを読み込み中…</div>
+        </div>
+        <div id="loginInfo" style="display:none;"></div>
 
-          <div class="tile">
-            <div class="tileTitle">📄 日報 / 月報 / CSV <span class="badge">出力</span></div>
-            <div class="sub">日報PDF（詳細） / 月報PDF（詳細） / CSV出力</div>
-            <div style="height:10px;"></div>
-            <button class="btn dark" id="goExport">出力ページへ</button>
+        <div class="cardHead" style="border-radius:16px;">
+          <div class="t">メニュー</div>
+          <div class="d">下のボタンから移動できます（ボタンが反応しない問題を防ぐためリンク式）</div>
+        </div>
+
+        <div class="menuItem">
+          <div class="row">
+            <div class="left">
+              <div class="icon">🚚</div>
+              <div>
+                <div class="name">業務開始（出発点呼）<span class="tag">出庫前</span></div>
+                <div class="desc">点呼・車両点検・アルコール・写真（必要に応じて免許）</div>
+              </div>
+            </div>
+          </div>
+          <div class="btnRow">
+            <a class="btnLink btnRainbow" href="./departure.html">出発点呼へ</a>
           </div>
         </div>
 
-        <div class="help" style="margin-top:14px;">
+        <div class="menuItem">
+          <div class="row">
+            <div class="left">
+              <div class="icon">📦</div>
+              <div>
+                <div class="name">業務終了（帰着点呼）<span class="tag">業務終了</span></div>
+                <div class="desc">帰庫点呼＋日報（業務内容）＋写真（任意）</div>
+              </div>
+            </div>
+          </div>
+          <div class="btnRow">
+            <a class="btnLink btnRainbow" href="./arrival.html">帰着点呼 / 日報へ</a>
+          </div>
+        </div>
+
+        <div class="menuItem">
+          <div class="row">
+            <div class="left">
+              <div class="icon">📄</div>
+              <div>
+                <div class="name">日報 / 月報 / CSV<span class="tag">出力</span></div>
+                <div class="desc">日報PDF（詳細）/ 月報PDF（集計＋詳細）/ CSV出力（本人 or 管理者）</div>
+              </div>
+            </div>
+          </div>
+          <div class="btnRow">
+            <a class="btnLink btnDark" href="./export.html">出力ページへ</a>
+          </div>
+        </div>
+
+        <div class="note">
           ・送信するとGASがDriveとスプレッドシートへ保存します<br>
-          ・日報PDFは「入力内容そのまま」レポート形式で出力（印刷OK）<br>
-          ・月報PDFは日報の月間集計＋詳細行を出力（写真の有無だけでなく内容を出す想定）
+          ・日報PDFは「入力内容そのまま」詳細出力（印刷OK）<br>
+          ・月報PDFは月間集計＋詳細行を出力（写真の有無だけではなく内容も出す）
         </div>
       </div>
     </div>
+
   </div>
 
   <div class="toast" id="toast"></div>
@@ -67,7 +276,12 @@
   <!-- Google Identity Services -->
   <script src="https://accounts.google.com/gsi/client" async defer></script>
 
+  <!-- ✅ あなたの本物の Client ID をここに入れる（あなたが送ってくれたID） -->
+  <script>
+    window.OFA_GOOGLE_CLIENT_ID = "321435608721-vfrb8sgjnkqake7rgrscv8de798re2tl.apps.googleusercontent.com";
+  </script>
+
+  <!-- auth.js -->
   <script src="./auth.js"></script>
-  <script src="./app.js"></script>
 </body>
 </html>
