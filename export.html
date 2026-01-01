@@ -3,144 +3,89 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-  <title>OFA | 日報 / 月報 / CSV</title>
+  <title>OFA｜出力（日報/月報/CSV）</title>
   <link rel="stylesheet" href="./style.css" />
+  <script src="./config.js"></script>
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 <body data-page="export">
   <div class="wrap">
-    <div class="topbar">
+    <div class="header">
       <div class="brand">
-        <div class="logoMark"></div>
+        <div class="badge">OFA</div>
         <div>
-          <div class="h1">日報 / 月報 / 月次CSV</div>
-          <div class="sub">日報PDF（詳細） / 月報PDF（詳細） / CSV（月・範囲） / 履歴一覧</div>
+          <h1>出力（日報PDF／月報PDF／CSV）</h1>
+          <p>日報は詳細、月報は月間集計＋詳細行を出力</p>
         </div>
       </div>
-      <button class="btnBack" id="backBtn">戻る</button>
     </div>
 
-    <div class="rainbowLine"></div>
-
-    <div id="loginBox"></div>
-    <div id="loginInfo"></div>
-
-    <div class="card" style="margin-top:14px;">
-      <div class="cardHead">
-        <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;">
-          <div>
-            <div style="font-weight:1000;">出力</div>
-            <div class="sub">通常：本人のみ / 管理者：管理者キーで全データ検索・出力</div>
-          </div>
-          <div class="badge">権限：<span id="roleBadge">-</span></div>
-        </div>
+    <div class="grid">
+      <div class="card col6">
+        <div class="top"><div class="ttl">ログイン</div><div class="pill">本人のみ</div></div>
+        <div class="body"><div id="loginBox"></div></div>
       </div>
 
-      <div class="cardBody">
-        <div class="grid grid2">
-          <div>
-            <label>日付（日報PDF用）</label>
-            <input id="dateDaily" type="date" />
+      <div class="card col6">
+        <div class="top"><div class="ttl">出力</div><div class="pill">Drive保存</div></div>
+        <div class="body">
+          <div class="row">
+            <div>
+              <label>日付（日報PDF）</label>
+              <input id="dateDaily" type="date" />
+            </div>
+            <div>
+              <label>月（YYYY-MM：月報/CSV/履歴）</label>
+              <input id="month" type="month" />
+            </div>
           </div>
-          <div>
-            <label>月（YYYY-MM / 月報・月CSV・履歴用）</label>
-            <input id="month" type="month" />
+
+          <div class="row">
+            <button class="btn grad" id="btnDailyPdf" type="button">日報PDF（詳細）を作成</button>
           </div>
-        </div>
-
-        <label>運転者名（任意：入れるとその人だけ）</label>
-        <input id="name" type="text" placeholder="未入力なら全員（※通常は本人のみ。管理者キーで全員OK）" />
-
-        <div class="actions">
-          <button class="btn rainbow" id="btnDailyPdf">日報PDFを作成</button>
-          <button class="btn primary" id="btnMonthlyPdf">月報PDFを作成</button>
-          <button class="btn dark" id="btnMonthlyCsv">月次CSVを作成</button>
-        </div>
-
-        <div class="help">
-          ① 日報PDF：業務終了後の入力内容がそのままレポートに表示（印刷OK）<br>
-          ② 月報PDF：日報の月間集計＋詳細行（写真有無ではなく中身を出す）<br>
-          ③ CSV：月 / 範囲で出力（管理者は検索・全件出力）
-        </div>
-
-        <div class="hr"></div>
-
-        <div style="font-weight:1000;">CSV（日付範囲）</div>
-        <div class="grid grid2">
-          <div>
-            <label>開始日（from）</label>
-            <input id="fromDate" type="date" />
+          <div class="row">
+            <button class="btn" id="btnMonthlyPdf" type="button">月報PDF（詳細）を作成</button>
+            <button class="btn" id="btnMonthlyCsv" type="button">月次CSVを作成</button>
           </div>
-          <div>
-            <label>終了日（to）</label>
-            <input id="toDate" type="date" />
+
+          <div class="hr"></div>
+          <div class="pill">CSV（日付範囲）</div>
+          <div class="row">
+            <div><label>開始日</label><input id="fromDate" type="date"></div>
+            <div><label>終了日</label><input id="toDate" type="date"></div>
           </div>
-        </div>
-        <div class="actions">
-          <button class="btn ghost" id="btnCsvRange">範囲CSVを作成</button>
-        </div>
+          <button class="btn dark" id="btnCsvRange" type="button">範囲CSVを作成</button>
 
-        <div class="hr"></div>
-
-        <div style="font-weight:1000;">日報PDF 履歴（一覧）</div>
-        <div class="grid grid2">
-          <div>
-            <label>履歴対象月（YYYY-MM）</label>
-            <input id="historyMonth" type="month" />
+          <div class="hr"></div>
+          <div class="pill">日報PDF 履歴（対象月）</div>
+          <div class="row">
+            <div><label>履歴対象月</label><input id="historyMonth" type="month"></div>
+            <div style="display:flex;align-items:flex-end;">
+              <button class="btn small grad" id="btnLoadHistory" type="button" style="width:100%;">履歴を読み込む</button>
+            </div>
           </div>
-          <div style="display:flex;align-items:flex-end;gap:10px;">
-            <button class="btn small ghost" id="btnLoadHistory" style="width:100%;">履歴を読み込む</button>
+
+          <div class="card" id="historyBox" style="display:none; box-shadow:none; border-color:var(--line);">
+            <div class="top">
+              <div class="ttl">履歴</div><div class="pill" id="historyCount">0件</div>
+            </div>
+            <div class="body" id="historyList"></div>
           </div>
-        </div>
 
-        <div class="historyBox" id="historyBox" style="display:none;">
-          <div class="historyHead">
-            <div>記録がある日付を表示（タップで日報PDFを作成）</div>
-            <div id="historyCount">0件</div>
+          <div class="card" id="resultBox" style="display:none; box-shadow:none; border-color:var(--line);"></div>
+
+          <div class="note" style="margin-top:12px;">
+            GAS: <span id="gasUrlView"></span>
           </div>
-          <div class="historyList" id="historyList"></div>
+
+          <div style="height:10px"></div>
+          <button class="btn" type="button" onclick="location.href='index.html'">戻る</button>
         </div>
-
-        <div class="resultBox" id="resultBox" style="display:none;"></div>
-
-        <div class="resultBox" style="margin-top:10px;">
-          GAS: <span id="gasUrlView"></span>
-        </div>
-
-        <div class="hr"></div>
-
-        <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;">
-          <div class="badge">🔑 管理者キー：<span style="font-weight:1000;">設定できます</span></div>
-          <button class="btn small dark" id="btnAdminKey">管理者キー入力</button>
-        </div>
-
-        <!-- adminKey保持（hidden） -->
-        <input id="adminKeyHold" type="hidden" value="" />
-      </div>
-    </div>
-  </div>
-
-  <!-- 管理者モーダル -->
-  <div class="modalBg" id="adminModalBg">
-    <div class="modal">
-      <div class="modalHead">管理者キー</div>
-      <div class="modalBody">
-        <label>管理者キー（空欄でクリア）</label>
-        <input id="adminKey" type="password" placeholder="管理者キーを入力" />
-        <div class="help" style="margin-top:10px;">
-          管理者キーが設定されている場合、<br>
-          「全員」や「検索」を許可する仕様にできます（GAS側で判定）。
-        </div>
-      </div>
-      <div class="modalActions">
-        <button class="btn small" id="btnAdminCancel">キャンセル</button>
-        <button class="btn small rainbow" id="btnAdminOk">OK</button>
       </div>
     </div>
   </div>
 
   <div class="toast" id="toast"></div>
-
-  <script src="https://accounts.google.com/gsi/client" async defer></script>
   <script src="./auth.js"></script>
   <script src="./app.js"></script>
 </body>
