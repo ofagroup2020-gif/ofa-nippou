@@ -1,184 +1,173 @@
 /****************************************************
- * OFA 点呼アプリ（フロント）
- * - departure.html / arrival.html：送信（POST）
- * - export.html：日報PDF / 月報PDF / CSV / 履歴（GET）
+ * OFA 点呼アプリ
+ * - departure/arrival: doPost
+ * - export/admin: doGet
  ****************************************************/
 
-const GAS_WEBAPP_URL = window.OFA_GAS_URL;
+// ★あなたのGAS URL（auth.jsと合わせる）
+const GAS_WEBAPP_URL =
+  "https://script.google.com/macros/s/AKfycbxa7fmk0rDDNmZ2p2GTEmE8g6yVaVJxy97J2vpw_NUuYr8lR3QbDNg6EDifoSoSFrKq9Q/exec";
+
+const APP_KEY = "OFA_TENKO_V2";
 
 const $ = (id)=>document.getElementById(id);
 
 function toast(msg, ok=true){
-  window.OFA_AUTH?.toast ? window.OFA_AUTH.toast(msg, ok) : alert(msg);
+  const t = $("toast");
+  if(!t){ alert(msg); return; }
+  t.textContent = msg;
+  t.classList.toggle("bad", !ok);
+  t.classList.add("show");
+  setTimeout(()=>t.classList.remove("show"), 1800);
 }
 
-function toYMD(dateObj = new Date()){
-  const y = dateObj.getFullYear();
-  const m = String(dateObj.getMonth()+1).padStart(2,"0");
-  const d = String(dateObj.getDate()).padStart(2,"0");
-  return `${y}-${m}-${d}`;
+function ymd(d=new Date()){
+  const y=d.getFullYear();
+  const m=String(d.getMonth()+1).padStart(2,"0");
+  const dd=String(d.getDate()).padStart(2,"0");
+  return `${y}-${m}-${dd}`;
 }
-function toHM(dateObj = new Date()){
-  const h = String(dateObj.getHours()).padStart(2,"0");
-  const m = String(dateObj.getMinutes()).padStart(2,"0");
+function hm(d=new Date()){
+  const h=String(d.getHours()).padStart(2,"0");
+  const m=String(d.getMinutes()).padStart(2,"0");
   return `${h}:${m}`;
 }
-function safeStr(v){ return (v===undefined||v===null) ? "" : String(v).trim(); }
-function numOrBlank(v){
-  const s = safeStr(v);
+
+function safe(v){ return (v==null) ? "" : String(v).trim(); }
+function num(v){
+  const s=safe(v);
   if(!s) return "";
-  const n = Number(s);
+  const n=Number(s);
   return Number.isFinite(n) ? n : "";
 }
 
-function normalizeYMD(input){
-  return String(input||"").trim().replace(/\//g,"-");
-}
-
-// ✅ 画像圧縮（任意）
 async function fileToCompressedDataURL(file, maxW=1280, quality=0.75){
   if(!file) return null;
   if(!file.type || !file.type.startsWith("image/")) return null;
 
-  const { im, url } = await new Promise((resolve, reject)=>{
-    const u = URL.createObjectURL(file);
-    const img = new Image();
-    img.onload = ()=>resolve({ im:img, url:u });
-    img.onerror = reject;
-    img.src = u;
+  const {im,url} = await new Promise((resolve,reject)=>{
+    const u=URL.createObjectURL(file);
+    const im=new Image();
+    im.onload=()=>resolve({im,url:u});
+    im.onerror=reject;
+    im.src=u;
   });
 
-  const w = im.naturalWidth || im.width;
-  const h = im.naturalHeight || im.height;
-  const scale = Math.min(1, maxW / w);
-  const cw = Math.round(w*scale);
-  const ch = Math.round(h*scale);
+  const w=im.naturalWidth||im.width;
+  const h=im.naturalHeight||im.height;
+  const scale=Math.min(1, maxW/w);
+  const cw=Math.round(w*scale);
+  const ch=Math.round(h*scale);
 
-  const canvas = document.createElement("canvas");
-  canvas.width = cw; canvas.height = ch;
-  const ctx = canvas.getContext("2d");
-  ctx.drawImage(im, 0,0,cw,ch);
-
+  const canvas=document.createElement("canvas");
+  canvas.width=cw; canvas.height=ch;
+  const ctx=canvas.getContext("2d");
+  ctx.drawImage(im,0,0,cw,ch);
   URL.revokeObjectURL(url);
   return canvas.toDataURL("image/jpeg", quality);
 }
 
-async function collectFilesAsDataURLs(inputId){
-  const el = $(inputId);
+async function collectDataURLs(inputId){
+  const el=$(inputId);
   if(!el || !el.files || !el.files.length) return [];
-  const files = Array.from(el.files);
-  const out = [];
-  for(const f of files){
+  const arr=[];
+  for(const f of Array.from(el.files)){
     const du = await fileToCompressedDataURL(f, 1280, 0.75);
-    if(du) out.push(du);
+    if(du) arr.push(du);
   }
-  return out;
+  return arr;
 }
 
-function must(v, name){
-  if(!v) throw new Error(`未入力: ${name}`);
-}
-
-function requireLoginOrBlock(){
-  if(!window.OFA_AUTH?.isLoggedIn?.()){
-    toast("ログインしてください", false);
-    return false;
-  }
-  return true;
-}
-
-/** ===== 点検項目 ===== */
 function collectInspection(){
-  const keys = [
+  const keys=[
     "insp_tire","insp_light","insp_brake","insp_wiper",
-    "insp_engineOil","insp_coolant","insp_damage","insp_cargo"
+    "insp_engineOil","insp_coolant","insp_damage","insp_cargo",
   ];
-  const obj = {};
-  keys.forEach((id)=>{
-    const el = $(id);
-    if(el) obj[id] = safeStr(el.value);
-  });
-  const note = $("insp_note");
-  if(note) obj.note = safeStr(note.value);
-  return obj;
+  const o={};
+  for(const k of keys){
+    const el=$(k);
+    if(el) o[k]=safe(el.value);
+  }
+  o.note = safe($("insp_note")?.value);
+  return o;
 }
 
-/** ===== 出発/帰着送信 ===== */
+function getIdToken(){
+  return localStorage.getItem("ofa_id_token") || "";
+}
+
 async function submitTenko(mode){
   try{
-    if(!requireLoginOrBlock()) return;
+    const id_token = getIdToken();
+    if(!id_token) throw new Error("ログインが必要です");
 
-    const date = normalizeYMD(safeStr($("date")?.value));
-    const time = safeStr($("time")?.value);
+    const date = safe($("date")?.value) || ymd();
+    const time = safe($("time")?.value) || hm();
 
-    const driverName = safeStr($("driverName")?.value);
-    const vehicleNo  = safeStr($("vehicleNo")?.value);
-    const managerName= safeStr($("managerName")?.value);
-    const method     = safeStr($("method")?.value);
-    const place      = safeStr($("place")?.value);
-    const alcoholValue = safeStr($("alcoholValue")?.value);
-    const alcoholBand  = safeStr($("alcoholBand")?.value);
-    const memo = safeStr($("memo")?.value);
+    // ドライバー本人情報（ログイン情報優先）
+    const me = (()=>{
+      try{ return JSON.parse(localStorage.getItem("ofa_me")||"null"); }catch(e){ return null; }
+    })();
 
-    const odoStart = numOrBlank($("odoStart")?.value);
-    const odoEnd   = numOrBlank($("odoEnd")?.value);
-    let odoTotal = "";
-    if(odoStart!=="" && odoEnd!=="") odoTotal = Math.max(0, Number(odoEnd)-Number(odoStart));
+    const driverName = safe($("driverName")?.value) || safe(me?.driverName) || safe(me?.name);
+    const phone      = safe($("phone")?.value)      || safe(me?.phone);
+    const vehicleNo  = safe($("vehicleNo")?.value)  || safe(me?.vehicleNo);
+    const plate      = safe($("plate")?.value)      || safe(me?.plate);
 
-    const licenseNo = safeStr($("licenseNo")?.value);
+    const managerName = safe($("managerName")?.value);
+    const method      = safe($("method")?.value);
+    const place       = safe($("place")?.value);
+    const alcoholValue= safe($("alcoholValue")?.value);
+    const alcoholBand = safe($("alcoholBand")?.value);
+    const memo        = safe($("memo")?.value);
 
-    // 日報（帰着のみ）
-    const workType = safeStr($("workType")?.value);
-    const workArea = safeStr($("workArea")?.value);
-    const workHours= safeStr($("workHours")?.value);
-    const deliveryCount = safeStr($("deliveryCount")?.value);
-    const trouble = safeStr($("trouble")?.value);
-    const dailyNote = safeStr($("dailyNote")?.value);
+    const odoStart=num($("odoStart")?.value);
+    const odoEnd  =num($("odoEnd")?.value);
+    const odoTotal = (odoStart!=="" && odoEnd!=="") ? Math.max(0, Number(odoEnd)-Number(odoStart)) : "";
 
-    // 必須
-    must(date,"日付");
-    must(time,"時刻");
-    must(driverName,"運転者氏名");
-    must(vehicleNo,"車両番号");
+    // 帰着（日報）
+    const workType     = safe($("workType")?.value);
+    const workArea     = safe($("workArea")?.value);
+    const workHours    = safe($("workHours")?.value);
+    const deliveryCount= safe($("deliveryCount")?.value);
+    const trouble      = safe($("trouble")?.value);
+    const dailyNote    = safe($("dailyNote")?.value);
+
+    // 最低限必須
+    const must=(v,name)=>{ if(!v) throw new Error(`未入力: ${name}`); };
+    must(date,"日付"); must(time,"時刻");
+    must(driverName,"運転者名");
+    must(vehicleNo,"車番");
     must(managerName,"点呼実施者");
     must(method,"点呼方法");
-    must(alcoholValue,"アルコール測定値");
+    must(alcoholValue,"アルコール値");
     must(alcoholBand,"酒気帯び");
 
     const inspection = collectInspection();
+    const tenkoPhotos   = await collectDataURLs("tenkoPhotos");
+    const reportPhotos  = await collectDataURLs("reportPhotos");
+    const licensePhotos = await collectDataURLs("licensePhotos");
 
-    // 写真（任意）
-    const photos = await collectFilesAsDataURLs("tenkoPhotos");
-    const reportPhotos = await collectFilesAsDataURLs("reportPhotos");
-    const licensePhotos = await collectFilesAsDataURLs("licensePhotos");
-
-    const id_token = localStorage.getItem("ofa_id_token");
+    $("btnSubmit") && ($("btnSubmit").disabled=true);
+    toast("送信中...", true);
 
     const payload = {
-      action: "saveTenko",
-      mode, // departure / arrival
+      app: APP_KEY,
       id_token,
-      data: {
-        date, time,
-        driverName, vehicleNo,
-        managerName, method, place,
-        alcoholValue, alcoholBand,
+      mode, // departure / arrival
+      data:{
+        date,time,
+        driverName,phone,vehicleNo,plate,
+        managerName,method,place,
+        alcoholValue,alcoholBand,
         memo,
-        odoStart, odoEnd, odoTotal,
-        licenseNo,
+        odoStart,odoEnd,odoTotal,
         inspection,
-
         // arrival(日報)
-        workType, workArea, workHours,
-        deliveryCount, trouble, dailyNote
+        workType,workArea,workHours,deliveryCount,trouble,dailyNote,
       },
-      photos,
-      reportPhotos,
-      licensePhotos
+      tenkoPhotos, reportPhotos, licensePhotos
     };
-
-    $("btnSubmit") && ($("btnSubmit").disabled = true);
-    toast("送信中…", true);
 
     const res = await fetch(GAS_WEBAPP_URL, {
       method:"POST",
@@ -187,301 +176,232 @@ async function submitTenko(mode){
     });
 
     const json = await res.json().catch(()=>null);
-    if(!json || !json.ok){
-      throw new Error(json?.message || "送信失敗");
-    }
+    if(!json || !json.ok) throw new Error(json?.message || "送信失敗");
 
     toast("送信OK（保存完了）", true);
-    setTimeout(()=>{ location.href="index.html"; }, 500);
-  }catch(err){
-    console.error(err);
-    toast(err.message || String(err), false);
-    $("btnSubmit") && ($("btnSubmit").disabled = false);
+    setTimeout(()=>location.href="./index.html", 400);
+
+  }catch(e){
+    toast(e.message||String(e), false);
+    $("btnSubmit") && ($("btnSubmit").disabled=false);
   }
 }
 
-/** ===== export 呼び出し ===== */
-function buildUrl(action, params){
-  const u = new URL(GAS_WEBAPP_URL);
+function buildUrl(action, params={}){
+  const u=new URL(GAS_WEBAPP_URL);
   u.searchParams.set("action", action);
-  Object.entries(params||{}).forEach(([k,v])=>{
-    if(v!==undefined && v!==null && String(v).trim()!==""){
-      u.searchParams.set(k, String(v).trim());
-    }
-  });
+  // tokenはGETにも付ける（本人制御）
+  const id_token = getIdToken();
+  if(id_token) u.searchParams.set("id_token", id_token);
+
+  for(const [k,v] of Object.entries(params)){
+    if(v==null) continue;
+    const s=String(v).trim();
+    if(!s) continue;
+    u.searchParams.set(k,s);
+  }
   return u.toString();
 }
 
-async function callGet(action, params){
-  const url = buildUrl(action, params);
+async function callApi(action, params={}){
+  const url=buildUrl(action, params);
   try{
-    const res = await fetch(url, { method:"GET", cache:"no-store" });
-    const json = await res.json();
-    return { ok:true, json, url };
+    const res=await fetch(url,{cache:"no-store"});
+    const json=await res.json();
+    return {ok:true,json,url};
   }catch(err){
-    return { ok:false, err, url };
+    return {ok:false,err,url};
   }
 }
 
-function setResult(url, label){
-  const box = $("resultBox");
+function setResult(url,label){
+  const box=$("resultBox");
   if(!box) return;
-  box.style.display = "block";
+  box.style.display="block";
   box.innerHTML = `
-    <div class="resultTitle">${label}</div>
-    <div>リンク：<a href="${url}" target="_blank" rel="noopener">${url}</a></div>
-    <div class="resultActions">
-      <button class="btn small rainbow" onclick="window.open('${url}','_blank')">開く</button>
-      <button class="btn small" onclick="navigator.clipboard.writeText('${url}');toast('コピーしました');">コピー</button>
+    <div style="font-weight:1000;margin-bottom:6px">${label}</div>
+    <div class="small" style="word-break:break-all;margin-bottom:10px;">
+      <a href="${url}" target="_blank" rel="noopener">${url}</a>
+    </div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap">
+      <button class="btn dark" type="button" onclick="window.open('${url}','_blank')">開く</button>
+      <button class="btn" type="button" onclick="navigator.clipboard.writeText('${url}');">コピー</button>
     </div>
   `;
 }
 
-async function createDailyPdf(date, name, adminKey){
-  if(!requireLoginOrBlock()) return;
-  if(!date){ toast("日付を入れてください", false); return; }
-
-  toast("日報PDFを作成中…", true);
-  const id_token = localStorage.getItem("ofa_id_token");
-  const r = await callGet("dailyPdf", { date, name, adminKey, id_token });
-
+async function createDailyPdf(date){
+  toast("日報PDF作成中...", true);
+  const r=await callApi("dailyPdf",{date});
   if(r.ok && r.json?.ok && r.json?.url){
     toast("作成しました", true);
-    setResult(r.json.url, `日報PDF（${date}${name? " / "+name:""}）`);
-    window.open(r.json.url, "_blank");
+    setResult(r.json.url, `日報PDF（${date}）`);
+    window.open(r.json.url,"_blank");
     return;
   }
-  toast("取得に失敗。別タブで確認します", false);
-  window.open(r.url, "_blank");
+  toast("失敗。別タブで確認します", false);
+  window.open(r.url,"_blank");
 }
 
-async function createMonthlyPdf(month, name, adminKey){
-  if(!requireLoginOrBlock()) return;
-  if(!month){ toast("月（YYYY-MM）を入れてください", false); return; }
-
-  toast("月報PDFを作成中…", true);
-  const id_token = localStorage.getItem("ofa_id_token");
-  const r = await callGet("monthlyPdf", { month, name, adminKey, id_token });
-
+async function createMonthlyPdf(month){
+  toast("月報PDF作成中...", true);
+  const r=await callApi("monthlyPdf",{month});
   if(r.ok && r.json?.ok && r.json?.url){
     toast("作成しました", true);
-    setResult(r.json.url, `月報PDF（${month}${name? " / "+name:""}）`);
-    window.open(r.json.url, "_blank");
+    setResult(r.json.url, `月報PDF（${month}）`);
+    window.open(r.json.url,"_blank");
     return;
   }
-  toast("取得に失敗。別タブで確認します", false);
-  window.open(r.url, "_blank");
+  toast("失敗。別タブで確認します", false);
+  window.open(r.url,"_blank");
 }
 
-async function createMonthlyCsv(month, name, adminKey){
-  if(!requireLoginOrBlock()) return;
-  if(!month){ toast("月（YYYY-MM）を入れてください", false); return; }
-
-  toast("月次CSVを作成中…", true);
-  const id_token = localStorage.getItem("ofa_id_token");
-  const r = await callGet("monthlyCsv", { month, name, adminKey, id_token });
-
+async function createMonthlyCsv(month){
+  toast("月次CSV作成中...", true);
+  const r=await callApi("monthlyCsv",{month});
   if(r.ok && r.json?.ok && r.json?.url){
     toast("作成しました", true);
-    setResult(r.json.url, `月次CSV（${month}${name? " / "+name:""}）`);
-    window.open(r.json.url, "_blank");
+    setResult(r.json.url, `月次CSV（${month}）`);
+    window.open(r.json.url,"_blank");
     return;
   }
-  toast("取得に失敗。別タブで確認します", false);
-  window.open(r.url, "_blank");
+  toast("失敗。別タブで確認します", false);
+  window.open(r.url,"_blank");
 }
 
-async function createCsvRange(from, to, name, adminKey){
-  if(!requireLoginOrBlock()) return;
-  if(!from || !to){ toast("開始日・終了日を入れてください", false); return; }
-  if(from > to){ toast("開始日が終了日より後です", false); return; }
-
-  toast("範囲CSVを作成中…", true);
-  const id_token = localStorage.getItem("ofa_id_token");
-  const r = await callGet("csvRange", { from, to, name, adminKey, id_token });
-
+async function createCsvRange(from,to){
+  if(!from||!to){ toast("開始日・終了日を入れてください", false); return; }
+  if(from>to){ toast("開始日が終了日より後です", false); return; }
+  toast("範囲CSV作成中...", true);
+  const r=await callApi("csvRange",{from,to});
   if(r.ok && r.json?.ok && r.json?.url){
     toast("作成しました", true);
-    setResult(r.json.url, `範囲CSV（${from}〜${to}${name? " / "+name:""}）`);
-    window.open(r.json.url, "_blank");
+    setResult(r.json.url, `範囲CSV（${from}〜${to}）`);
+    window.open(r.json.url,"_blank");
     return;
   }
-  toast("取得に失敗。別タブで確認します", false);
-  window.open(r.url, "_blank");
+  toast("失敗。別タブで確認します", false);
+  window.open(r.url,"_blank");
 }
 
-async function loadHistory(month, name, adminKey){
-  if(!requireLoginOrBlock()) return;
-  if(!month){ toast("履歴の月（YYYY-MM）を入れてください", false); return; }
-
-  toast("履歴を取得中…", true);
-  const id_token = localStorage.getItem("ofa_id_token");
-  const r = await callGet("historyDays", { month, name, adminKey, id_token });
-
+async function loadHistory(month){
+  toast("履歴取得中...", true);
+  const r=await callApi("historyDays",{month});
   if(r.ok && r.json?.ok && Array.isArray(r.json.days)){
-    const days = r.json.days;
-
-    $("historyBox").style.display = "block";
+    const days=r.json.days;
+    $("historyBox").style.display="block";
     $("historyCount").textContent = `${days.length}件`;
-
-    const list = $("historyList");
-    list.innerHTML = "";
-
-    if(days.length === 0){
-      list.innerHTML = `<div style="color:rgba(17,24,39,.65);font-size:12px;padding:6px 2px;">データなし</div>`;
+    const list=$("historyList");
+    list.innerHTML="";
+    if(days.length===0){
+      list.innerHTML=`<div class="small">データなし</div>`;
     }else{
       days.slice().reverse().forEach(d=>{
-        const div = document.createElement("div");
-        div.className = "item";
-        div.innerHTML = `
-          <div>
-            <div class="d">${d}</div>
-            <div class="meta">${name ? ("運転者: "+escapeHtml(name)) : "全員"} / 日報PDF</div>
-          </div>
-          <div class="right">
-            <button class="btn small rainbow">日報PDF</button>
-            <button class="btn small">リンク</button>
-          </div>
-        `;
-        const btnPdf = div.querySelectorAll("button")[0];
-        const btnLink= div.querySelectorAll("button")[1];
-
-        btnPdf.addEventListener("click", ()=>createDailyPdf(d, name, adminKey));
-        btnLink.addEventListener("click", ()=>{
-          const u = buildUrl("dailyPdf", { date:d, name, adminKey, id_token });
-          navigator.clipboard.writeText(u);
-          toast("APIリンクをコピーしました", true);
-        });
-
+        const div=document.createElement("div");
+        div.className="help";
+        div.style.cursor="pointer";
+        div.innerHTML=`<b>${d}</b><div class="small">タップで日報PDF作成</div>`;
+        div.addEventListener("click",()=>createDailyPdf(d));
         list.appendChild(div);
       });
     }
-
     toast("履歴を表示しました", true);
     return;
   }
-
-  toast("取得に失敗。別タブで確認します", false);
-  window.open(r.url, "_blank");
+  toast("失敗。別タブで確認します", false);
+  window.open(r.url,"_blank");
 }
 
-function escapeHtml(s){
-  return String(s??"")
-    .replace(/&/g,"&amp;")
-    .replace(/</g,"&lt;")
-    .replace(/>/g,"&gt;")
-    .replace(/"/g,"&quot;")
-    .replace(/'/g,"&#39;");
+/** admin search */
+async function adminSearch(q){
+  toast("検索中...", true);
+  const r=await callApi("adminSearch",{q});
+  if(r.ok && r.json?.ok){
+    const out=$("adminOut");
+    const rows=r.json.rows||[];
+    out.innerHTML=`<div class="small">結果：${rows.length}件</div><div class="hr"></div>`;
+    rows.forEach(row=>{
+      const box=document.createElement("div");
+      box.className="help";
+      box.innerHTML=`
+        <b>${row.date} ${row.time}（${row.mode}）</b>
+        <div class="small">${row.driverName} / ${row.email} / ${row.vehicleNo} / ${row.plate}</div>
+        <div class="small">点呼実施者：${row.managerName} / アルコール：${row.alcoholValue} / 酒気：${row.alcoholBand}</div>
+        <div style="margin-top:8px;display:flex;gap:10px;flex-wrap:wrap">
+          <button class="btn dark" type="button">日報PDF</button>
+        </div>
+      `;
+      box.querySelector("button").addEventListener("click",()=>{
+        const url=buildUrl("dailyPdf",{date:row.date, email:row.email});
+        window.open(url,"_blank");
+      });
+      out.appendChild(box);
+    });
+    toast("完了", true);
+    return;
+  }
+  toast("失敗", false);
+  window.open(r.url,"_blank");
 }
 
-/** ===== 管理者モーダル ===== */
-function openAdminModal(){
-  $("adminModalBg").style.display = "flex";
-  $("adminKey").value = "";
-  $("adminKey").focus();
-}
-function closeAdminModal(){
-  $("adminModalBg").style.display = "none";
-}
-function getAdminKey(){
-  return safeStr($("adminKeyHold")?.value);
-}
-function setAdminKey(v){
-  const el = $("adminKeyHold");
-  if(el) el.value = v || "";
-}
+/** ページ初期化 */
+window.addEventListener("DOMContentLoaded", async ()=>{
+  const page=document.body?.dataset?.page || "";
 
-function initAdminUi(){
-  const role = window.OFA_AUTH?.getRole?.() || "driver";
-  $("roleBadge").textContent = (role==="admin" ? "管理者" : "ドライバー");
+  // ログイン必須ページはauth.jsのrequireLoginを呼ぶ
+  if(page !== "index"){
+    if(typeof requireLogin === "function") await requireLogin();
+  }
 
-  $("btnAdminKey")?.addEventListener("click", ()=>{
-    openAdminModal();
-  });
-  $("btnAdminCancel")?.addEventListener("click", closeAdminModal);
-  $("adminModalBg")?.addEventListener("click", (e)=>{
-    if(e.target?.id==="adminModalBg") closeAdminModal();
-  });
-  $("btnAdminOk")?.addEventListener("click", ()=>{
-    const k = safeStr($("adminKey").value);
-    setAdminKey(k);
-    closeAdminModal();
-    toast(k ? "管理者キーをセットしました" : "管理者キーをクリアしました", true);
-  });
-}
+  if($("gasUrlView")) $("gasUrlView").textContent = GAS_WEBAPP_URL;
 
-/** ===== ページ別 init ===== */
-function initIndex(){
-  $("goDeparture")?.addEventListener("click", ()=>location.href="departure.html");
-  $("goArrival")?.addEventListener("click", ()=>location.href="arrival.html");
-  $("goExport")?.addEventListener("click", ()=>location.href="export.html");
-}
+  if(page==="departure" || page==="arrival"){
+    $("date").value = $("date").value || ymd();
+    $("time").value = $("time").value || hm();
 
-function initTenkoCommon(){
-  if($("date") && !$("date").value) $("date").value = toYMD();
-  if($("time") && !$("time").value) $("time").value = toHM();
-
-  const calc = ()=>{
-    const s = numOrBlank($("odoStart")?.value);
-    const e = numOrBlank($("odoEnd")?.value);
-    if($("odoTotal")){
+    const calc=()=>{
+      const s=num($("odoStart")?.value);
+      const e=num($("odoEnd")?.value);
       if(s!=="" && e!=="") $("odoTotal").value = Math.max(0, Number(e)-Number(s));
-      else $("odoTotal").value = "";
-    }
-  };
-  $("odoStart")?.addEventListener("input", calc);
-  $("odoEnd")?.addEventListener("input", calc);
+    };
+    $("odoStart")?.addEventListener("input", calc);
+    $("odoEnd")?.addEventListener("input", calc);
 
-  $("backBtn")?.addEventListener("click", ()=>history.length>1 ? history.back() : location.href="index.html");
-}
+    $("btnSubmit")?.addEventListener("click", ()=>{
+      submitTenko(page==="departure" ? "departure" : "arrival");
+    });
+  }
 
-function initDeparture(){
-  initTenkoCommon();
-  $("btnSubmit")?.addEventListener("click", ()=>submitTenko("departure"));
-}
+  if(page==="export"){
+    $("dateDaily").value = $("dateDaily").value || ymd();
+    const d=new Date(); $("month").value = $("month").value || `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}`;
+    $("historyMonth").value = $("historyMonth").value || $("month").value;
 
-function initArrival(){
-  initTenkoCommon();
-  $("btnSubmit")?.addEventListener("click", ()=>submitTenko("arrival"));
-}
+    $("btnDailyPdf")?.addEventListener("click", ()=>createDailyPdf($("dateDaily").value));
+    $("btnMonthlyPdf")?.addEventListener("click", ()=>createMonthlyPdf($("month").value));
+    $("btnMonthlyCsv")?.addEventListener("click", ()=>createMonthlyCsv($("month").value));
+    $("btnCsvRange")?.addEventListener("click", ()=>createCsvRange($("fromDate").value, $("toDate").value));
+    $("btnLoadHistory")?.addEventListener("click", ()=>loadHistory($("historyMonth").value));
+  }
 
-function initExport(){
-  // init values
-  const d = new Date();
-  const month = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}`;
+  if(page==="admin"){
+    $("btnAdmin")?.addEventListener("click", async ()=>{
+      const pass=safe($("adminPass").value);
+      if(!pass){ toast("管理者パスを入力", false); return; }
+      localStorage.setItem("ofa_admin_pass", pass);
+      toast("管理者モード確認中...", true);
+      const r=await callApi("adminUnlock",{pass});
+      if(r.ok && r.json?.ok){
+        toast("管理者モードOK", true);
+        $("adminBox").style.display="block";
+      }else{
+        toast("パスが違います", false);
+      }
+    });
 
-  $("dateDaily").value = toYMD();
-  $("month").value = month;
-  $("historyMonth").value = month;
-
-  $("gasUrlView").textContent = GAS_WEBAPP_URL;
-
-  // actions
-  $("backBtn")?.addEventListener("click", ()=>history.length>1 ? history.back() : location.href="index.html");
-
-  $("btnDailyPdf")?.addEventListener("click", ()=>{
-    createDailyPdf($("dateDaily").value, $("name").value, getAdminKey());
-  });
-  $("btnMonthlyPdf")?.addEventListener("click", ()=>{
-    createMonthlyPdf($("month").value, $("name").value, getAdminKey());
-  });
-  $("btnMonthlyCsv")?.addEventListener("click", ()=>{
-    createMonthlyCsv($("month").value, $("name").value, getAdminKey());
-  });
-  $("btnCsvRange")?.addEventListener("click", ()=>{
-    createCsvRange($("fromDate").value, $("toDate").value, $("name").value, getAdminKey());
-  });
-  $("btnLoadHistory")?.addEventListener("click", ()=>{
-    loadHistory($("historyMonth").value, $("name").value, getAdminKey());
-  });
-
-  initAdminUi();
-}
-
-window.addEventListener("DOMContentLoaded", ()=>{
-  const page = document.body?.dataset?.page || "";
-  if(page==="index") initIndex();
-  if(page==="departure") initDeparture();
-  if(page==="arrival") initArrival();
-  if(page==="export") initExport();
+    $("btnSearch")?.addEventListener("click", ()=>{
+      const q=safe($("q").value);
+      adminSearch(q);
+    });
+  }
 });
