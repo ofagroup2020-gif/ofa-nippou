@@ -7,7 +7,7 @@
   <link rel="stylesheet" href="./style.css" />
 </head>
 
-<body data-page="index">
+<body>
   <div class="wrap">
     <header class="card head">
       <div class="logo"></div>
@@ -28,34 +28,23 @@
     </section>
 
     <section class="card">
-      <h2>Googleでログイン</h2>
+      <h2>メニュー</h2>
       <p class="note">
-        ※自動ログインできる場合は次回からスムーズに入れます。<br>
+        ※ログイン必須にする場合は各ページでGoogleログインを通してから送信します。<br>
         ※ログインできない場合は「Authorized JavaScript origins」にGitHub PagesのURLが必要です。
       </p>
 
-      <!-- ✅ JSが死んでも必ず遷移する（ここが重要） -->
-      <div class="btnGrid">
+      <!-- ✅ ここが崩れ防止：必ず縦積み -->
+      <div class="btnCol">
         <a class="btn grad" href="./departure.html">✅ 業務開始（出発点呼）</a>
         <a class="btn grad" href="./arrival.html">✅ 業務終了（帰着点呼 / 日報）</a>
-        <a class="btn light" href="./export.html">📄 日報PDF / 月報 / CSV</a>
+        <a class="btn dark" href="./export.html">📄 日報PDF / 月報 / CSV（出力）</a>
       </div>
-    </section>
-
-    <section class="card">
-      <h2>管理者パスワード（管理者は全データ出力・検索可）</h2>
-      <input id="adminPass" type="password" placeholder="管理者パスワード" />
-      <div class="btnGrid">
-        <button id="btnAdminOn" class="btn gold" type="button">管理者モードON</button>
-        <button id="btnAdminOff" class="btn gray" type="button">管理者モードOFF</button>
-      </div>
-      <p class="note">※管理者は誰でもなれます（パス入力でON）</p>
     </section>
 
     <div id="toast" class="toast" style="display:none;"></div>
   </div>
 
-  <!-- ✅ defer必須：これが無いとiPhoneで「反応しない」が起きやすい -->
-  <script src="./app.js" defer></script>
+  <!-- JSはトップでは不要（リンクで動く） -->
 </body>
 </html>
