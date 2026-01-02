@@ -39,3 +39,22 @@ h2{margin:0 0 10px;font-size:16px;}
 
 /* 変な被さり対策 */
 .card, .btnCol, .btn{position:relative;z-index:1;}
+.inp{
+  width:100%;
+  padding:14px 14px;
+  border-radius:14px;
+  border:1px solid rgba(0,0,0,.12);
+  font-size:16px;
+  outline:none;
+}
+.inp:focus{ border-color: rgba(0,0,0,.35); }
+
+.toast{
+  position:fixed; left:16px; right:16px; bottom:18px;
+  padding:12px 14px; border-radius:14px;
+  box-shadow:0 10px 30px rgba(0,0,0,.18);
+  font-weight:800;
+  z-index:9999;
+}
+.toast.ok{ background:#eafff0; color:#0b5; border:1px solid rgba(0,0,0,.08); }
+.toast.ng{ background:#ffecec; color:#d11; border:1px solid rgba(0,0,0,.08); }
