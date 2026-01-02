@@ -92,3 +92,14 @@
   <script src="./app.js"></script>
 </body>
 </html>
+<script>
+  // ログイン済みならメニュー表示
+  (function(){
+    const token = localStorage.getItem("ofa_id_token");
+    const email = localStorage.getItem("ofa_email");
+    const ok = !!token && !!email;
+
+    document.getElementById("menuArea").style.display = ok ? "block" : "none";
+    document.getElementById("needLogin").style.display = ok ? "none" : "block";
+  })();
+</script>
