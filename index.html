@@ -1,105 +1,47 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-  <title>OFA｜点呼ポータル</title>
-  <link rel="stylesheet" href="./style.css" />
-  <script src="./config.js"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>OFA 点呼ポータル</title>
 
-  <!-- Google Identity Services -->
-  <script src="https://accounts.google.com/gsi/client" async defer></script>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<script>
+  window.OFA_GOOGLE_CLIENT_ID =
+  "321435608721-vfrb8sgjnkqake7rgrscv8de798re2tl.apps.googleusercontent.com";
+</script>
+
+<style>
+body{font-family:-apple-system,BlinkMacSystemFont;background:#f5f6fa;margin:0}
+.card{background:#fff;margin:16px;border-radius:16px;padding:16px}
+.btn{display:block;margin:12px 0;padding:16px;border-radius:14px;
+background:linear-gradient(90deg,#ff5,#5f5,#5ff,#a5f);
+text-align:center;font-weight:900;text-decoration:none;color:#111}
+.hidden{display:none}
+</style>
 </head>
-<body data-page="index">
-  <div class="wrap">
-    <div class="header">
-      <div class="brand">
-        <div class="badge">OFA</div>
-        <div>
-          <h1>OFA｜点呼ポータル</h1>
-          <p>出発点呼（業務開始）／帰着点呼（業務終了）／日報・月報・CSV（詳細出力）</p>
-        </div>
-      </div>
-    </div>
 
-    <div class="grid">
-      <div class="card col6">
-        <div class="top">
-          <div class="ttl">Googleログイン</div>
-          <div class="pill">本人のみ出力</div>
-        </div>
-        <div class="body">
-          <div id="loginBox"></div>
-        </div>
-      </div>
+<body>
 
-      <div class="card col6" id="menuBox" style="display:none;">
-        <div class="top">
-          <div class="ttl">メニュー</div>
-          <div class="pill">ログイン後に利用</div>
-        </div>
-        <div class="body">
-          <div class="menuBtn" id="goDeparture">
-            <div class="left">
-              <div class="icon">🚚</div>
-              <div class="meta">
-                <div class="t">出発点呼（業務開始）</div>
-                <div class="s">点呼・車両点検・アルコール・写真</div>
-              </div>
-            </div>
-            <div class="pill">入力へ</div>
-          </div>
+<div class="card">
+<h2>OFA｜点呼ポータル</h2>
+<p>出発点呼 / 帰着点呼 / 日報</p>
+</div>
 
-          <div style="height:10px"></div>
+<div class="card" id="loginArea">
+<h3>Googleログイン</h3>
+<div id="g_id_onload"
+ data-client_id=""
+ data-callback="onGoogleLogin">
+</div>
+<div class="g_id_signin" data-type="standard"></div>
+</div>
 
-          <div class="menuBtn" id="goArrival">
-            <div class="left">
-              <div class="icon">📦</div>
-              <div class="meta">
-                <div class="t">帰着点呼（業務終了）＋日報</div>
-                <div class="s">業務内容（詳細）＋写真</div>
-              </div>
-            </div>
-            <div class="pill">入力へ</div>
-          </div>
+<div class="card hidden" id="menu">
+<a class="btn" href="departure.html">🚚 出発点呼</a>
+<a class="btn" href="arrival.html">📦 帰着点呼</a>
+</div>
 
-          <div style="height:10px"></div>
-
-          <div class="menuBtn" id="goExport">
-            <div class="left">
-              <div class="icon">📄</div>
-              <div class="meta">
-                <div class="t">日報／月報／CSV（出力）</div>
-                <div class="s">日報PDF（詳細）／月報PDF（詳細）／CSV</div>
-              </div>
-            </div>
-            <div class="pill">出力へ</div>
-          </div>
-
-          <div class="hr"></div>
-          <div class="note">
-            ・送信するとGASが Drive と スプレッドシートへ保存します<br>
-            ・日報PDFは「入力内容そのまま」をレポート形式で出力（LINE/メール転送用）<br>
-            ・月報PDFは「日報の月間集計＋詳細行」を出力（写真有無だけではなく内容も出す）
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <div class="toast" id="toast"></div>
-  <script src="./auth.js"></script>
-  <script src="./app.js"></script>
+<script src="auth.js"></script>
 </body>
 </html>
-<script>
-  // ログイン済みならメニュー表示
-  (function(){
-    const token = localStorage.getItem("ofa_id_token");
-    const email = localStorage.getItem("ofa_email");
-    const ok = !!token && !!email;
-
-    document.getElementById("menuArea").style.display = ok ? "block" : "none";
-    document.getElementById("needLogin").style.display = ok ? "none" : "block";
-  })();
-</script>
