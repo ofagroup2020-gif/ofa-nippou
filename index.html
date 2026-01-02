@@ -2,68 +2,60 @@
 <html lang="ja">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-  <title>OFA 点呼システム | ログイン</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>OFA 点呼システム</title>
   <link rel="stylesheet" href="./style.css" />
 </head>
+
 <body data-page="index">
   <div class="wrap">
-    <div class="topbar">
-      <div class="brand">
-        <div class="logo"></div>
-        <div>
-          <div class="title">OFA 点呼システム</div>
-          <div class="subtitle">業務開始（出発点呼）/ 業務終了（帰着点呼）/ 日報・月報・CSV</div>
-        </div>
+    <header class="card head">
+      <div class="logo"></div>
+      <div>
+        <h1>OFA 点呼システム</h1>
+        <p class="sub">業務開始（出発点呼）/ 業務終了（帰着点呼）/ 日報・月報・CSV</p>
       </div>
-    </div>
+    </header>
 
-    <div class="card rainbow-border">
-      <div class="notice">
-        <b>🚚 点呼の重要ルール（必読）</b><br>
-        ・点呼は <b>業務開始前（出発）</b> と <b>業務終了後（帰着）</b> の2回<br>
-        ・アルコール測定は <b>必須</b>（数値と酒気帯び判定を入力）<br>
-        ・点検（タイヤ/灯火/ブレーキ等）も <b>必須</b>（異常時はメモに詳細）<br>
-        ・帰着点呼の「日報内容」は <b>そのままPDF提出</b> されるため、丁寧に記載<br>
+    <section class="card rule">
+      <h2>🚚 点呼の重要ルール（必読）</h2>
+      <ul>
+        <li>点呼は <b>業務開始前（出発）</b> と <b>業務終了後（帰着）</b> の2回</li>
+        <li>アルコール測定は必須（数値＋酒気帯び判定）</li>
+        <li>点検（タイヤ/灯火/ブレーキ等）も必須（異常時はメモに詳細）</li>
+        <li>帰着点呼の「日報内容」はPDF提出されるため丁寧に記載</li>
+      </ul>
+    </section>
+
+    <section class="card">
+      <h2>Googleでログイン</h2>
+      <p class="note">
+        ※自動ログインできる場合は次回からスムーズに入れます。<br>
+        ※ログインできない場合は「Authorized JavaScript origins」にGitHub PagesのURLが必要です。
+      </p>
+
+      <!-- ✅ JSが死んでも必ず遷移する（ここが重要） -->
+      <div class="btnGrid">
+        <a class="btn grad" href="./departure.html">✅ 業務開始（出発点呼）</a>
+        <a class="btn grad" href="./arrival.html">✅ 業務終了（帰着点呼 / 日報）</a>
+        <a class="btn light" href="./export.html">📄 日報PDF / 月報 / CSV</a>
       </div>
+    </section>
 
-      <hr class="sep">
-
-      <div id="loginState"></div>
-      <div style="margin-top:12px">
-        <div style="font-weight:950;margin-bottom:8px;">Googleでログイン</div>
-        <div id="googleBtn"></div>
-        <small class="hint">
-          ※自動ログインできる場合は、次回からスムーズに入れます。<br>
-          ※ログインできない時は「Authorized JavaScript origins」に GitHub Pages のURLが必要です。
-        </small>
+    <section class="card">
+      <h2>管理者パスワード（管理者は全データ出力・検索可）</h2>
+      <input id="adminPass" type="password" placeholder="管理者パスワード" />
+      <div class="btnGrid">
+        <button id="btnAdminOn" class="btn gold" type="button">管理者モードON</button>
+        <button id="btnAdminOff" class="btn gray" type="button">管理者モードOFF</button>
       </div>
+      <p class="note">※管理者は誰でもなれます（パス入力でON）</p>
+    </section>
 
-      <div class="btnrow" style="margin-top:14px">
-        <button class="btn rainbow" id="goDeparture" disabled>✅ 業務開始（出発点呼）</button>
-        <button class="btn rainbow" id="goArrival" disabled>✅ 業務終了（帰着点呼 / 日報）</button>
-        <button class="btn primary" id="goExport" disabled>📄 日報PDF / 月報 / CSV</button>
-        <button class="btn danger" id="logoutBtn" style="display:none;">ログアウト</button>
-      </div>
-
-      <hr class="sep">
-
-      <div id="adminState"></div>
-      <div class="grid grid2" style="margin-top:12px;">
-        <div>
-          <label>管理者パスワード（管理者は全データ出力・検索可）</label>
-          <input id="adminPass" type="password" placeholder="ofa-2026" />
-          <small class="hint">※管理者は誰でもなれます（パス入力でON）</small>
-        </div>
-        <div style="display:flex;align-items:flex-end;gap:10px;flex-wrap:wrap;">
-          <button class="btn primary" id="adminLoginBtn" style="width:100%;">管理者モードON</button>
-          <button class="btn ghost" id="adminLogoutBtn" style="width:100%;">管理者モードOFF</button>
-        </div>
-      </div>
-    </div>
+    <div id="toast" class="toast" style="display:none;"></div>
   </div>
 
-  <div class="toast" id="toast"></div>
-  <script src="./app.js"></script>
+  <!-- ✅ defer必須：これが無いとiPhoneで「反応しない」が起きやすい -->
+  <script src="./app.js" defer></script>
 </body>
 </html>
