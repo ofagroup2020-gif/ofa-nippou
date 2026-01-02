@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>OFA 管理設定</title>
+  <link rel="stylesheet" href="./style.css" />
+</head>
+<body>
+  <div class="wrap">
+    <header class="card head">
+      <div class="logo"></div>
+      <div>
+        <h1>管理設定</h1>
+        <p class="sub">管理者パスワード（管理者モード）を変更できます</p>
+      </div>
+    </header>
+
+    <section class="card">
+      <h2>① 現在の管理者パスワード</h2>
+      <input id="currentPass" class="inp" type="password" placeholder="現在のパスワード（例：ofa-2026）" />
+      <div style="height:10px"></div>
+
+      <h2>② 新しい管理者パスワード</h2>
+      <input id="newPass" class="inp" type="password" placeholder="新しいパスワード" />
+      <div style="height:10px"></div>
+
+      <h2>③ 新しいパスワード（確認）</h2>
+      <input id="newPass2" class="inp" type="password" placeholder="新しいパスワード（確認）" />
+      <div style="height:14px"></div>
+
+      <button class="btn grad" id="btnChange">管理者パスワードを変更</button>
+      <div style="height:10px"></div>
+      <a class="btn dark" href="./index.html">トップへ戻る</a>
+
+      <p class="note" style="margin-top:12px;">
+        ※変更後は、管理者モードONに使うパスワードが新しいものになります。<br/>
+        ※安全のため「現在パスが一致したときだけ」変更できます。
+      </p>
+    </section>
+
+    <div id="toast" class="toast" style="display:none;"></div>
+  </div>
+
+  <script>
+    // あなたのGAS WebApp URL（exec）
+    window.OFA_GAS_URL = "https://script.google.com/macros/s/AKfycby36HAYkaJwC3K6-8LogpFZ56iplXwvrp38IskarnrLZrHguoCzeOGLSB-S3Kcjo_Uf_w/exec";
+  </script>
+  <script src="./admin.js"></script>
+</body>
+</html>
