@@ -1,47 +1,69 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="ja">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>OFA 点呼ポータル</title>
-
-<script src="https://accounts.google.com/gsi/client" async defer></script>
-<script>
-  window.OFA_GOOGLE_CLIENT_ID =
-  "321435608721-vfrb8sgjnkqake7rgrscv8de798re2tl.apps.googleusercontent.com";
-</script>
-
-<style>
-body{font-family:-apple-system,BlinkMacSystemFont;background:#f5f6fa;margin:0}
-.card{background:#fff;margin:16px;border-radius:16px;padding:16px}
-.btn{display:block;margin:12px 0;padding:16px;border-radius:14px;
-background:linear-gradient(90deg,#ff5,#5f5,#5ff,#a5f);
-text-align:center;font-weight:900;text-decoration:none;color:#111}
-.hidden{display:none}
-</style>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <title>OFA 点呼システム | ログイン</title>
+  <link rel="stylesheet" href="./style.css" />
 </head>
+<body data-page="index">
+  <div class="wrap">
+    <div class="topbar">
+      <div class="brand">
+        <div class="logo"></div>
+        <div>
+          <div class="title">OFA 点呼システム</div>
+          <div class="subtitle">業務開始（出発点呼）/ 業務終了（帰着点呼）/ 日報・月報・CSV</div>
+        </div>
+      </div>
+    </div>
 
-<body>
+    <div class="card rainbow-border">
+      <div class="notice">
+        <b>🚚 点呼の重要ルール（必読）</b><br>
+        ・点呼は <b>業務開始前（出発）</b> と <b>業務終了後（帰着）</b> の2回<br>
+        ・アルコール測定は <b>必須</b>（数値と酒気帯び判定を入力）<br>
+        ・点検（タイヤ/灯火/ブレーキ等）も <b>必須</b>（異常時はメモに詳細）<br>
+        ・帰着点呼の「日報内容」は <b>そのままPDF提出</b> されるため、丁寧に記載<br>
+      </div>
 
-<div class="card">
-<h2>OFA｜点呼ポータル</h2>
-<p>出発点呼 / 帰着点呼 / 日報</p>
-</div>
+      <hr class="sep">
 
-<div class="card" id="loginArea">
-<h3>Googleログイン</h3>
-<div id="g_id_onload"
- data-client_id=""
- data-callback="onGoogleLogin">
-</div>
-<div class="g_id_signin" data-type="standard"></div>
-</div>
+      <div id="loginState"></div>
+      <div style="margin-top:12px">
+        <div style="font-weight:950;margin-bottom:8px;">Googleでログイン</div>
+        <div id="googleBtn"></div>
+        <small class="hint">
+          ※自動ログインできる場合は、次回からスムーズに入れます。<br>
+          ※ログインできない時は「Authorized JavaScript origins」に GitHub Pages のURLが必要です。
+        </small>
+      </div>
 
-<div class="card hidden" id="menu">
-<a class="btn" href="departure.html">🚚 出発点呼</a>
-<a class="btn" href="arrival.html">📦 帰着点呼</a>
-</div>
+      <div class="btnrow" style="margin-top:14px">
+        <button class="btn rainbow" id="goDeparture" disabled>✅ 業務開始（出発点呼）</button>
+        <button class="btn rainbow" id="goArrival" disabled>✅ 業務終了（帰着点呼 / 日報）</button>
+        <button class="btn primary" id="goExport" disabled>📄 日報PDF / 月報 / CSV</button>
+        <button class="btn danger" id="logoutBtn" style="display:none;">ログアウト</button>
+      </div>
 
-<script src="auth.js"></script>
+      <hr class="sep">
+
+      <div id="adminState"></div>
+      <div class="grid grid2" style="margin-top:12px;">
+        <div>
+          <label>管理者パスワード（管理者は全データ出力・検索可）</label>
+          <input id="adminPass" type="password" placeholder="ofa-2026" />
+          <small class="hint">※管理者は誰でもなれます（パス入力でON）</small>
+        </div>
+        <div style="display:flex;align-items:flex-end;gap:10px;flex-wrap:wrap;">
+          <button class="btn primary" id="adminLoginBtn" style="width:100%;">管理者モードON</button>
+          <button class="btn ghost" id="adminLogoutBtn" style="width:100%;">管理者モードOFF</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+  <script src="./app.js"></script>
 </body>
 </html>
