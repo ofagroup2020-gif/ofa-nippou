@@ -234,3 +234,7 @@ hr.sep{
 .toast.show{opacity:1}
 .toast.danger{background: rgba(255,59,59,.92)}
 a{color:#2e6bff}
+/* iPhoneで「タップできない」時の最終対策 */
+* { -webkit-tap-highlight-color: transparent; }
+a, button, input { pointer-events: auto !important; }
+.wrap, .card { position: relative; z-index: 1; }
