@@ -2,90 +2,48 @@
 <html lang="ja">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>OFA 点呼システム</title>
-  <link rel="stylesheet" href="./style.css" />
-  <!-- Google Identity Services（使う場合のみ） -->
+
+  <!-- Google Identity Services -->
   <script src="https://accounts.google.com/gsi/client" async defer></script>
+
+  <link rel="stylesheet" href="./style.css" />
 </head>
+<body>
+<div class="wrap">
 
-<body data-page="index">
-  <div class="wrap">
-    <header class="card head">
-      <div class="logo"></div>
-      <div>
-        <h1>OFA 点呼システム</h1>
-        <p class="sub">業務開始（出発）/ 業務終了（帰着・日報）/ PDF・月報・CSV</p>
-      </div>
-    </header>
+  <header class="card">
+    <h1>OFA 点呼システム</h1>
+    <p>業務開始 / 業務終了 / 日報・PDF・CSV</p>
+  </header>
 
-    <section class="card rule">
-      <h2>🚚 点呼の重要ルール（必読）</h2>
-      <ul>
-        <li>点呼は <b>業務開始前（出発）</b> と <b>業務終了後（帰着）</b> の2回</li>
-        <li>アルコール測定は必須（数値＋酒気帯び判定）</li>
-        <li>車両点検も必須（異常時はメモ＋写真推奨）</li>
-        <li>帰着点呼の「日報内容」はPDF提出されるため丁寧に記載</li>
-      </ul>
-    </section>
+  <section class="card">
+    <h2>Googleログイン</h2>
 
-    <section class="card">
-      <div class="row">
-        <h2 style="margin:0;">ログイン</h2>
-        <span id="badgeLogin" class="badge">未ログイン</span>
-      </div>
+    <!-- Google Login Button -->
+    <div
+      id="g_id_onload"
+      data-client_id="321435608721-vfrb8sgjnkqake7rgrscv8de798re2tl.apps.googleusercontent.com"
+      data-callback="onGoogleLogin"
+      data-auto_prompt="false">
+    </div>
 
-      <div id="loginBox" class="loginbox">
-        <div class="note">
-          ※Googleログインが使えない端末があるため、業務を止めないように「ゲスト入力」も使えます。<br>
-          ※管理者モードは <b>出力ページのみ</b> でパスワード入力します（トップに表示しません）。
-        </div>
+    <div class="g_id_signin"
+      data-type="standard"
+      data-size="large"
+      data-theme="outline"
+      data-text="signin_with"
+      data-shape="rectangular">
+    </div>
 
-        <!-- Googleログイン（Client IDが正しく設定されている時だけ表示） -->
-        <div id="gLoginWrap" style="display:none;">
-          <div class="label">Googleログイン（推奨）</div>
-          <div id="gBtn"></div>
-          <div class="hint">※表示されない/エラーになる場合は下の「ゲスト入力」を使ってください。</div>
-        </div>
+    <p class="hint">
+      ※ Googleアカウントがあれば誰でも利用できます  
+    </p>
+  </section>
 
-        <!-- ゲスト入力（誰でも確実に入れる） -->
-        <div class="sepLine"></div>
-        <div class="label">ゲスト入力（誰でもOK）</div>
-        <div class="grid grid2">
-          <div>
-            <label>運転者氏名（本名） <span class="req">*</span></label>
-            <input id="guestName" type="text" placeholder="例：森下 洸" />
-          </div>
-          <div>
-            <label>電話番号（任意）</label>
-            <input id="guestPhone" type="tel" placeholder="例：080..." />
-          </div>
-        </div>
-        <button class="btn primary" id="btnGuestStart">ゲストで開始</button>
+</div>
 
-        <div class="sepLine"></div>
-
-        <div id="userInfo" class="userInfo" style="display:none;"></div>
-        <button class="btn ghost" id="btnLogout" style="display:none;">ログアウト</button>
-      </div>
-    </section>
-
-    <section class="card">
-      <h2>メニュー</h2>
-      <div class="btnCol">
-        <a class="btn grad" href="./departure.html">✅ 業務開始（出発点呼）</a>
-        <a class="btn grad" href="./arrival.html">✅ 業務終了（帰着点呼 / 日報）</a>
-        <a class="btn dark" href="./export.html">📄 日報PDF / 月報 / CSV（出力）</a>
-      </div>
-      <div class="hint" style="margin-top:10px;">
-        ※未ログインでも使えます（ゲスト入力）。Googleログインできる場合は自動で本人情報が入ります。
-      </div>
-    </section>
-  </div>
-
-  <div id="toast" class="toast" style="display:none;"></div>
-
-  <script src="./auth.js"></script>
-  <script src="./app.js"></script>
+<script src="./auth.js"></script>
 </body>
 </html>
