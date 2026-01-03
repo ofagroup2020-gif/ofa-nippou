@@ -5,7 +5,10 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
   <title>OFA | 帰着点呼（業務終了）/ 日報</title>
   <link rel="stylesheet" href="./style.css" />
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+  <script src="./auth.js" defer></script>
 </head>
+
 <body data-page="arrival">
   <div class="wrap">
     <div class="topbar">
@@ -13,60 +16,69 @@
         <div class="logo"></div>
         <div>
           <div class="title">業務終了（帰着点呼 / 日報）</div>
-          <div class="subtitle">帰着点呼＋日報内容は「そのままPDF提出」されます</div>
+          <div class="subtitle">日報内容はPDF提出されます（丁寧に）</div>
         </div>
       </div>
       <button class="btn ghost" id="backBtn" type="button">戻る</button>
     </div>
 
-    <!-- Google login -->
-    <div class="card" id="loginCard">
-      <h2>Googleでログイン</h2>
-      <div id="gBtn"></div>
-      <p class="note mini">※ログイン後、送信ボタンが有効になります</p>
-    </div>
+    <div class="card rainbow-border">
+      <div class="rowBetween">
+        <div id="loginState" class="small muted">未ログイン</div>
+        <div class="pill" id="pagePill">帰着</div>
+      </div>
 
-    <div class="card rainbow-border" id="formCard" style="display:none;">
-      <div id="loginState" class="loginState"></div>
+      <div class="notice">
+        <b>※運転者氏名は “本名” を入力</b>
+      </div>
+
+      <div id="loginBox" class="loginBox">
+        <div id="g_id_onload"
+             data-client_id="__CLIENT_ID__"
+             data-callback="onGoogleLogin"
+             data-auto_prompt="false"></div>
+        <div class="g_id_signin" data-type="standard" data-size="large"></div>
+      </div>
+
       <hr class="sep">
 
       <div class="grid grid2">
         <div>
-          <label>日付 <span class="req">必須</span></label>
-          <input id="date" type="date" data-req="1" />
+          <label>日付<span class="req">*</span></label>
+          <input id="date" type="date" data-required="1" />
         </div>
         <div>
-          <label>時刻 <span class="req">必須</span></label>
-          <input id="time" type="time" data-req="1" />
+          <label>時刻<span class="req">*</span></label>
+          <input id="time" type="time" data-required="1" />
         </div>
       </div>
 
       <div class="grid grid2">
         <div>
-          <label>運転者氏名（本名） <span class="req">必須</span></label>
-          <input id="driverName" type="text" placeholder="例：森下 洸" data-req="1" />
+          <label>運転者氏名（本名）<span class="req">*</span></label>
+          <input id="driverName" type="text" placeholder="例：森下洸" data-required="1" />
         </div>
         <div>
           <label>電話番号（任意：検索用）</label>
-          <input id="driverPhone" type="tel" placeholder="090..." />
+          <input id="driverPhone" type="tel" placeholder="080..." />
         </div>
       </div>
 
       <div class="grid grid2">
         <div>
-          <label>車両番号 / ナンバー <span class="req">必須</span></label>
-          <input id="vehicleNo" type="text" placeholder="例：鹿児島 480 あ 12-34" data-req="1" />
+          <label>車両番号 / ナンバー<span class="req">*</span></label>
+          <input id="vehicleNo" type="text" placeholder="例：鹿児島 480 れ 21-15" data-required="1" />
         </div>
         <div>
-          <label>点呼実施者 <span class="req">必須</span></label>
-          <input id="managerName" type="text" placeholder="例：太田" data-req="1" />
+          <label>点呼実施者<span class="req">*</span></label>
+          <input id="managerName" type="text" placeholder="例：太田" data-required="1" />
         </div>
       </div>
 
       <div class="grid grid2">
         <div>
-          <label>点呼方法 <span class="req">必須</span></label>
-          <select id="method" data-req="1">
+          <label>点呼方法<span class="req">*</span></label>
+          <select id="method" data-required="1">
             <option value="">選択</option>
             <option>対面</option>
             <option>電話</option>
@@ -75,19 +87,19 @@
           </select>
         </div>
         <div>
-          <label>点呼場所 <span class="req">必須</span></label>
-          <input id="place" type="text" placeholder="例：Amazon鹿児島" data-req="1" />
+          <label>点呼場所<span class="req">*</span></label>
+          <input id="place" type="text" placeholder="例：Amazon鹿児島" data-required="1" />
         </div>
       </div>
 
       <div class="grid grid2">
         <div>
-          <label>アルコール測定値 <span class="req">必須</span></label>
-          <input id="alcoholValue" type="text" placeholder="例：0.00 / 0.02" data-req="1" />
+          <label>アルコール測定値<span class="req">*</span></label>
+          <input id="alcoholValue" type="text" placeholder="例：0 / 0.00 / 0.02" data-required="1" />
         </div>
         <div>
-          <label>酒気帯び <span class="req">必須</span></label>
-          <select id="alcoholBand" data-req="1">
+          <label>酒気帯び<span class="req">*</span></label>
+          <select id="alcoholBand" data-required="1">
             <option value="">選択</option>
             <option>なし</option>
             <option>あり</option>
@@ -97,73 +109,73 @@
 
       <div class="grid grid2">
         <div>
-          <label>睡眠時間（時間） <span class="req">必須</span></label>
-          <input id="sleepHours" type="number" step="0.5" min="0" placeholder="例：6.5" data-req="1" />
+          <label>睡眠時間（h）<span class="req">*</span></label>
+          <input id="sleepHours" type="number" inputmode="decimal" step="0.5" min="0" placeholder="例：6" data-required="1" />
         </div>
         <div>
-          <label>体調 / 睡眠メモ（任意）</label>
-          <input id="sleepNote" type="text" placeholder="例：眠気あり、頭痛なし 等" />
+          <label>体調<span class="req">*</span></label>
+          <select id="condition" data-required="1">
+            <option value="">選択</option>
+            <option>良好</option>
+            <option>やや不調</option>
+            <option>不調</option>
+          </select>
         </div>
       </div>
 
       <label>メモ（異常時は必ず詳細）</label>
-      <textarea id="memo" placeholder="体調・睡眠・指示事項など"></textarea>
+      <textarea id="memo" placeholder="体調・睡眠・指示事項・改善点など"></textarea>
 
       <hr class="sep">
 
-      <div class="title minorTitle">走行距離（業務終了）</div>
+      <div class="titleSm">走行距離（業務終了）</div>
       <div class="grid grid3">
         <div>
-          <label>開始メーター（出発の値でもOK） <span class="req">必須</span></label>
-          <input id="odoStart" inputmode="numeric" placeholder="例：12345" data-req="1" />
+          <label>開始メーター（出発の値でもOK）<span class="req">*</span></label>
+          <input id="odoStart" inputmode="numeric" placeholder="例：12345" data-required="1" />
         </div>
         <div>
-          <label>終了メーター（帰着） <span class="req">必須</span></label>
-          <input id="odoEnd" inputmode="numeric" placeholder="例：12500" data-req="1" />
+          <label>終了メーター（帰着）<span class="req">*</span></label>
+          <input id="odoEnd" inputmode="numeric" placeholder="例：12500" data-required="1" />
         </div>
         <div>
-          <label>走行距離（自動計算）</label>
+          <label>走行距離（自動）</label>
           <input id="odoTotal" readonly placeholder="自動計算" />
         </div>
       </div>
 
       <hr class="sep">
 
-      <div class="title minorTitle">車両点検（必須）</div>
-      <p class="note mini">※どれか1つでもNGの場合、<b>異常箇所写真</b>が必須になります。</p>
-
+      <div class="titleSm">車両点検（必須）</div>
       <div class="grid grid3">
-        <div><label>タイヤ <span class="req">必須</span></label><select id="insp_tire" data-req="1"><option value="">選択</option><option>OK</option><option>NG</option></select></div>
-        <div><label>灯火 <span class="req">必須</span></label><select id="insp_light" data-req="1"><option value="">選択</option><option>OK</option><option>NG</option></select></div>
-        <div><label>ブレーキ <span class="req">必須</span></label><select id="insp_brake" data-req="1"><option value="">選択</option><option>OK</option><option>NG</option></select></div>
+        <div><label>タイヤ<span class="req">*</span></label><select id="insp_tire" data-required="1"><option value="">選択</option><option>OK</option><option>NG</option></select></div>
+        <div><label>灯火<span class="req">*</span></label><select id="insp_light" data-required="1"><option value="">選択</option><option>OK</option><option>NG</option></select></div>
+        <div><label>ブレーキ<span class="req">*</span></label><select id="insp_brake" data-required="1"><option value="">選択</option><option>OK</option><option>NG</option></select></div>
 
-        <div><label>ワイパー <span class="req">必須</span></label><select id="insp_wiper" data-req="1"><option value="">選択</option><option>OK</option><option>NG</option></select></div>
-        <div><label>エンジンオイル <span class="req">必須</span></label><select id="insp_engineOil" data-req="1"><option value="">選択</option><option>OK</option><option>NG</option></select></div>
-        <div><label>冷却水 <span class="req">必須</span></label><select id="insp_coolant" data-req="1"><option value="">選択</option><option>OK</option><option>NG</option></select></div>
+        <div><label>ワイパー<span class="req">*</span></label><select id="insp_wiper" data-required="1"><option value="">選択</option><option>OK</option><option>NG</option></select></div>
+        <div><label>エンジンオイル<span class="req">*</span></label><select id="insp_engineOil" data-required="1"><option value="">選択</option><option>OK</option><option>NG</option></select></div>
+        <div><label>冷却水<span class="req">*</span></label><select id="insp_coolant" data-required="1"><option value="">選択</option><option>OK</option><option>NG</option></select></div>
 
-        <div><label>バッテリー <span class="req">必須</span></label><select id="insp_battery" data-req="1"><option value="">選択</option><option>OK</option><option>NG</option></select></div>
-        <div><label>ホーン <span class="req">必須</span></label><select id="insp_horn" data-req="1"><option value="">選択</option><option>OK</option><option>NG</option></select></div>
-        <div><label>ミラー <span class="req">必須</span></label><select id="insp_mirror" data-req="1"><option value="">選択</option><option>OK</option><option>NG</option></select></div>
+        <div><label>バッテリー<span class="req">*</span></label><select id="insp_battery" data-required="1"><option value="">選択</option><option>OK</option><option>NG</option></select></div>
+        <div><label>ホーン<span class="req">*</span></label><select id="insp_horn" data-required="1"><option value="">選択</option><option>OK</option><option>NG</option></select></div>
+        <div><label>ミラー<span class="req">*</span></label><select id="insp_mirror" data-required="1"><option value="">選択</option><option>OK</option><option>NG</option></select></div>
 
-        <div><label>外装/破損 <span class="req">必須</span></label><select id="insp_damage" data-req="1"><option value="">選択</option><option>OK</option><option>NG</option></select></div>
-        <div><label>積載状態 <span class="req">必須</span></label><select id="insp_cargo" data-req="1"><option value="">選択</option><option>OK</option><option>NG</option></select></div>
-        <div><label>消火器 <span class="req">必須</span></label><select id="insp_extinguisher" data-req="1"><option value="">選択</option><option>OK</option><option>NG</option></select></div>
+        <div><label>外装/破損<span class="req">*</span></label><select id="insp_damage" data-required="1"><option value="">選択</option><option>OK</option><option>NG</option></select></div>
+        <div><label>積載状態<span class="req">*</span></label><select id="insp_cargo" data-required="1"><option value="">選択</option><option>OK</option><option>NG</option></select></div>
+        <div><label>消火器<span class="req">*</span></label><select id="insp_extinguisher" data-required="1"><option value="">選択</option><option>OK</option><option>NG</option></select></div>
 
-        <div><label>三角停止板 <span class="req">必須</span></label><select id="insp_triangle" data-req="1"><option value="">選択</option><option>OK</option><option>NG</option></select></div>
+        <div><label>三角停止板<span class="req">*</span></label><select id="insp_triangle" data-required="1"><option value="">選択</option><option>OK</option><option>NG</option></select></div>
       </div>
 
-      <label>点検メモ（任意：NGなら詳細必須）</label>
+      <label>点検メモ（任意：NGは必ず詳細）</label>
       <textarea id="insp_note" placeholder="NGの場合は必ず詳細"></textarea>
 
-      <div id="inspPhotoBlock" class="softBlock" style="display:none;">
-        <label>異常箇所写真（NGがあるため必須） <span class="req">必須</span></label>
-        <input id="inspPhotos" type="file" accept="image/*" multiple />
-        <p class="note mini">※NG箇所が分かる写真を複数添付OK</p>
-      </div>
+      <label>異常箇所写真（任意：NG時は推奨）</label>
+      <input id="inspPhotos" type="file" accept="image/*" multiple />
 
       <hr class="sep">
 
-      <div class="title minorTitle">免許（番号 or 写真）</div>
+      <div class="titleSm">免許・点呼写真（任意）</div>
       <div class="grid grid2">
         <div>
           <label>免許番号（任意）</label>
@@ -180,49 +192,49 @@
 
       <hr class="sep">
 
-      <div class="title minorTitle">日報（詳細記載：PDF提出用）</div>
+      <div class="titleSm">日報（詳細記載：PDF提出用）</div>
       <div class="grid grid2">
         <div>
-          <label>業務内容 <span class="req">必須</span></label>
-          <input id="workType" type="text" placeholder="例：Amazon/チャーター/企業配" data-req="1" />
+          <label>業務内容<span class="req">*</span></label>
+          <input id="workType" type="text" placeholder="例：Amazon配送" data-required="1" />
         </div>
         <div>
-          <label>配送エリア <span class="req">必須</span></label>
-          <input id="workArea" type="text" placeholder="例：鹿児島市/姶良/福岡市東区" data-req="1" />
+          <label>配送エリア<span class="req">*</span></label>
+          <input id="workArea" type="text" placeholder="例：鹿児島市/姶良" data-required="1" />
         </div>
       </div>
 
       <div class="grid grid3">
         <div>
-          <label>稼働時間 <span class="req">必須</span></label>
-          <input id="workHours" type="text" placeholder="例：9:00-19:30" data-req="1" />
+          <label>稼働時間<span class="req">*</span></label>
+          <input id="workHours" type="text" placeholder="例：9:30-21:10" data-required="1" />
         </div>
         <div>
-          <label>配送個数 <span class="req">必須</span></label>
-          <input id="deliveryCount" type="number" min="0" placeholder="例：120" data-req="1" />
+          <label>配送個数<span class="req">*</span></label>
+          <input id="deliveryCount" type="number" inputmode="numeric" placeholder="例：179" data-required="1" />
         </div>
         <div>
-          <label>トラブル/事故 <span class="req">必須</span></label>
-          <input id="trouble" type="text" placeholder="なければ「なし」" data-req="1" />
+          <label>トラブル/事故<span class="req">*</span></label>
+          <input id="trouble" type="text" placeholder="なければ「なし」" data-required="1" />
         </div>
       </div>
 
-      <label>日報メモ（詳細に：今日の状況/改善/引継ぎ） <span class="req">必須</span></label>
-      <textarea id="dailyNote" placeholder="例：再配達○件、クレーム○件、置き配注意、明日の注意点、改善点など" data-req="1"></textarea>
+      <label>日報メモ（詳細に：今日の状況/改善/引継ぎ）<span class="req">*</span></label>
+      <textarea id="dailyNote" data-required="1" placeholder="例：再配達○件、クレーム○件、注意点、明日の引継ぎ…"></textarea>
 
       <label>日報添付写真（任意：荷姿/事故/証跡など）</label>
       <input id="reportPhotos" type="file" accept="image/*" multiple />
 
       <div class="btnrow">
-        <button class="btn rainbow" id="btnSubmit" type="button">送信（帰着点呼/日報）→ 保存してトップへ</button>
+        <button class="btn rainbow" id="btnSubmit" type="button">送信（帰着点呼 / 日報）</button>
       </div>
 
-      <small class="hint">※送信後、スプレッドシート保存＆Drive保存（PDF出力時にリンクが掲載されます）。</small>
+      <small class="hint">※送信後、保存完了したらトップへ戻ります。</small>
     </div>
+
+    <div id="toast" class="toast" style="display:none;"></div>
   </div>
 
-  <div class="toast" id="toast"></div>
-  <script src="./auth.js"></script>
-  <script src="./app.js"></script>
+  <script src="./app.js" defer></script>
 </body>
 </html>
