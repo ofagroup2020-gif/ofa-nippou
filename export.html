@@ -13,49 +13,61 @@
         <div class="logo"></div>
         <div>
           <div class="title">日報PDF / 月報PDF / CSV</div>
-          <div class="subtitle">ドライバー：本人のみ / 管理者：パスONで全件検索・出力</div>
+          <div class="subtitle">本人は自分のデータのみ / 管理者はパスで全件</div>
         </div>
       </div>
       <button class="btn ghost" id="backBtn" type="button">戻る</button>
     </div>
 
-    <div class="card rainbow-border">
+    <!-- Google login -->
+    <div class="card" id="loginCard">
+      <h2>Googleでログイン</h2>
+      <div id="gBtn"></div>
+    </div>
+
+    <div class="card rainbow-border" id="exportCard" style="display:none;">
       <div class="grid grid2">
-        <div id="loginState"></div>
-        <div id="adminState" class="right"></div>
+        <div id="loginState" class="loginState"></div>
+        <div id="adminState" class="adminBadge" style="text-align:right;"></div>
       </div>
 
       <hr class="sep">
 
-      <div class="grid grid2">
-        <div>
-          <label>管理者パスワード</label>
-          <input id="adminPass" type="password" placeholder="ofa-2026" />
-          <small class="hint">※管理者は誰でもなれます（パス入力でON）</small>
+      <div class="softBlock">
+        <div class="rowBetween">
+          <div><b>管理者モード（任意）</b></div>
+          <div class="mini">パス：<code>ofa-2026</code></div>
         </div>
-        <div class="grid2btn">
-          <button class="btn primary" id="adminLoginBtn" type="button">管理者モードON</button>
-          <button class="btn ghost" id="adminLogoutBtn" type="button">管理者モードOFF</button>
-        </div>
-      </div>
 
-      <div id="adminSearchBox" class="subbox" style="display:none;">
-        <div class="notice">
-          <b>🔎 管理者検索（全データ対象）</b><br>
-          名前/電話/車両番号で検索できます。空欄なら全件。
+        <div class="grid grid2" style="margin-top:10px;">
+          <div>
+            <label>管理者パスワード</label>
+            <input id="adminPass" type="password" placeholder="ofa-2026" />
+          </div>
+          <div class="grid grid2" style="gap:10px;">
+            <button class="btn primary" id="adminLoginBtn" type="button">管理者ON</button>
+            <button class="btn ghost" id="adminLogoutBtn" type="button">管理者OFF</button>
+          </div>
         </div>
-        <div class="grid grid3">
-          <div>
-            <label>名前</label>
-            <input id="qName" type="text" placeholder="例：中村" />
+
+        <div id="adminSearchBox" style="display:none;margin-top:10px;">
+          <div class="notice">
+            <b>🔎 管理者検索（全データ対象）</b><br>
+            名前/電話/車両番号で検索。空欄なら全件。
           </div>
-          <div>
-            <label>電話番号</label>
-            <input id="qPhone" type="text" placeholder="例：090" />
-          </div>
-          <div>
-            <label>車両番号/ナンバー</label>
-            <input id="qVehicle" type="text" placeholder="例：12-34" />
+          <div class="grid grid3" style="margin-top:10px;">
+            <div>
+              <label>名前</label>
+              <input id="qName" type="text" placeholder="例：中村" />
+            </div>
+            <div>
+              <label>電話番号</label>
+              <input id="qPhone" type="text" placeholder="例：090" />
+            </div>
+            <div>
+              <label>車両番号/ナンバー</label>
+              <input id="qVehicle" type="text" placeholder="例：12-34" />
+            </div>
           </div>
         </div>
       </div>
@@ -66,12 +78,10 @@
         <div>
           <label>日報（日付）</label>
           <input id="dateDaily" type="date" />
-          <small class="hint">履歴から選んで作成もOK（印刷・LINE共有OK）</small>
         </div>
         <div>
           <label>月報（月）</label>
           <input id="month" type="month" />
-          <small class="hint">月報は「日報内容」を月単位でまとめて詳細記載します</small>
         </div>
       </div>
 
@@ -83,7 +93,7 @@
 
       <hr class="sep">
 
-      <div class="title" style="font-size:14px;">CSV（日付範囲）</div>
+      <div class="title minorTitle">CSV（日付範囲）</div>
       <div class="grid grid2">
         <div>
           <label>開始日（from）</label>
@@ -100,29 +110,26 @@
 
       <hr class="sep">
 
-      <div class="title" style="font-size:14px;">日報PDF 履歴（一覧）</div>
+      <div class="title minorTitle">履歴（一覧）</div>
       <div class="grid grid2">
         <div>
           <label>履歴対象月（YYYY-MM）</label>
           <input id="historyMonth" type="month" />
         </div>
         <div style="display:flex;align-items:flex-end;">
-          <button class="btn ghost" id="btnLoadHistory" type="button" style="width:100%;">履歴を読み込む</button>
+          <button class="btn ghost" id="btnLoadHistory" style="width:100%;" type="button">履歴を読み込む</button>
         </div>
       </div>
 
       <div class="history" id="historyBox" style="display:none;">
         <div class="head">
-          <div>記録がある日付を表示（タップで日報PDF作成）</div>
+          <div>記録がある日付（タップで日報PDF）</div>
           <div id="historyCount">0件</div>
         </div>
         <div class="list" id="historyList"></div>
       </div>
 
       <div id="resultBox" style="display:none;margin-top:12px;" class="rulebox"></div>
-      <div class="rulebox" style="margin-top:10px;">
-        GAS: <span id="gasUrlView"></span>
-      </div>
     </div>
   </div>
 
