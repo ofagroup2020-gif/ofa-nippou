@@ -1,10 +1,11 @@
 /****************************************************
- * OFA 点呼システム app.js（完全動作版）
+ * OFA 点呼システム app.js（完全動作・送信停止潰し版）
  ****************************************************/
 
-const GAS_WEBAPP_URL =
-  "https://script.google.com/macros/s/AKfycbwvairPzgugAoB-51_9JcnAOKBxKF6hRDdj2hfwaGvq8KcczWFKDdBBia_mepTVEhoBGQ/exec";
+// ✅ あなたのGAS WebApp URLに置換
+const GAS_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbyBhHOjpzOlfOIVANlELi4sbJtT_DWd7ApCEX8f_chBXl4xfCtYo9nJE008vLwtKcqO_w/exec";
 
+// ✅ 管理者パス
 const ADMIN_PASS = "ofa-2026";
 
 function $(id){ return document.getElementById(id); }
@@ -15,14 +16,7 @@ function toast(msg, ok=false){
   el.textContent = msg;
   el.className = "toast " + (ok ? "ok":"ng");
   el.style.display = "block";
-  setTimeout(()=> el.style.display="none", 2200);
-}
-
-function setBusy(btn, busy){
-  if(!btn) return;
-  btn.disabled = !!busy;
-  btn.style.opacity = busy ? "0.6" : "1";
-  btn.style.pointerEvents = busy ? "none" : "auto";
+  setTimeout(()=> el.style.display="none", 2400);
 }
 
 function setAdmin(enabled){
@@ -32,467 +26,367 @@ function isAdmin(){
   return localStorage.getItem("ofa_admin")==="1";
 }
 
-function pageName(){
-  return document.body?.dataset?.page || "";
-}
-
-function nowLocalDateTime(){
-  const d = new Date();
-  const pad = (n)=> String(n).padStart(2,"0");
+function getLogin(){
   return {
-    date: `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`,
-    time: `${pad(d.getHours())}:${pad(d.getMinutes())}`,
-    iso: d.toISOString()
+    token: localStorage.getItem("ofa_token") || "",
+    email: localStorage.getItem("ofa_email") || "",
+    name: localStorage.getItem("ofa_name") || ""
   };
 }
 
-function setDefaultDateTime(){
-  const n = nowLocalDateTime();
-  if($("date") && !$("date").value) $("date").value = n.date;
-  if($("time") && !$("time").value) $("time").value = n.time;
+function fillNow(){
+  const d = new Date();
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth()+1).padStart(2,"0");
+  const dd = String(d.getDate()).padStart(2,"0");
+  const hh = String(d.getHours()).padStart(2,"0");
+  const mi = String(d.getMinutes()).padStart(2,"0");
+  if($("date") && !$("date").value) $("date").value = `${yyyy}-${mm}-${dd}`;
+  if($("time") && !$("time").value) $("time").value = `${hh}:${mi}`;
 }
 
 function bindBack(){
   const b = $("backBtn");
-  if(b) b.addEventListener("click", ()=> history.length>1 ? history.back() : (location.href="./index.html"));
+  if(b) b.addEventListener("click", ()=> history.length>1 ? history.back() : location.href="./index.html");
 }
 
 function calcOdo(){
-  const s = Number(($("odoStart")?.value||"").toString().replace(/[^\d.]/g,""));
-  const e = Number(($("odoEnd")?.value||"").toString().replace(/[^\d.]/g,""));
-  if(!isFinite(s) || !isFinite(e) || s<=0 || e<=0 || e<s){
-    if($("odoTotal")) $("odoTotal").value = "";
-    return;
-  }
-  if($("odoTotal")) $("odoTotal").value = String(e - s);
+  const s = ($("odoStart")?.value||"").trim();
+  const e = ($("odoEnd")?.value||"").trim();
+  const total = $("odoTotal");
+  if(!total) return;
+  const sn = Number(String(s).replace(/[^\d.]/g,""));
+  const en = Number(String(e).replace(/[^\d.]/g,""));
+  if(!isFinite(sn) || !isFinite(en) || !s || !e){ total.value=""; return; }
+  const diff = en - sn;
+  total.value = diff >= 0 ? String(diff) : "";
 }
 
-function bindOdo(){
-  const a = $("odoStart");
-  const b = $("odoEnd");
-  if(a) a.addEventListener("input", calcOdo);
-  if(b) b.addEventListener("input", calcOdo);
-}
-
-function anyInspectionNG(){
-  const ids = [
-    "insp_tire","insp_light","insp_brake","insp_wiper","insp_engineOil","insp_coolant",
-    "insp_battery","insp_horn","insp_mirror","insp_damage","insp_cargo","insp_extinguisher","insp_triangle"
-  ];
-  return ids.some(id => ($(`${id}`)?.value||"") === "NG");
-}
-
-function updateInspPhotoRequirement(){
-  const block = $("inspPhotoBlock");
-  if(!block) return;
-  const need = anyInspectionNG();
-  block.style.display = need ? "block" : "none";
-}
-
-function bindInspection(){
-  const ids = [
-    "insp_tire","insp_light","insp_brake","insp_wiper","insp_engineOil","insp_coolant",
-    "insp_battery","insp_horn","insp_mirror","insp_damage","insp_cargo","insp_extinguisher","insp_triangle"
-  ];
-  ids.forEach(id=>{
-    const el = $(id);
-    if(el) el.addEventListener("change", updateInspPhotoRequirement);
-  });
-  updateInspPhotoRequirement();
-}
-
-function clearErrMarks(){
-  document.querySelectorAll(".err").forEach(el=> el.classList.remove("err"));
-}
-
-function markErr(el){
+function markInvalid(el, invalid){
   if(!el) return;
-  el.classList.add("err");
-  el.scrollIntoView({behavior:"smooth", block:"center"});
+  if(invalid) el.classList.add("invalid");
+  else el.classList.remove("invalid");
 }
 
 function validateRequired(){
-  clearErrMarks();
-
-  // data-req=1 を必須として扱う
-  const reqEls = Array.from(document.querySelectorAll("[data-req='1']"));
-  for(const el of reqEls){
-    const v = (el.value ?? "").toString().trim();
-    if(!v){
-      markErr(el);
-      toast("未入力の必須項目があります");
-      return false;
-    }
-  }
-
-  // 点検NGなら異常箇所写真必須
-  if(anyInspectionNG()){
-    const files = $("inspPhotos")?.files;
-    if(!files || files.length === 0){
-      markErr($("inspPhotos"));
-      toast("点検NGがあるため「異常箇所写真」が必須です");
-      return false;
-    }
-    // NGなら点検メモも推奨（空でも許容はするが、赤枠にするなら必須化）
-    const note = ($("insp_note")?.value||"").trim();
-    if(!note){
-      markErr($("insp_note"));
-      toast("点検NGのため「点検メモ（詳細）」も入力してください");
-      return false;
-    }
-  }
-
-  // 走行距離の簡易チェック
-  const s = Number(($("odoStart")?.value||"").toString().replace(/[^\d.]/g,""));
-  const e = $("odoEnd") ? Number(($("odoEnd").value||"").toString().replace(/[^\d.]/g,"")) : NaN;
-  if(isFinite(s) && isFinite(e) && e>0 && e<s){
-    markErr($("odoEnd"));
-    toast("終了メーターが開始メーターより小さいです");
-    return false;
-  }
-
-  return true;
+  let ok = true;
+  const req = document.querySelectorAll("[data-required='1']");
+  req.forEach(el=>{
+    const v = (el.value || "").trim();
+    const invalid = !v;
+    markInvalid(el, invalid);
+    if(invalid) ok = false;
+  });
+  if(!ok) toast("必須項目を入力してください（赤枠）");
+  return ok;
 }
 
-// ファイルを base64 で読む（容量が大きすぎる場合は弾く）
-async function filesToBase64(fileList, maxFiles=6, maxTotalMB=12){
-  if(!fileList || fileList.length===0) return [];
-  const files = Array.from(fileList).slice(0, maxFiles);
+async function filesToBase64(inputId, limitCount=3){
+  const el = $(inputId);
+  if(!el || !el.files || el.files.length===0) return [];
+  const files = Array.from(el.files).slice(0, limitCount);
 
-  let total = 0;
-  for(const f of files){ total += f.size; }
-  const totalMB = total / (1024*1024);
-  if(totalMB > maxTotalMB){
-    throw new Error(`添付が大きすぎます（合計 ${totalMB.toFixed(1)}MB）。写真枚数を減らしてください。`);
-  }
-
-  const readOne = (file)=> new Promise((resolve, reject)=>{
-    const fr = new FileReader();
-    fr.onload = ()=> {
-      const dataUrl = String(fr.result||"");
-      const comma = dataUrl.indexOf(",");
-      const base64 = comma>=0 ? dataUrl.slice(comma+1) : "";
-      resolve({
-        name: file.name,
-        type: file.type || "application/octet-stream",
-        size: file.size,
-        base64
-      });
-    };
-    fr.onerror = ()=> reject(new Error("ファイル読み込み失敗"));
-    fr.readAsDataURL(file);
-  });
-
-  const out = [];
+  const results = [];
   for(const f of files){
-    out.push(await readOne(f));
-  }
-  return out;
-}
-
-// ✅ プリフライト回避：Content-Type を text/plain にして JSON文字列送信
-async function postToGAS(payload){
-  const res = await fetch(GAS_WEBAPP_URL, {
-    method: "POST",
-    headers: { "Content-Type": "text/plain;charset=utf-8" },
-    body: JSON.stringify(payload)
-  });
-  const text = await res.text();
-  let json;
-  try{ json = JSON.parse(text); }catch(e){
-    throw new Error("GAS応答がJSONではありません: " + text.slice(0,200));
-  }
-  if(!json.ok){
-    throw new Error(json.error || "GASでエラーが発生しました");
-  }
-  return json;
-}
-
-function setLoginUI(profile){
-  const s = $("loginState");
-  if(s){
-    s.innerHTML = `ログイン中： <b>${profile.name || "ユーザー"}</b><br><span class="note mini">${profile.email}</span>`;
-  }
-}
-
-// ===== Departure/Arrival common =====
-async function submitTenko(kind){
-  if(!validateRequired()) return;
-
-  // ログイン必須
-  const profile = (typeof getProfile === "function") ? getProfile() : {email:"",name:""};
-  if(!profile.email){
-    toast("Googleログインが必要です");
-    return;
-  }
-
-  const btn = $("btnSubmit");
-  setBusy(btn, true);
-  toast("送信中…");
-
-  try{
-    const inspections = {
-      tire: $("insp_tire")?.value||"",
-      light: $("insp_light")?.value||"",
-      brake: $("insp_brake")?.value||"",
-      wiper: $("insp_wiper")?.value||"",
-      engineOil: $("insp_engineOil")?.value||"",
-      coolant: $("insp_coolant")?.value||"",
-      battery: $("insp_battery")?.value||"",
-      horn: $("insp_horn")?.value||"",
-      mirror: $("insp_mirror")?.value||"",
-      damage: $("insp_damage")?.value||"",
-      cargo: $("insp_cargo")?.value||"",
-      extinguisher: $("insp_extinguisher")?.value||"",
-      triangle: $("insp_triangle")?.value||""
-    };
-
-    // 添付（必要な分だけ）
-    const licensePhotos = await filesToBase64($("licensePhotos")?.files);
-    const tenkoPhotos = await filesToBase64($("tenkoPhotos")?.files);
-    const inspPhotos   = await filesToBase64($("inspPhotos")?.files);
-
-    const payload = {
-      action: "submitTenko",
-      kind, // "departure" or "arrival"
-      profile,
-      data: {
-        date: $("date")?.value||"",
-        time: $("time")?.value||"",
-        driverName: $("driverName")?.value||"",
-        driverPhone: $("driverPhone")?.value||"",
-        vehicleNo: $("vehicleNo")?.value||"",
-        managerName: $("managerName")?.value||"",
-        method: $("method")?.value||"",
-        place: $("place")?.value||"",
-        alcoholValue: $("alcoholValue")?.value||"",
-        alcoholBand: $("alcoholBand")?.value||"",
-        sleepHours: $("sleepHours")?.value||"",
-        sleepNote: $("sleepNote")?.value||"",
-        memo: $("memo")?.value||"",
-        odoStart: $("odoStart")?.value||"",
-        odoEnd: $("odoEnd")?.value||"",
-        odoTotal: $("odoTotal")?.value||"",
-        inspections,
-        insp_note: $("insp_note")?.value||"",
-        licenseNo: $("licenseNo")?.value||"",
-      },
-      files: {
-        licensePhotos,
-        tenkoPhotos,
-        inspPhotos
-      }
-    };
-
-    // arrival only fields
-    if(kind === "arrival"){
-      const reportPhotos = await filesToBase64($("reportPhotos")?.files);
-      payload.data.workType = $("workType")?.value||"";
-      payload.data.workArea = $("workArea")?.value||"";
-      payload.data.workHours = $("workHours")?.value||"";
-      payload.data.deliveryCount = $("deliveryCount")?.value||"";
-      payload.data.trouble = $("trouble")?.value||"";
-      payload.data.dailyNote = $("dailyNote")?.value||"";
-      payload.files.reportPhotos = reportPhotos;
-    }
-
-    const json = await postToGAS(payload);
-    toast("送信完了！保存しました", true);
-
-    // トップへ
-    setTimeout(()=> location.href="./index.html", 700);
-
-  }catch(e){
-    console.error(e);
-    toast("送信失敗: " + (e?.message || e));
-  }finally{
-    setBusy(btn, false);
-  }
-}
-
-// ===== Export =====
-function exportAdminUI(){
-  const adminState = $("adminState");
-  const box = $("adminSearchBox");
-  if(adminState){
-    adminState.textContent = isAdmin() ? "管理者ON" : "管理者OFF";
-  }
-  if(box){
-    box.style.display = isAdmin() ? "block" : "none";
-  }
-}
-
-async function exportAction(action, extra = {}){
-  const profile = getProfile();
-  if(!profile.email){
-    toast("Googleログインが必要です");
-    return;
-  }
-
-  const payload = {
-    action,
-    profile,
-    admin: isAdmin() ? 1 : 0,
-    adminPass: isAdmin() ? (localStorage.getItem("ofa_admin_pass") || "") : "",
-    query: {
-      name: $("qName")?.value||"",
-      phone: $("qPhone")?.value||"",
-      vehicle: $("qVehicle")?.value||""
-    },
-    ...extra
-  };
-
-  toast("処理中…");
-  const json = await postToGAS(payload);
-
-  // 結果表示
-  const box = $("resultBox");
-  if(box){
-    box.style.display = "block";
-    if(json.url){
-      box.innerHTML = `✅ 完了<br><a href="${json.url}" target="_blank" rel="noopener">結果を開く</a>`;
-    }else if(json.csv){
-      box.innerHTML = `✅ 完了<br><a href="${json.csv}" target="_blank" rel="noopener">CSVを開く</a>`;
-    }else{
-      box.innerHTML = `✅ 完了`;
-    }
-  }
-
-  return json;
-}
-
-async function loadHistory(){
-  const m = $("historyMonth")?.value || "";
-  if(!m){ toast("履歴対象月を選んでください"); return; }
-
-  const json = await exportAction("listHistory", { month: m });
-  const list = json.items || [];
-  const box = $("historyBox");
-  const cnt = $("historyCount");
-  const ul = $("historyList");
-
-  if(cnt) cnt.textContent = `${list.length}件`;
-  if(ul){
-    ul.innerHTML = "";
-    list.forEach(item=>{
-      const div = document.createElement("div");
-      div.className = "item";
-      div.innerHTML = `<div><b>${item.date}</b><div class="note mini">${item.driverName || ""}</div></div><div>作成</div>`;
-      div.addEventListener("click", async ()=>{
-        $("dateDaily").value = item.date;
-        await exportAction("createDailyPdf", { date: item.date });
-      });
-      ul.appendChild(div);
+    const b64 = await new Promise((resolve, reject)=>{
+      const r = new FileReader();
+      r.onload = ()=> resolve(String(r.result||""));
+      r.onerror = reject;
+      r.readAsDataURL(f);
+    });
+    results.push({
+      name: f.name,
+      type: f.type,
+      dataUrl: b64
     });
   }
-  if(box) box.style.display = "block";
+  return results;
 }
 
-// ===== Init per page =====
-window.addEventListener("DOMContentLoaded", async ()=>{
-  bindBack();
-
-  const p = pageName();
-
-  // index は何もしない（リンクのみ）
-  if(p === "") return;
-
-  // departure/arrival/export はログイン必須
-  if(typeof requireLogin !== "function"){
-    toast("auth.js が読み込まれていません");
-    return;
+async function postToGAS(payload){
+  // ✅ 送信中表示
+  const btn = $("btnSubmit");
+  if(btn){
+    btn.disabled = true;
+    btn.dataset.old = btn.textContent;
+    btn.textContent = "送信中…";
   }
 
-  await requireLogin({
-    buttonElId: "gBtn",
-    onAuthed: (profile)=>{
-      // ✅ ログイン後も“勝手に別ページへ行かない”
-      setLoginUI(profile);
+  try{
+    const res = await fetch(GAS_WEBAPP_URL, {
+      method: "POST",
+      headers: {"Content-Type":"application/json"},
+      body: JSON.stringify(payload),
+      mode: "cors"
+    });
 
-      const loginCard = $("loginCard");
-      const formCard = $("formCard");
-      const exportCard = $("exportCard");
+    // GASがtext返す場合もあるので両対応
+    const text = await res.text();
+    let json;
+    try{ json = JSON.parse(text); }catch(_){ json = { ok: res.ok, raw: text }; }
 
-      if(p === "departure" || p === "arrival"){
-        if(loginCard) loginCard.style.display = "none";
-        if(formCard) formCard.style.display = "block";
-
-        setDefaultDateTime();
-        bindOdo();
-        bindInspection();
-
-        const submitBtn = $("btnSubmit");
-        if(submitBtn){
-          submitBtn.addEventListener("click", ()=> submitTenko(p));
-        }
-      }
-
-      if(p === "export"){
-        if(loginCard) loginCard.style.display = "none";
-        if(exportCard) exportCard.style.display = "block";
-
-        // admin ON/OFF
-        exportAdminUI();
-
-        const onBtn = $("adminLoginBtn");
-        const offBtn = $("adminLogoutBtn");
-        const pass = $("adminPass");
-
-        if(onBtn){
-          onBtn.addEventListener("click", ()=>{
-            const v = (pass?.value||"").trim();
-            if(v !== ADMIN_PASS){
-              setAdmin(false);
-              localStorage.removeItem("ofa_admin_pass");
-              exportAdminUI();
-              toast("管理者パスワードが違います");
-              return;
-            }
-            setAdmin(true);
-            localStorage.setItem("ofa_admin_pass", v);
-            exportAdminUI();
-            toast("管理者モードON", true);
-          });
-        }
-        if(offBtn){
-          offBtn.addEventListener("click", ()=>{
-            setAdmin(false);
-            localStorage.removeItem("ofa_admin_pass");
-            if(pass) pass.value="";
-            exportAdminUI();
-            toast("管理者モードOFF", true);
-          });
-        }
-
-        // export buttons
-        $("btnDailyPdf")?.addEventListener("click", async ()=>{
-          const d = $("dateDaily")?.value || "";
-          if(!d){ toast("日報の日付を選んでください"); return; }
-          await exportAction("createDailyPdf", { date: d });
-        });
-
-        $("btnMonthlyPdf")?.addEventListener("click", async ()=>{
-          const m = $("month")?.value || "";
-          if(!m){ toast("月報の月を選んでください"); return; }
-          await exportAction("createMonthlyPdf", { month: m });
-        });
-
-        $("btnMonthlyCsv")?.addEventListener("click", async ()=>{
-          const m = $("month")?.value || "";
-          if(!m){ toast("月を選んでください"); return; }
-          await exportAction("createMonthlyCsv", { month: m });
-        });
-
-        $("btnCsvRange")?.addEventListener("click", async ()=>{
-          const from = $("fromDate")?.value || "";
-          const to = $("toDate")?.value || "";
-          if(!from || !to){ toast("開始日と終了日を入力してください"); return; }
-          await exportAction("createRangeCsv", { from, to });
-        });
-
-        $("btnLoadHistory")?.addEventListener("click", loadHistory);
-      }
+    if(!res.ok || json.ok === false){
+      throw new Error(json.message || json.error || json.raw || "送信に失敗しました");
     }
+    return json;
+
+  }finally{
+    if(btn){
+      btn.disabled = false;
+      btn.textContent = btn.dataset.old || "送信";
+    }
+  }
+}
+
+function collectCommon(){
+  const login = getLogin();
+  return {
+    token: login.token,
+    loginEmail: login.email,
+    loginName: login.name,
+    date: $("date")?.value || "",
+    time: $("time")?.value || "",
+    driverName: $("driverName")?.value || "",
+    driverPhone: $("driverPhone")?.value || "",
+    vehicleNo: $("vehicleNo")?.value || "",
+    managerName: $("managerName")?.value || "",
+    method: $("method")?.value || "",
+    place: $("place")?.value || "",
+    alcoholValue: $("alcoholValue")?.value || "",
+    alcoholBand: $("alcoholBand")?.value || "",
+    sleepHours: $("sleepHours")?.value || "",
+    condition: $("condition")?.value || "",
+    memo: $("memo")?.value || "",
+    odoStart: $("odoStart")?.value || "",
+    odoEnd: $("odoEnd")?.value || "",
+    odoTotal: $("odoTotal")?.value || "",
+
+    insp: {
+      tire: $("insp_tire")?.value || "",
+      light: $("insp_light")?.value || "",
+      brake: $("insp_brake")?.value || "",
+      wiper: $("insp_wiper")?.value || "",
+      engineOil: $("insp_engineOil")?.value || "",
+      coolant: $("insp_coolant")?.value || "",
+      battery: $("insp_battery")?.value || "",
+      horn: $("insp_horn")?.value || "",
+      mirror: $("insp_mirror")?.value || "",
+      damage: $("insp_damage")?.value || "",
+      cargo: $("insp_cargo")?.value || "",
+      extinguisher: $("insp_extinguisher")?.value || "",
+      triangle: $("insp_triangle")?.value || ""
+    },
+    insp_note: $("insp_note")?.value || "",
+    licenseNo: $("licenseNo")?.value || ""
+  };
+}
+
+async function initDeparture(){
+  fillNow();
+  bindBack();
+
+  $("odoStart")?.addEventListener("input", calcOdo);
+  $("odoEnd")?.addEventListener("input", calcOdo);
+
+  // 入力時に赤枠解除
+  document.querySelectorAll("[data-required='1']").forEach(el=>{
+    el.addEventListener("input", ()=> markInvalid(el,false));
+    el.addEventListener("change", ()=> markInvalid(el,false));
   });
 
+  const btn = $("btnSubmit");
+  if(!btn) return;
+
+  btn.addEventListener("click", async ()=>{
+    const login = getLogin();
+    if(!login.token){
+      toast("Googleでログインしてください");
+      return;
+    }
+    if(!validateRequired()) return;
+
+    const base = collectCommon();
+
+    // 写真（多すぎると失敗するので枚数制限）
+    const inspPhotos = await filesToBase64("inspPhotos", 3);
+    const licensePhotos = await filesToBase64("licensePhotos", 2);
+    const tenkoPhotos = await filesToBase64("tenkoPhotos", 2);
+
+    const payload = {
+      action: "submitDeparture",
+      ...base,
+      photos: { inspPhotos, licensePhotos, tenkoPhotos }
+    };
+
+    try{
+      const out = await postToGAS(payload);
+      toast("送信完了！", true);
+      // ✅ 戻る
+      setTimeout(()=> location.href="./index.html", 700);
+    }catch(e){
+      toast(String(e.message || e));
+    }
+  });
+}
+
+async function initArrival(){
+  fillNow();
+  bindBack();
+
+  $("odoStart")?.addEventListener("input", calcOdo);
+  $("odoEnd")?.addEventListener("input", calcOdo);
+
+  document.querySelectorAll("[data-required='1']").forEach(el=>{
+    el.addEventListener("input", ()=> markInvalid(el,false));
+    el.addEventListener("change", ()=> markInvalid(el,false));
+  });
+
+  const btn = $("btnSubmit");
+  if(!btn) return;
+
+  btn.addEventListener("click", async ()=>{
+    const login = getLogin();
+    if(!login.token){
+      toast("Googleでログインしてください");
+      return;
+    }
+    if(!validateRequired()) return;
+
+    const base = collectCommon();
+
+    // 日報系
+    const workType = $("workType")?.value || "";
+    const workArea = $("workArea")?.value || "";
+    const workHours = $("workHours")?.value || "";
+    const deliveryCount = $("deliveryCount")?.value || "";
+    const trouble = $("trouble")?.value || "";
+    const dailyNote = $("dailyNote")?.value || "";
+
+    const inspPhotos = await filesToBase64("inspPhotos", 3);
+    const licensePhotos = await filesToBase64("licensePhotos", 2);
+    const tenkoPhotos = await filesToBase64("tenkoPhotos", 2);
+    const reportPhotos = await filesToBase64("reportPhotos", 3);
+
+    const payload = {
+      action: "submitArrival",
+      ...base,
+      daily: { workType, workArea, workHours, deliveryCount, trouble, dailyNote },
+      photos: { inspPhotos, licensePhotos, tenkoPhotos, reportPhotos }
+    };
+
+    try{
+      const out = await postToGAS(payload);
+      toast("送信完了！", true);
+      setTimeout(()=> location.href="./index.html", 700);
+    }catch(e){
+      toast(String(e.message || e));
+    }
+  });
+}
+
+function initExport(){
+  bindBack();
+
+  const gasView = $("gasUrlView");
+  if(gasView) gasView.textContent = GAS_WEBAPP_URL;
+
+  const adminState = $("adminState");
+  const adminBox = $("adminSearchBox");
+
+  function refreshAdminUI(){
+    const on = isAdmin();
+    if(adminState) adminState.textContent = on ? "管理者ON" : "管理者OFF";
+    if(adminBox){
+      adminBox.classList.toggle("hidden", !on);
+    }
+  }
+
+  $("adminLoginBtn")?.addEventListener("click", ()=>{
+    const v = ($("adminPass")?.value || "").trim();
+    if(v !== ADMIN_PASS){
+      setAdmin(false);
+      toast("管理者パスワードが違います");
+      refreshAdminUI();
+      return;
+    }
+    setAdmin(true);
+    toast("管理者モードON", true);
+    refreshAdminUI();
+  });
+
+  $("adminLogoutBtn")?.addEventListener("click", ()=>{
+    setAdmin(false);
+    if($("adminPass")) $("adminPass").value="";
+    toast("管理者モードOFF", true);
+    refreshAdminUI();
+  });
+
+  refreshAdminUI();
+
+  async function exportAction(action, extra){
+    const login = getLogin();
+    if(!login.token){
+      toast("Googleでログインしてください");
+      return;
+    }
+
+    const payload = {
+      action,
+      token: login.token,
+      loginEmail: login.email,
+      admin: isAdmin(),
+      adminQuery: isAdmin() ? {
+        name: $("qName")?.value || "",
+        phone: $("qPhone")?.value || "",
+        vehicle: $("qVehicle")?.value || ""
+      } : null,
+      ...extra
+    };
+
+    try{
+      const out = await postToGAS(payload);
+      const box = $("resultBox");
+      if(box){
+        box.classList.remove("hidden");
+        const link = out.url ? `<a href="${out.url}" target="_blank" rel="noopener">出力を開く</a>` : "";
+        box.innerHTML = `<b>完了</b><br>${out.message || ""}<br>${link}`;
+      }
+      toast("出力完了", true);
+    }catch(e){
+      toast(String(e.message || e));
+    }
+  }
+
+  $("btnDailyPdf")?.addEventListener("click", ()=>{
+    exportAction("makeDailyPdf", { date: $("dateDaily")?.value || "" });
+  });
+
+  $("btnMonthlyPdf")?.addEventListener("click", ()=>{
+    exportAction("makeMonthlyPdf", { month: $("month")?.value || "" });
+  });
+
+  $("btnMonthlyCsv")?.addEventListener("click", ()=>{
+    exportAction("makeMonthlyCsv", { month: $("month")?.value || "" });
+  });
+
+  $("btnCsvRange")?.addEventListener("click", ()=>{
+    exportAction("makeRangeCsv", { from: $("fromDate")?.value || "", to: $("toDate")?.value || "" });
+  });
+}
+
+window.addEventListener("DOMContentLoaded", ()=>{
+  const page = document.body?.dataset?.page || "";
+
+  // 共通：ログイン表示
+  const ls = $("loginState");
+  const login = getLogin();
+  if(ls){
+    ls.innerHTML = login.token ? `ログイン中：<b>${login.email}</b>` : "未ログイン";
+  }
+
+  if(page === "departure") initDeparture();
+  if(page === "arrival") initArrival();
+  if(page === "export") initExport();
+
+  // indexはauth.js側でメニュー制御
 });
