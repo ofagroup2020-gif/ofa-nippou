@@ -3,7 +3,7 @@
  ****************************************************/
 
 const GAS_WEBAPP_URL =
-  "https://script.google.com/macros/s/AKfycbyBhHOjpzOlfOIVANlELi4sbJtT_DWd7ApCEX8f_chBXl4xfCtYo9nJE008vLwtKcqO_w/exec";
+  "https://script.google.com/macros/s/AKfycbwvairPzgugAoB-51_9JcnAOKBxKF6hRDdj2hfwaGvq8KcczWFKDdBBia_mepTVEhoBGQ/exec";
 
 const ADMIN_PASS = "ofa-2026";
 
