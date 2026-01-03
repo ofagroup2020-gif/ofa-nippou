@@ -2,49 +2,67 @@
 <html lang="ja">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
   <title>OFA 点呼システム</title>
   <link rel="stylesheet" href="./style.css" />
+
+  <!-- Google Identity Services（Gmailログイン） -->
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 
-<body>
+<body data-page="index">
   <div class="wrap">
+
     <header class="card head">
-      <div class="logo"></div>
-      <div>
-        <h1>OFA 点呼システム</h1>
-        <p class="sub">業務開始（出発点呼）/ 業務終了（帰着点呼）/ 日報・月報・CSV</p>
+      <div class="brand">
+        <div class="logo"></div>
+        <div>
+          <h1>OFA 点呼システム</h1>
+          <p class="sub">業務開始（出発点呼）/ 業務終了（帰着点呼）/ 日報・月報・CSV</p>
+        </div>
       </div>
     </header>
 
-    <section class="card rule">
-      <h2>🚚 点呼の重要ルール（必読）</h2>
-      <ul>
-        <li>点呼は <b>業務開始前（出発）</b> と <b>業務終了後（帰着）</b> の2回</li>
-        <li>アルコール測定は必須（数値＋酒気帯び判定）</li>
-        <li>点検（タイヤ/灯火/ブレーキ等）も必須（異常時はメモに詳細）</li>
-        <li>帰着点呼の「日報内容」はPDF提出されるため丁寧に記載</li>
+    <!-- ✅ ログイン（ここにルールも表示） -->
+    <section class="card rule rainbow-border" id="loginArea">
+      <h2 class="h2">🚚 点呼の重要ルール（必読）</h2>
+      <ul class="listRule">
+        <li>点呼は <b>業務開始前（出発）</b> と <b>業務終了後（帰着）</b> の<b>2回</b></li>
+        <li>アルコール測定は必須（<b>数値＋酒気帯び判定</b>）</li>
+        <li>点検（タイヤ/灯火/ブレーキ等）も必須（異常時は<b>メモに詳細</b>）</li>
+        <li>帰着点呼の<b>日報内容はPDF提出</b>されます。<b>そのまま提出できる文章</b>で丁寧に記載</li>
       </ul>
+
+      <div class="notice">
+        <b>ログイン必須</b>：Gmailでログイン後、本人名で点呼・日報を記録します。<br>
+        <span class="muted">※ログインできない場合は「Authorized JavaScript origins」にGitHub Pages URL が必要です。</span>
+      </div>
+
+      <div class="loginBox">
+        <div id="gSignIn"></div>
+        <button class="btn ghost" id="btnLogout" style="display:none;">ログアウト</button>
+        <div class="hint" id="loginHint"></div>
+      </div>
     </section>
 
-    <section class="card">
-      <h2>メニュー</h2>
-      <p class="note">
-        ※ログイン必須にする場合は各ページでGoogleログインを通してから送信します。<br>
-        ※ログインできない場合は「Authorized JavaScript origins」にGitHub PagesのURLが必要です。
-      </p>
-
-      <!-- ✅ ここが崩れ防止：必ず縦積み -->
+    <!-- ✅ ログイン後メニュー -->
+    <section class="card rainbow-border" id="menu" style="display:none;">
+      <h2 class="h2">メニュー</h2>
       <div class="btnCol">
-        <a class="btn grad" href="./departure.html">✅ 業務開始（出発点呼）</a>
-        <a class="btn grad" href="./arrival.html">✅ 業務終了（帰着点呼 / 日報）</a>
-        <a class="btn dark" href="./export.html">📄 日報PDF / 月報 / CSV（出力）</a>
+        <a class="btn rainbow" href="./departure.html">業務開始（出発点呼）</a>
+        <a class="btn rainbow" href="./arrival.html">業務終了（帰着点呼 / 日報）</a>
+        <a class="btn primary" href="./export.html">日報PDF / 月報PDF / CSV（出力）</a>
+      </div>
+
+      <div class="rulebox" style="margin-top:12px;">
+        <div><b>ログイン中：</b><span id="whoami">-</span></div>
       </div>
     </section>
 
     <div id="toast" class="toast" style="display:none;"></div>
   </div>
 
-  <!-- JSはトップでは不要（リンクで動く） -->
+  <script src="./auth.js"></script>
+  <script src="./app.js"></script>
 </body>
 </html>
