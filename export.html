@@ -5,7 +5,10 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
   <title>OFA | 日報PDF / 月報PDF / CSV</title>
   <link rel="stylesheet" href="./style.css" />
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+  <script src="./auth.js" defer></script>
 </head>
+
 <body data-page="export">
   <div class="wrap">
     <div class="topbar">
@@ -13,61 +16,58 @@
         <div class="logo"></div>
         <div>
           <div class="title">日報PDF / 月報PDF / CSV</div>
-          <div class="subtitle">本人は自分のデータのみ / 管理者はパスで全件</div>
+          <div class="subtitle">本人は本人のみ / 管理者はパスで全件</div>
         </div>
       </div>
       <button class="btn ghost" id="backBtn" type="button">戻る</button>
     </div>
 
-    <!-- Google login -->
-    <div class="card" id="loginCard">
-      <h2>Googleでログイン</h2>
-      <div id="gBtn"></div>
-    </div>
+    <div class="card rainbow-border">
+      <div class="rowBetween">
+        <div id="loginState" class="small muted">未ログイン</div>
+        <div class="pill" id="adminState">管理者OFF</div>
+      </div>
 
-    <div class="card rainbow-border" id="exportCard" style="display:none;">
-      <div class="grid grid2">
-        <div id="loginState" class="loginState"></div>
-        <div id="adminState" class="adminBadge" style="text-align:right;"></div>
+      <div id="loginBox" class="loginBox">
+        <div id="g_id_onload"
+             data-client_id="__CLIENT_ID__"
+             data-callback="onGoogleLogin"
+             data-auto_prompt="false"></div>
+        <div class="g_id_signin" data-type="standard" data-size="large"></div>
       </div>
 
       <hr class="sep">
 
-      <div class="softBlock">
-        <div class="rowBetween">
-          <div><b>管理者モード（任意）</b></div>
-          <div class="mini">パス：<code>ofa-2026</code></div>
-        </div>
+      <div class="notice">
+        <b>管理者モード（このページだけ）</b><br>
+        ※トップには表示しません
+      </div>
 
-        <div class="grid grid2" style="margin-top:10px;">
+      <div class="grid grid2">
+        <div>
+          <label>管理者パスワード</label>
+          <input id="adminPass" type="password" placeholder="ofa-2026" />
+        </div>
+        <div class="btnrow" style="justify-content:flex-end; gap:10px;">
+          <button class="btn primary" id="adminLoginBtn" type="button">管理者ON</button>
+          <button class="btn ghost" id="adminLogoutBtn" type="button">管理者OFF</button>
+        </div>
+      </div>
+
+      <div id="adminSearchBox" class="rulebox hidden" style="margin-top:10px;">
+        <b>🔎 管理者検索（全データ対象）</b>
+        <div class="grid grid3" style="margin-top:10px;">
           <div>
-            <label>管理者パスワード</label>
-            <input id="adminPass" type="password" placeholder="ofa-2026" />
+            <label>名前</label>
+            <input id="qName" type="text" placeholder="例：森下" />
           </div>
-          <div class="grid grid2" style="gap:10px;">
-            <button class="btn primary" id="adminLoginBtn" type="button">管理者ON</button>
-            <button class="btn ghost" id="adminLogoutBtn" type="button">管理者OFF</button>
+          <div>
+            <label>電話番号</label>
+            <input id="qPhone" type="text" placeholder="例：080" />
           </div>
-        </div>
-
-        <div id="adminSearchBox" style="display:none;margin-top:10px;">
-          <div class="notice">
-            <b>🔎 管理者検索（全データ対象）</b><br>
-            名前/電話/車両番号で検索。空欄なら全件。
-          </div>
-          <div class="grid grid3" style="margin-top:10px;">
-            <div>
-              <label>名前</label>
-              <input id="qName" type="text" placeholder="例：中村" />
-            </div>
-            <div>
-              <label>電話番号</label>
-              <input id="qPhone" type="text" placeholder="例：090" />
-            </div>
-            <div>
-              <label>車両番号/ナンバー</label>
-              <input id="qVehicle" type="text" placeholder="例：12-34" />
-            </div>
+          <div>
+            <label>車両番号</label>
+            <input id="qVehicle" type="text" placeholder="例：21-15" />
           </div>
         </div>
       </div>
@@ -93,7 +93,6 @@
 
       <hr class="sep">
 
-      <div class="title minorTitle">CSV（日付範囲）</div>
       <div class="grid grid2">
         <div>
           <label>開始日（from）</label>
@@ -104,37 +103,20 @@
           <input id="toDate" type="date" />
         </div>
       </div>
+
       <div class="btnrow">
         <button class="btn" id="btnCsvRange" type="button">範囲CSVを作成</button>
       </div>
 
-      <hr class="sep">
-
-      <div class="title minorTitle">履歴（一覧）</div>
-      <div class="grid grid2">
-        <div>
-          <label>履歴対象月（YYYY-MM）</label>
-          <input id="historyMonth" type="month" />
-        </div>
-        <div style="display:flex;align-items:flex-end;">
-          <button class="btn ghost" id="btnLoadHistory" style="width:100%;" type="button">履歴を読み込む</button>
-        </div>
+      <div id="resultBox" class="rulebox hidden" style="margin-top:12px;"></div>
+      <div class="small muted" style="margin-top:8px;">
+        GAS: <span id="gasUrlView"></span>
       </div>
-
-      <div class="history" id="historyBox" style="display:none;">
-        <div class="head">
-          <div>記録がある日付（タップで日報PDF）</div>
-          <div id="historyCount">0件</div>
-        </div>
-        <div class="list" id="historyList"></div>
-      </div>
-
-      <div id="resultBox" style="display:none;margin-top:12px;" class="rulebox"></div>
     </div>
+
+    <div id="toast" class="toast" style="display:none;"></div>
   </div>
 
-  <div class="toast" id="toast"></div>
-  <script src="./auth.js"></script>
-  <script src="./app.js"></script>
+  <script src="./app.js" defer></script>
 </body>
 </html>
