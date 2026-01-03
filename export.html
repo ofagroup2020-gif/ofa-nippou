@@ -5,7 +5,9 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
   <title>OFA | 日報PDF / 月報PDF / CSV</title>
   <link rel="stylesheet" href="./style.css" />
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
+
 <body data-page="export">
   <div class="wrap">
     <div class="topbar">
@@ -13,7 +15,7 @@
         <div class="logo"></div>
         <div>
           <div class="title">日報PDF / 月報PDF / CSV</div>
-          <div class="subtitle">ドライバー：本人のみ / 管理者：パスONで全件検索・出力</div>
+          <div class="subtitle">ドライバー：本人のみ / 管理者：設定でON（管理者パス）</div>
         </div>
       </div>
       <button class="btn ghost" id="backBtn">戻る</button>
@@ -21,22 +23,28 @@
 
     <div class="card rainbow-border">
       <div class="grid grid2">
-        <div id="loginState"></div>
-        <div id="adminState" style="text-align:right;"></div>
+        <div id="loginState" class="loginState"></div>
+        <div id="adminState" class="loginState" style="text-align:right;"></div>
       </div>
 
-      <div class="grid grid2" style="margin-top:10px;">
-        <div>
-          <label>管理者パスワード</label>
-          <input id="adminPass" type="password" placeholder="ofa-2026" />
-        </div>
-        <div style="display:flex;align-items:flex-end;gap:10px;">
-          <button class="btn primary" id="adminLoginBtn" style="width:100%;">管理者モードON</button>
-          <button class="btn ghost" id="adminLogoutBtn" style="width:100%;">管理者モードOFF</button>
+      <!-- ✅ 管理者モード（トップには出さない：ここだけ） -->
+      <div class="rulebox" style="margin-top:10px;">
+        <b>管理者設定</b>（管理者は全データ検索・出力が可能）<br>
+        <span class="muted">※管理者は誰でもなれる仕様（パス：ofa-2026）</span>
+
+        <div class="grid grid2" style="margin-top:10px;">
+          <div>
+            <label>管理者パスワード</label>
+            <input id="adminPass" type="password" placeholder="ofa-2026" />
+          </div>
+          <div style="display:flex;align-items:flex-end;gap:10px;">
+            <button class="btn primary" id="adminLoginBtn" style="width:100%;">管理者モードON</button>
+            <button class="btn ghost" id="adminLogoutBtn" style="width:100%;">OFF</button>
+          </div>
         </div>
       </div>
 
-      <!-- 管理者検索 -->
+      <!-- 管理者検索（ONで表示） -->
       <div id="adminSearchBox" style="display:none;margin-top:10px;">
         <div class="notice">
           <b>🔎 管理者検索（全データ対象）</b><br>
@@ -64,12 +72,12 @@
         <div>
           <label>日報（日付）</label>
           <input id="dateDaily" type="date" />
-          <small class="hint">履歴から選んで作成もOK（印刷・LINE共有OK）</small>
+          <small class="hint">印刷・LINE共有OK</small>
         </div>
         <div>
           <label>月報（月）</label>
           <input id="month" type="month" />
-          <small class="hint">月報は「日報内容」を月単位でまとめて詳細記載します</small>
+          <small class="hint">月報は「日報詳細」を月単位でまとめて記載</small>
         </div>
       </div>
 
@@ -81,7 +89,7 @@
 
       <hr class="sep">
 
-      <div class="title" style="font-size:14px;">CSV（日付範囲）</div>
+      <div class="sectionMini">CSV（日付範囲）</div>
       <div class="grid grid2">
         <div>
           <label>開始日（from）</label>
@@ -98,7 +106,7 @@
 
       <hr class="sep">
 
-      <div class="title" style="font-size:14px;">日報PDF 履歴（一覧）</div>
+      <div class="sectionMini">日報PDF 履歴（一覧）</div>
       <div class="grid grid2">
         <div>
           <label>履歴対象月（YYYY-MM）</label>
@@ -111,7 +119,7 @@
 
       <div class="history" id="historyBox" style="display:none;">
         <div class="head">
-          <div>記録がある日付を表示（タップで日報PDF作成）</div>
+          <div>記録がある日付（タップで日報PDF）</div>
           <div id="historyCount">0件</div>
         </div>
         <div class="list" id="historyList"></div>
@@ -126,6 +134,7 @@
   </div>
 
   <div class="toast" id="toast"></div>
+  <script src="./auth.js"></script>
   <script src="./app.js"></script>
 </body>
 </html>
