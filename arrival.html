@@ -5,7 +5,9 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
   <title>OFA | 帰着点呼（業務終了）/ 日報</title>
   <link rel="stylesheet" href="./style.css" />
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
+
 <body data-page="arrival">
   <div class="wrap">
     <div class="topbar">
@@ -20,7 +22,7 @@
     </div>
 
     <div class="card rainbow-border">
-      <div id="loginState"></div>
+      <div id="loginState" class="loginState"></div>
       <hr class="sep">
 
       <div class="grid grid2">
@@ -36,8 +38,8 @@
 
       <div class="grid grid2">
         <div>
-          <label>運転者氏名</label>
-          <input id="driverName" type="text" placeholder="自動入力されます" />
+          <label>運転者氏名（ログイン名）</label>
+          <input id="driverName" type="text" placeholder="自動入力" />
         </div>
         <div>
           <label>電話番号（任意：検索用）</label>
@@ -93,7 +95,7 @@
 
       <hr class="sep">
 
-      <div class="title" style="font-size:14px;">走行距離（業務終了）</div>
+      <div class="sectionMini">走行距離（業務終了）</div>
       <div class="grid grid3">
         <div>
           <label>開始メーター（出発の値でもOK）</label>
@@ -111,7 +113,7 @@
 
       <hr class="sep">
 
-      <div class="title" style="font-size:14px;">車両点検（必須）</div>
+      <div class="sectionMini">車両点検（必須）</div>
       <div class="grid grid3">
         <div><label>タイヤ</label><select id="insp_tire"><option value="">選択</option><option>OK</option><option>NG</option></select></div>
         <div><label>灯火</label><select id="insp_light"><option value="">選択</option><option>OK</option><option>NG</option></select></div>
@@ -137,7 +139,7 @@
 
       <hr class="sep">
 
-      <div class="title" style="font-size:14px;">免許（番号 or 写真）</div>
+      <div class="sectionMini">免許（番号 or 写真）</div>
       <div class="grid grid2">
         <div>
           <label>免許番号（任意）</label>
@@ -154,7 +156,7 @@
 
       <hr class="sep">
 
-      <div class="title" style="font-size:14px;">日報（詳細記載：PDF提出用）</div>
+      <div class="sectionMini">日報（詳細記載：PDF提出用）</div>
       <div class="grid grid2">
         <div>
           <label>業務内容（例：Amazon/チャーター/企業配）</label>
@@ -196,6 +198,7 @@
   </div>
 
   <div class="toast" id="toast"></div>
+  <script src="./auth.js"></script>
   <script src="./app.js"></script>
 </body>
 </html>
