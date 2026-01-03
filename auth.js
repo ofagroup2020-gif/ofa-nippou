@@ -1,148 +1,122 @@
 /****************************************************
- * auth.js（Googleログイン / 自動ログイン / ガード）
+ * OFA 点呼システム auth.js（GIS）
  ****************************************************/
 
-const GOOGLE_CLIENT_ID =
-  "321435608721-vfrb8sgjnkqake7rgrscv8de798re2tl.apps.googleusercontent.com";
+// ★あなたの本物の Client ID
+const GOOGLE_CLIENT_ID = "321435608721-vfrb8sgjnkqake7rgrscv8de798re2tl.apps.googleusercontent.com";
 
-/** 取得 */
-function getLogin(){
-  return {
-    token: localStorage.getItem("ofa_token") || "",
-    email: localStorage.getItem("ofa_email") || "",
-    name:  localStorage.getItem("ofa_name")  || ""
-  };
-}
+const LS_TOKEN = "ofa_id_token";
+const LS_EMAIL = "ofa_email";
+const LS_NAME  = "ofa_name";
 
-/** ログイン必須ガード（index以外） */
-function requireLoginOrRedirect(){
-  const page = document.body?.dataset?.page || "";
-  if(page === "index") return;
-  const me = getLogin();
-  if(!me.token){
-    location.href = "./index.html";
-  }
-}
+function getToken(){ return localStorage.getItem(LS_TOKEN) || ""; }
+function getEmail(){ return localStorage.getItem(LS_EMAIL) || ""; }
+function getName(){ return localStorage.getItem(LS_NAME) || ""; }
 
-/** 表示更新 */
-function renderLoginState(){
-  const me = getLogin();
-  const st = document.getElementById("loginState");
-  if(st){
-    st.innerHTML = me.token
-      ? `ログイン中：<b>${escapeHtml(me.name || "-")}</b><br><span class="muted">${escapeHtml(me.email || "")}</span>`
-      : `未ログイン（トップでログインしてください）`;
-  }
-  const who = document.getElementById("whoami");
-  if(who) who.textContent = me.token ? `${me.name}（${me.email}）` : "-";
-
-  // フォームに自動入力
-  if(me.token && document.getElementById("driverName") && !document.getElementById("driverName").value){
-    document.getElementById("driverName").value = me.name || "";
-  }
-}
-
-/** ログアウト */
-function logout(){
-  localStorage.removeItem("ofa_token");
-  localStorage.removeItem("ofa_email");
-  localStorage.removeItem("ofa_name");
-  localStorage.removeItem("ofa_admin");
-  location.href = "./index.html";
-}
-
-/** Google callback */
-function onGoogleLogin(res){
+function setLoginFromToken(token){
   try{
-    const token = res.credential;
     const payload = JSON.parse(atob(token.split(".")[1]));
-
-    localStorage.setItem("ofa_token", token);
-    localStorage.setItem("ofa_email", payload.email || "");
-    localStorage.setItem("ofa_name", payload.name || "");
-
-    // index UI
-    const loginArea = document.getElementById("loginArea");
-    const menu = document.getElementById("menu");
-    const btnLogout = document.getElementById("btnLogout");
-    const hint = document.getElementById("loginHint");
-
-    if(loginArea) loginArea.style.display = "none";
-    if(menu) menu.style.display = "block";
-    if(btnLogout) btnLogout.style.display = "inline-flex";
-    if(hint) hint.textContent = "";
-
-    renderLoginState();
+    localStorage.setItem(LS_TOKEN, token);
+    localStorage.setItem(LS_EMAIL, payload.email || "");
+    localStorage.setItem(LS_NAME, payload.name || payload.given_name || "");
+    return true;
   }catch(e){
-    const hint = document.getElementById("loginHint");
-    if(hint) hint.textContent = "ログイン処理に失敗しました。もう一度お試しください。";
+    return false;
   }
 }
 
-/** Googleボタン表示（index） */
-function initGoogleButton(){
-  const holder = document.getElementById("gSignIn");
-  if(!holder) return;
+function logout(){
+  localStorage.removeItem(LS_TOKEN);
+  localStorage.removeItem(LS_EMAIL);
+  localStorage.removeItem(LS_NAME);
+  location.reload();
+}
 
-  const me = getLogin();
-  const loginArea = document.getElementById("loginArea");
-  const menu = document.getElementById("menu");
-  const btnLogout = document.getElementById("btnLogout");
+function renderLoginState(){
+  const box = document.getElementById("loginState");
+  if(!box) return;
 
-  // 既にログイン済みならメニュー表示
-  if(me.token){
-    if(loginArea) loginArea.style.display = "none";
-    if(menu) menu.style.display = "block";
-    if(btnLogout) btnLogout.style.display = "inline-flex";
-    renderLoginState();
+  const token = getToken();
+  const email = getEmail();
+  const name  = getName();
+
+  box.innerHTML = "";
+  const wrap = document.createElement("div");
+  wrap.className = "loginBox";
+
+  if(token && email){
+    wrap.innerHTML = `
+      <div class="loginRow">
+        <div>
+          <div class="loginTitle">ログイン中</div>
+          <div class="loginUser">${escapeHtml(name || "")}</div>
+          <div class="loginMail">${escapeHtml(email)}</div>
+        </div>
+        <button class="btn ghost" type="button" id="btnLogout">ログアウト</button>
+      </div>
+      <small class="hint">※送信はログイン必須です</small>
+    `;
+    box.appendChild(wrap);
+    const b = document.getElementById("btnLogout");
+    if(b) b.addEventListener("click", logout);
     return;
   }
 
-  // Google GIS 初期化
-  if(!(window.google && google.accounts && google.accounts.id)){
-    const hint = document.getElementById("loginHint");
-    if(hint) hint.textContent = "Googleログインの読み込み中…（少し待ってください）";
-    setTimeout(initGoogleButton, 600);
+  wrap.innerHTML = `
+    <div class="loginTitle">Googleでログイン</div>
+    <div id="gBtn"></div>
+    <small class="hint">※ログインできない場合は「Authorized JavaScript origins」にGitHub Pages URLが必要です</small>
+  `;
+  box.appendChild(wrap);
+
+  // GIS読み込み → ボタン描画
+  loadGis(() => {
+    /* global google */
+    google.accounts.id.initialize({
+      client_id: GOOGLE_CLIENT_ID,
+      callback: (res) => {
+        if(setLoginFromToken(res.credential)){
+          location.reload();
+        }else{
+          alert("ログイン情報の解析に失敗しました");
+        }
+      },
+      auto_select: false
+    });
+
+    google.accounts.id.renderButton(
+      document.getElementById("gBtn"),
+      { theme: "outline", size: "large", text: "signin_with" }
+    );
+  });
+}
+
+function loadGis(done){
+  if(window.google && window.google.accounts && window.google.accounts.id){
+    done(); return;
+  }
+  const id = "gis_script";
+  if(document.getElementById(id)){
+    const t = setInterval(()=>{
+      if(window.google && window.google.accounts && window.google.accounts.id){
+        clearInterval(t); done();
+      }
+    }, 200);
     return;
   }
-
-  google.accounts.id.initialize({
-    client_id: GOOGLE_CLIENT_ID,
-    callback: onGoogleLogin,
-    auto_select: true,        // 自動ログインを狙う
-    cancel_on_tap_outside: false
-  });
-
-  google.accounts.id.renderButton(holder, {
-    theme: "outline",
-    size: "large",
-    shape: "pill",
-    text: "continue_with",
-    width: 280
-  });
-
-  // できる環境はワンタップ
-  google.accounts.id.prompt();
+  const s = document.createElement("script");
+  s.id = id;
+  s.src = "https://accounts.google.com/gsi/client";
+  s.async = true;
+  s.defer = true;
+  s.onload = done;
+  document.head.appendChild(s);
 }
 
-function escapeHtml(s){
-  return String(s ?? "")
-    .replace(/&/g,"&amp;")
-    .replace(/</g,"&lt;")
-    .replace(/>/g,"&gt;")
-    .replace(/"/g,"&quot;")
-    .replace(/'/g,"&#39;");
+function escapeHtml(str){
+  return (str||"").replace(/[&<>"']/g, (m)=>({
+    "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
+  }[m]));
 }
 
-/** 起動 */
-document.addEventListener("DOMContentLoaded", ()=>{
-  requireLoginOrRedirect();
-  renderLoginState();
-
-  // indexだけボタン生成
-  if(document.body?.dataset?.page === "index"){
-    initGoogleButton();
-    const btn = document.getElementById("btnLogout");
-    if(btn) btn.addEventListener("click", logout);
-  }
-});
+window.addEventListener("DOMContentLoaded", renderLoginState);
