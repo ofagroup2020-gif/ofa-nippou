@@ -7,13 +7,13 @@
   <link rel="stylesheet" href="./style.css" />
 </head>
 
-<body data-page="index">
+<body>
   <div class="wrap">
     <header class="card head">
       <div class="logo"></div>
       <div>
         <h1>OFA 点呼システム</h1>
-        <p class="sub">業務開始（出発点呼）/ 業務終了（帰着点呼）/ 日報・月報・CSV</p>
+        <p class="sub">業務開始（出発点呼）/ 業務終了（帰着点呼・日報）/ 日報・月報・CSV</p>
       </div>
     </header>
 
@@ -21,34 +21,22 @@
       <h2>🚚 点呼の重要ルール（必読）</h2>
       <ul>
         <li>点呼は <b>業務開始前（出発）</b> と <b>業務終了後（帰着）</b> の2回</li>
-        <li>アルコール測定は必須（数値＋酒気帯び判定）</li>
-        <li>点検（タイヤ/灯火/ブレーキ等）も必須（異常時はメモに詳細＋写真）</li>
-        <li>帰着点呼の「日報内容」はPDF提出されるため丁寧に記載</li>
+        <li>アルコール測定は必須（<b>数値 + 酒気帯び判定</b>）</li>
+        <li>車両点検も必須（NGがあれば<b>詳細メモ + 異常箇所写真</b>）</li>
+        <li>帰着点呼の「日報内容」は<b>そのままPDF提出</b>されるため丁寧に記載</li>
       </ul>
-      <div class="mini">
-        <span class="pill">✅ ドライバー：本人データのみ</span>
-        <span class="pill">🔑 管理者：パスONで全件出力</span>
-      </div>
     </section>
 
     <section class="card">
       <h2>メニュー</h2>
-      <p class="note">
-        ※各ページでGoogleログインしてから送信します。<br>
-        ※ログインできない場合は「Authorized JavaScript origins」にGitHub PagesのURLが必要です。
-      </p>
+      <p class="note">※各ページで Googleログインしてから送信します（トップではログイン不要）</p>
 
       <div class="btnCol">
         <a class="btn grad" href="./departure.html">✅ 業務開始（出発点呼）</a>
         <a class="btn grad" href="./arrival.html">✅ 業務終了（帰着点呼 / 日報）</a>
-        <a class="btn dark" href="./export.html">📄 日報PDF / 月報 / CSV（出力）</a>
+        <a class="btn dark" href="./export.html">📄 日報PDF / 月報PDF / CSV（出力）</a>
       </div>
     </section>
-
-    <div class="card subtle">
-      <h3>管理者モード（トップには表示しない方針）</h3>
-      <p class="note">管理者切替は <b>出力ページ（export）</b> で行います。</p>
-    </div>
 
     <div id="toast" class="toast" style="display:none;"></div>
   </div>
