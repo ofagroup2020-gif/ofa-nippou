@@ -1,122 +1,102 @@
-/****************************************************
- * OFA 点呼システム auth.js（GIS）
- ****************************************************/
+// auth.js (Google Identity Services)
+// ✅ ここをあなたの「本物のClient ID」に差し替え
+const GOOGLE_CLIENT_ID = "YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com";
 
-// ★あなたの本物の Client ID
-const GOOGLE_CLIENT_ID = "321435608721-vfrb8sgjnkqake7rgrscv8de798re2tl.apps.googleusercontent.com";
+// ローカル保存キー
+const LS = {
+  email: "ofa_email",
+  name: "ofa_name",
+  picture: "ofa_picture"
+};
 
-const LS_TOKEN = "ofa_id_token";
-const LS_EMAIL = "ofa_email";
-const LS_NAME  = "ofa_name";
+function getProfile(){
+  return {
+    email: localStorage.getItem(LS.email) || "",
+    name: localStorage.getItem(LS.name) || "",
+    picture: localStorage.getItem(LS.picture) || ""
+  };
+}
 
-function getToken(){ return localStorage.getItem(LS_TOKEN) || ""; }
-function getEmail(){ return localStorage.getItem(LS_EMAIL) || ""; }
-function getName(){ return localStorage.getItem(LS_NAME) || ""; }
+function setProfile(p){
+  localStorage.setItem(LS.email, p.email || "");
+  localStorage.setItem(LS.name, p.name || "");
+  localStorage.setItem(LS.picture, p.picture || "");
+}
 
-function setLoginFromToken(token){
-  try{
-    const payload = JSON.parse(atob(token.split(".")[1]));
-    localStorage.setItem(LS_TOKEN, token);
-    localStorage.setItem(LS_EMAIL, payload.email || "");
-    localStorage.setItem(LS_NAME, payload.name || payload.given_name || "");
-    return true;
-  }catch(e){
-    return false;
-  }
+function isLoggedIn(){
+  const p = getProfile();
+  return !!p.email;
 }
 
 function logout(){
-  localStorage.removeItem(LS_TOKEN);
-  localStorage.removeItem(LS_EMAIL);
-  localStorage.removeItem(LS_NAME);
-  location.reload();
+  localStorage.removeItem(LS.email);
+  localStorage.removeItem(LS.name);
+  localStorage.removeItem(LS.picture);
 }
 
-function renderLoginState(){
-  const box = document.getElementById("loginState");
-  if(!box) return;
+function decodeJwtPayload(token){
+  const base64Url = token.split(".")[1];
+  const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
+  const jsonPayload = decodeURIComponent(
+    atob(base64).split("").map(c => "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2)).join("")
+  );
+  return JSON.parse(jsonPayload);
+}
 
-  const token = getToken();
-  const email = getEmail();
-  const name  = getName();
-
-  box.innerHTML = "";
-  const wrap = document.createElement("div");
-  wrap.className = "loginBox";
-
-  if(token && email){
-    wrap.innerHTML = `
-      <div class="loginRow">
-        <div>
-          <div class="loginTitle">ログイン中</div>
-          <div class="loginUser">${escapeHtml(name || "")}</div>
-          <div class="loginMail">${escapeHtml(email)}</div>
-        </div>
-        <button class="btn ghost" type="button" id="btnLogout">ログアウト</button>
-      </div>
-      <small class="hint">※送信はログイン必須です</small>
-    `;
-    box.appendChild(wrap);
-    const b = document.getElementById("btnLogout");
-    if(b) b.addEventListener("click", logout);
-    return;
-  }
-
-  wrap.innerHTML = `
-    <div class="loginTitle">Googleでログイン</div>
-    <div id="gBtn"></div>
-    <small class="hint">※ログインできない場合は「Authorized JavaScript origins」にGitHub Pages URLが必要です</small>
-  `;
-  box.appendChild(wrap);
-
-  // GIS読み込み → ボタン描画
-  loadGis(() => {
-    /* global google */
-    google.accounts.id.initialize({
-      client_id: GOOGLE_CLIENT_ID,
-      callback: (res) => {
-        if(setLoginFromToken(res.credential)){
-          location.reload();
-        }else{
-          alert("ログイン情報の解析に失敗しました");
-        }
-      },
-      auto_select: false
-    });
-
-    google.accounts.id.renderButton(
-      document.getElementById("gBtn"),
-      { theme: "outline", size: "large", text: "signin_with" }
-    );
+function ensureGoogleScriptLoaded(){
+  return new Promise((resolve, reject)=>{
+    if(window.google && google.accounts && google.accounts.id) return resolve();
+    const s = document.createElement("script");
+    s.src = "https://accounts.google.com/gsi/client";
+    s.async = true; s.defer = true;
+    s.onload = ()=> resolve();
+    s.onerror = ()=> reject(new Error("Google script load failed"));
+    document.head.appendChild(s);
   });
 }
 
-function loadGis(done){
-  if(window.google && window.google.accounts && window.google.accounts.id){
-    done(); return;
-  }
-  const id = "gis_script";
-  if(document.getElementById(id)){
-    const t = setInterval(()=>{
-      if(window.google && window.google.accounts && window.google.accounts.id){
-        clearInterval(t); done();
-      }
-    }, 200);
+// ページにログインUIを出し、ログイン済みならコールバックへ
+async function requireLogin({buttonElId="gBtn", onAuthed} = {}){
+  await ensureGoogleScriptLoaded();
+
+  const btnEl = document.getElementById(buttonElId);
+  if(!btnEl) return;
+
+  // 既ログインなら即進む
+  if(isLoggedIn()){
+    onAuthed && onAuthed(getProfile());
     return;
   }
-  const s = document.createElement("script");
-  s.id = id;
-  s.src = "https://accounts.google.com/gsi/client";
-  s.async = true;
-  s.defer = true;
-  s.onload = done;
-  document.head.appendChild(s);
-}
 
-function escapeHtml(str){
-  return (str||"").replace(/[&<>"']/g, (m)=>({
-    "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
-  }[m]));
-}
+  // GIS init（✅ “勝手に別画面へ遷移”しない構成）
+  google.accounts.id.initialize({
+    client_id: GOOGLE_CLIENT_ID,
+    callback: (res)=>{
+      try{
+        const payload = decodeJwtPayload(res.credential);
+        setProfile({
+          email: payload.email,
+          name: payload.name || payload.given_name || "",
+          picture: payload.picture || ""
+        });
+        onAuthed && onAuthed(getProfile());
+      }catch(e){
+        console.error(e);
+        alert("Googleログインの解析に失敗しました");
+      }
+    }
+  });
 
-window.addEventListener("DOMContentLoaded", renderLoginState);
+  // ボタン描画
+  btnEl.innerHTML = "";
+  google.accounts.id.renderButton(btnEl, {
+    theme: "outline",
+    size: "large",
+    shape: "pill",
+    width: 260,
+    text: "signin_with"
+  });
+
+  // OneTap は iPhoneで挙動がブレやすいのでオフ（必要なら true に）
+  // google.accounts.id.prompt();
+}
