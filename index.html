@@ -2,48 +2,40 @@
 <html lang="ja">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
   <title>OFA 点呼システム</title>
-
-  <!-- Google Identity Services -->
-  <script src="https://accounts.google.com/gsi/client" async defer></script>
-
   <link rel="stylesheet" href="./style.css" />
 </head>
 <body>
-<div class="wrap">
-
-  <header class="card">
-    <h1>OFA 点呼システム</h1>
-    <p>業務開始 / 業務終了 / 日報・PDF・CSV</p>
-  </header>
-
-  <section class="card">
-    <h2>Googleログイン</h2>
-
-    <!-- Google Login Button -->
-    <div
-      id="g_id_onload"
-      data-client_id="321435608721-vfrb8sgjnkqake7rgrscv8de798re2tl.apps.googleusercontent.com"
-      data-callback="onGoogleLogin"
-      data-auto_prompt="false">
+  <div class="wrap">
+    <div class="card">
+      <h1>OFA 点呼システム</h1>
+      <div class="muted">出発点呼 / 帰着点呼（日報） / PDF・CSV</div>
     </div>
 
-    <div class="g_id_signin"
-      data-type="standard"
-      data-size="large"
-      data-theme="outline"
-      data-text="signin_with"
-      data-shape="rectangular">
-    </div>
+    <section class="card rule">
+      <h2>🚚 点呼の重要ルール（必読）</h2>
+      <ul>
+        <li>点呼は <b>業務開始前（出発）</b> と <b>業務終了後（帰着）</b> の2回</li>
+        <li>アルコール測定は必須（数値＋酒気帯び判定）</li>
+        <li>車両点検は必須（異常時はメモ＋写真推奨）</li>
+        <li>帰着の日報内容は <b>PDF提出</b> されます</li>
+      </ul>
+    </section>
 
-    <p class="hint">
-      ※ Googleアカウントがあれば誰でも利用できます  
-    </p>
-  </section>
+    <section class="card">
+      <h2>メニュー</h2>
+      <div class="btnrow">
+        <button class="btn btnRainbow" onclick="location.href='./departure.html'">✅ 業務開始（出発点呼）</button>
+        <button class="btn btnRainbow" onclick="location.href='./arrival.html'">✅ 業務終了（帰着点呼 / 日報）</button>
+        <button class="btn btnDark" onclick="location.href='./export.html'">📄 本人PDF / 月次CSV（出力）</button>
+      </div>
+      <div style="margin-top:10px;">
+        <button class="btn btnGhost" onclick="location.href='./admin.html'">🔒 管理者</button>
+      </div>
+    </section>
 
-</div>
-
-<script src="./auth.js"></script>
+    <div id="toast" class="toast"></div>
+  </div>
 </body>
 </html>
