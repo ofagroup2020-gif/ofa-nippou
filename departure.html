@@ -5,7 +5,9 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
   <title>OFA | 出発点呼（業務開始）</title>
   <link rel="stylesheet" href="./style.css" />
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
+
 <body data-page="departure">
   <div class="wrap">
     <div class="topbar">
@@ -20,7 +22,7 @@
     </div>
 
     <div class="card rainbow-border">
-      <div id="loginState"></div>
+      <div id="loginState" class="loginState"></div>
       <hr class="sep">
 
       <div class="grid grid2">
@@ -36,8 +38,8 @@
 
       <div class="grid grid2">
         <div>
-          <label>運転者氏名</label>
-          <input id="driverName" type="text" placeholder="自動入力されます" />
+          <label>運転者氏名（ログイン名）</label>
+          <input id="driverName" type="text" placeholder="自動入力" />
         </div>
         <div>
           <label>電話番号（任意：検索用）</label>
@@ -93,14 +95,14 @@
 
       <hr class="sep">
 
-      <div class="title" style="font-size:14px;">走行距離（業務開始）</div>
+      <div class="sectionMini">走行距離（業務開始）</div>
       <div class="grid grid3">
         <div>
           <label>開始メーター</label>
           <input id="odoStart" inputmode="numeric" placeholder="例：12345" />
         </div>
         <div>
-          <label>終了メーター（帰着で入力）</label>
+          <label>終了メーター（帰着で入力でもOK）</label>
           <input id="odoEnd" inputmode="numeric" placeholder="帰着で入力でもOK" />
         </div>
         <div>
@@ -111,7 +113,7 @@
 
       <hr class="sep">
 
-      <div class="title" style="font-size:14px;">車両点検（必須）</div>
+      <div class="sectionMini">車両点検（必須）</div>
       <div class="grid grid3">
         <div><label>タイヤ</label><select id="insp_tire"><option value="">選択</option><option>OK</option><option>NG</option></select></div>
         <div><label>灯火</label><select id="insp_light"><option value="">選択</option><option>OK</option><option>NG</option></select></div>
@@ -137,7 +139,7 @@
 
       <hr class="sep">
 
-      <div class="title" style="font-size:14px;">免許（番号 or 写真）</div>
+      <div class="sectionMini">免許（番号 or 写真）</div>
       <div class="grid grid2">
         <div>
           <label>免許番号（任意）</label>
@@ -156,11 +158,12 @@
         <button class="btn rainbow" id="btnSubmit">送信（出発点呼）→ 保存してトップへ</button>
       </div>
 
-      <small class="hint">※送信後、GoogleスプレッドシートとDriveに保存されます。</small>
+      <small class="hint">※送信後、スプレッドシート＆Driveへ保存されます。</small>
     </div>
   </div>
 
   <div class="toast" id="toast"></div>
+  <script src="./auth.js"></script>
   <script src="./app.js"></script>
 </body>
 </html>
