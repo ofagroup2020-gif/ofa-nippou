@@ -1,5 +1,5 @@
 // ★あなたのGAS WebアプリURL（/exec）
-const GAS_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbz125_pS_rxMUETFB-n_xe-XCYkGGPuKzAUM-YhTv04vfMGg26Dh1SbVecmq01dqGAtIw/exec";
+const GAS_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbz5Jfpy7D9x8ps7VQMXD01jK5YX9FX8q0KwRmxMZ6eyi9I9AKj39UnBsYFPjLg-qcZCHg/exec";
 
 // ★パスワード（画面には表示しない）
 // ※定期更新するならここだけ差し替え
