@@ -13,14 +13,14 @@
         <div class="logo"></div>
         <div>
           <div class="title">業務終了（帰着点呼 / 日報）</div>
-          <div class="subtitle">日報内容はPDF提出されます（写真は日報のみ保存）</div>
+          <div class="subtitle">日報内容はPDF提出されます（そのまま反映）</div>
         </div>
       </div>
-      <button class="btn ghost" id="backBtn" type="button">戻る</button>
+      <button class="btn ghost small" id="backBtn" type="button">戻る</button>
     </div>
 
     <div class="card rainbow-border">
-      <div class="row" style="align-items:center;">
+      <div class="row" style="display:flex;align-items:center;justify-content:space-between;gap:10px;">
         <div id="loginState" class="hint" style="margin:0;"></div>
         <span id="badgeMode" class="badge">ドライバー</span>
       </div>
@@ -44,16 +44,50 @@
           <input id="driverName" type="text" placeholder="例：森下 洸" />
         </div>
         <div>
-          <label>車両番号 / ナンバー <span class="req">*</span></label>
-          <input id="vehicleNo" type="text" placeholder="例：鹿児島 480 れ 21-15" />
+          <label>電話番号（任意）</label>
+          <input id="driverPhone" type="tel" placeholder="080..." />
         </div>
       </div>
 
       <div class="grid grid2">
         <div>
+          <label>休憩時間（分） <span class="req">*</span></label>
+          <input id="restMinutes" type="number" step="1" min="0" max="600" placeholder="例：60" />
+        </div>
+        <div>
+          <label>体調 <span class="req">*</span></label>
+          <select id="condition">
+            <option value="">選択</option>
+            <option>良好</option>
+            <option>普通</option>
+            <option>不良</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="grid grid2">
+        <div>
+          <label>体温（任意）</label>
+          <input id="temperature" type="number" step="0.1" min="30" max="45" placeholder="例：36.5" />
+        </div>
+        <div>
+          <label>健康メモ（任意）</label>
+          <input id="healthNote" type="text" placeholder="疲労/服薬/注意点など" />
+        </div>
+      </div>
+
+      <div class="grid grid2">
+        <div>
+          <label>車両番号 / ナンバー <span class="req">*</span></label>
+          <input id="vehicleNo" type="text" placeholder="例：鹿児島 480 れ 21-15" />
+        </div>
+        <div>
           <label>点呼実施者 <span class="req">*</span></label>
           <input id="managerName" type="text" placeholder="例：太田" />
         </div>
+      </div>
+
+      <div class="grid grid2">
         <div>
           <label>点呼方法 <span class="req">*</span></label>
           <select id="method">
@@ -64,238 +98,144 @@
             <option>チャット</option>
           </select>
         </div>
-      </div>
-
-      <div class="grid grid2">
         <div>
           <label>点呼場所 <span class="req">*</span></label>
-          <input id="place" type="text" placeholder="例：Amazon鹿児島" />
-        </div>
-        <div>
-          <label>休憩時間（合計：分） <span class="req">*</span></label>
-          <input id="breakMinutes" type="number" min="0" step="5" placeholder="例：60" />
-        </div>
-      </div>
-
-      <div class="grid grid2">
-        <div>
-          <label>体調 <span class="req">*</span></label>
-          <select id="conditionEnd">
-            <option value="">選択</option>
-            <option value="良好">良好</option>
-            <option value="普通">普通</option>
-            <option value="不良">不良</option>
-          </select>
-        </div>
-        <div>
-          <label>業務内容（必須） <span class="req">*</span></label>
-          <input id="workType" type="text" placeholder="例：Amazon配送" />
-        </div>
-      </div>
-
-      <div class="grid grid2">
-        <div>
-          <label>配送エリア（必須） <span class="req">*</span></label>
-          <input id="workArea" type="text" placeholder="例：姶良市" />
-        </div>
-        <div>
-          <label>稼働時間（必須） <span class="req">*</span></label>
-          <input id="workHours" type="text" placeholder="例：9:00-20:45" />
-        </div>
-      </div>
-
-      <div class="grid grid3">
-        <div>
-          <label>配送個数（任意）</label>
-          <input id="deliveryCount" type="number" min="0" step="1" placeholder="例：198" />
-        </div>
-        <div>
-          <label>再配達（任意）</label>
-          <input id="redeliveryCount" type="number" min="0" step="1" placeholder="例：12" />
-        </div>
-        <div>
-          <label>残荷（任意）</label>
-          <input id="remainingCount" type="number" min="0" step="1" placeholder="例：3" />
-        </div>
-      </div>
-
-      <div class="grid grid2">
-        <div>
-          <label>事故・接触・破損 <span class="req">*</span></label>
-          <select id="accidentFlag">
-            <option value="">選択</option>
-            <option value="なし">なし</option>
-            <option value="あり">あり</option>
-          </select>
-        </div>
-        <div>
-          <label>クレーム/トラブル <span class="req">*</span></label>
-          <select id="troubleFlag">
-            <option value="">選択</option>
-            <option value="なし">なし</option>
-            <option value="あり">あり</option>
-          </select>
-        </div>
-      </div>
-
-      <label>ヒヤリハット（必須：なければ「なし」） <span class="req">*</span></label>
-      <textarea id="nearMiss" placeholder="例：交差点で自転車飛び出し（なければ『なし』）"></textarea>
-
-      <label>引継ぎ/改善メモ（必須：なければ「なし」） <span class="req">*</span></label>
-      <textarea id="handoverNote" placeholder="例：置き配ルール注意（なければ『なし』）"></textarea>
-
-      <!-- 必須強化（免許番号/アルコール） -->
-      <hr class="sep">
-      <div class="titleSm">点呼（必須）</div>
-      <div class="grid grid2">
-        <div>
-          <label>免許証番号 <span class="req">*</span></label>
-          <input id="licenseNo" type="text" placeholder="免許証番号（必須）" />
-        </div>
-        <div>
-          <label>免許証写真（任意）</label>
-          <input id="licensePhoto" type="file" accept="image/*" />
+          <input id="place" type="text" placeholder="例：現地/事務所" />
         </div>
       </div>
 
       <div class="grid grid2">
         <div>
           <label>アルコール測定値 <span class="req">*</span></label>
-          <input id="alcoholValue" type="text" inputmode="decimal" placeholder="例：0.00（必須）" />
+          <input id="alcoholValue" type="text" placeholder="例：0.00" />
         </div>
         <div>
-          <label>酒気帯び判定 <span class="req">*</span></label>
+          <label>酒気帯び <span class="req">*</span></label>
           <select id="alcoholBand">
             <option value="">選択</option>
-            <option value="なし">なし</option>
-            <option value="あり">あり</option>
+            <option>なし</option>
+            <option>あり</option>
           </select>
         </div>
       </div>
 
+      <label>メモ（任意：異常時は必ず詳細）</label>
+      <textarea id="memo" placeholder="体調・指示事項・反省点など"></textarea>
+
+      <label>アルコール指標写真（任意）</label>
+      <input id="alcoholPhotos" type="file" accept="image/*" multiple />
+
+      <hr class="sep">
+
+      <div class="titleSm">走行距離（業務終了）</div>
+      <div class="grid grid3">
+        <div>
+          <label>開始メーター（出発の値でもOK）</label>
+          <input id="odoStart" inputmode="numeric" placeholder="例：12345" />
+        </div>
+        <div>
+          <label>終了メーター（帰着）</label>
+          <input id="odoEnd" inputmode="numeric" placeholder="例：12500" />
+        </div>
+        <div>
+          <label>走行距離（自動計算）</label>
+          <input id="odoTotal" readonly placeholder="自動計算" />
+        </div>
+      </div>
+
+      <hr class="sep">
+
+      <div class="titleSm">車両点検（必須）</div>
+      <div class="grid grid3">
+        <div><label>タイヤ <span class="req">*</span></label><select id="insp_tire"><option value="">選択</option><option>OK</option><option>NG</option></select></div>
+        <div><label>灯火 <span class="req">*</span></label><select id="insp_light"><option value="">選択</option><option>OK</option><option>NG</option></select></div>
+        <div><label>ブレーキ <span class="req">*</span></label><select id="insp_brake"><option value="">選択</option><option>OK</option><option>NG</option></select></div>
+
+        <div><label>ワイパー <span class="req">*</span></label><select id="insp_wiper"><option value="">選択</option><option>OK</option><option>NG</option></select></div>
+        <div><label>エンジンオイル <span class="req">*</span></label><select id="insp_engineOil"><option value="">選択</option><option>OK</option><option>NG</option></select></div>
+        <div><label>冷却水 <span class="req">*</span></label><select id="insp_coolant"><option value="">選択</option><option>OK</option><option>NG</option></select></div>
+
+        <div><label>バッテリー <span class="req">*</span></label><select id="insp_battery"><option value="">選択</option><option>OK</option><option>NG</option></select></div>
+        <div><label>ホーン <span class="req">*</span></label><select id="insp_horn"><option value="">選択</option><option>OK</option><option>NG</option></select></div>
+        <div><label>ミラー <span class="req">*</span></label><select id="insp_mirror"><option value="">選択</option><option>OK</option><option>NG</option></select></div>
+
+        <div><label>外装/破損 <span class="req">*</span></label><select id="insp_damage"><option value="">選択</option><option>OK</option><option>NG</option></select></div>
+        <div><label>積載状態 <span class="req">*</span></label><select id="insp_cargo"><option value="">選択</option><option>OK</option><option>NG</option></select></div>
+        <div><label>消火器 <span class="req">*</span></label><select id="insp_extinguisher"><option value="">選択</option><option>OK</option><option>NG</option></select></div>
+
+        <div><label>三角停止板 <span class="req">*</span></label><select id="insp_triangle"><option value="">選択</option><option>OK</option><option>NG</option></select></div>
+      </div>
+
+      <label>点検メモ（任意：NGは必ず詳細）</label>
+      <textarea id="insp_note" placeholder="NGの場合は必ず詳細"></textarea>
+
+      <label>異常箇所写真（任意：NG時推奨）</label>
+      <input id="abnormalPhotos" type="file" accept="image/*" multiple />
+
+      <hr class="sep">
+
+      <div class="titleSm">免許（番号必須 / 写真任意）</div>
       <div class="grid grid2">
         <div>
-          <label>アルコールチェック指標写真（任意）</label>
-          <input id="alcoholPhoto" type="file" accept="image/*" />
+          <label>免許証番号 <span class="req">*</span></label>
+          <input id="licenseNo" type="text" placeholder="必須" />
         </div>
         <div>
-          <label>点呼写真（任意）</label>
-          <input id="tenkoPhoto" type="file" accept="image/*" />
+          <label>免許写真（任意）</label>
+          <input id="licensePhotos" type="file" accept="image/*" multiple />
         </div>
       </div>
 
-      <label>日報添付写真（任意：日報のみ保存）</label>
-      <input id="reportPhotos" type="file" accept="image/*" multiple />
+      <label>点呼写真（任意）</label>
+      <input id="tenkoPhotos" type="file" accept="image/*" multiple />
 
-      <label>日報メモ（詳細：引継ぎ/改善）</label>
-      <textarea id="dailyNote" placeholder="例：再配達○件、注意点、引継ぎなど（なければ空でOK）"></textarea>
+      <hr class="sep">
 
-      <label>点呼メモ（任意）</label>
-      <textarea id="memo" placeholder="体調・注意点など"></textarea>
-
-      <div class="btnrow">
-        <button class="btn rainbow" id="btnSubmit" type="button">送信（帰着点呼/日報）→ 保存してトップへ</button>
+      <div class="titleSm">日報（PDF提出用：内容そのまま反映）</div>
+      <div class="grid grid2">
+        <div>
+          <label>業務内容 <span class="req">*</span></label>
+          <input id="workType" type="text" placeholder="例：Amazon配送" />
+        </div>
+        <div>
+          <label>配送エリア <span class="req">*</span></label>
+          <input id="workArea" type="text" placeholder="例：姶良市" />
+        </div>
       </div>
 
-      <small class="hint">
-        ※送信は <b>フォーム＋隠しiframe</b> 方式（CORS無関係）で確実に通します。<br>
-        ※送信後、PDF/CSVは「自分のPDF/CSV」から出力できます。
-      </small>
+      <div class="grid grid3">
+        <div>
+          <label>稼働時間 <span class="req">*</span></label>
+          <input id="workHours" type="text" placeholder="例：9:30-21:10" />
+        </div>
+        <div>
+          <label>配送個数（任意）</label>
+          <input id="deliveryCount" type="number" min="0" step="1" placeholder="例：179" />
+        </div>
+        <div>
+          <label>トラブル/事故（任意）</label>
+          <input id="trouble" type="text" placeholder="なければ「なし」" />
+        </div>
+      </div>
+
+      <label>日報メモ（任意：引継ぎ/改善を詳細に）</label>
+      <textarea id="dailyNote" placeholder="例：再配達○件、注意点、引継ぎ、改善点など"></textarea>
+
+      <label>日報添付写真（任意：証跡）</label>
+      <input id="reportPhotos" type="file" accept="image/*" multiple />
+
+      <div class="btnrow">
+        <button class="btn rainbow" id="btnSubmit" type="button">送信（帰着点呼/日報）</button>
+      </div>
+
+      <small class="hint">※送信失敗端末でも“確実方式（sendBeacon）”へ自動切替します。</small>
     </div>
   </div>
 
   <div class="toast" id="toast"></div>
-  <iframe name="submitFrame" class="hiddenFrame"></iframe>
 
   <script src="./config.js"></script>
-  <script src="./common.js"></script>
-  <script src="./submit.js"></script>
-
-  <script>
-    requireLogin();
-    initPageCommon();
-
-    document.getElementById('btnSubmit').addEventListener('click', async ()=>{
-      const data = collectArrival();
-      const err = validateArrival(data);
-      if(err){ showToast(err); return; }
-
-      // 写真（任意）をbase64化 → GASでDrive保存（帰着は日報写真のみ保存）
-      const photos = await collectPhotosForTenko({
-        licensePhotoId: 'licensePhoto',
-        alcoholPhotoId: 'alcoholPhoto',
-        tenkoPhotoId: 'tenkoPhoto',
-        reportPhotosId: 'reportPhotos'
-      });
-
-      showToast('送信中…');
-      submitByIframe({
-        action: 'submitTenko',
-        payload: { ...data, ...photos }
-      }, (ok, message)=>{
-        if(!ok){
-          showToast('送信失敗：' + message);
-          return;
-        }
-        showToast('送信完了');
-        setTimeout(()=> location.href='./home.html', 800);
-      });
-    });
-
-    function collectArrival(){
-      return {
-        kind: 'arrival',
-        date: v('date'),
-        time: v('time'),
-        driverName: v('driverName'),
-        vehicleNo: v('vehicleNo'),
-        managerName: v('managerName'),
-        method: v('method'),
-        place: v('place'),
-        breakMinutes: v('breakMinutes'),
-        condition: v('conditionEnd'),
-        workType: v('workType'),
-        workArea: v('workArea'),
-        workHours: v('workHours'),
-        deliveryCount: v('deliveryCount') || '',
-        redeliveryCount: v('redeliveryCount') || '',
-        remainingCount: v('remainingCount') || '',
-        accidentFlag: v('accidentFlag'),
-        troubleFlag: v('troubleFlag'),
-        nearMiss: v('nearMiss') || 'なし',
-        handoverNote: v('handoverNote') || 'なし',
-        licenseNo: v('licenseNo'),
-        alcoholValue: v('alcoholValue'),
-        alcoholBand: v('alcoholBand'),
-        dailyNote: v('dailyNote') || '',
-        memo: v('memo') || ''
-      };
-    }
-
-    function validateArrival(d){
-      if(!d.date) return '日付が未入力です';
-      if(!d.time) return '時刻が未入力です';
-      if(!d.driverName) return '運転者氏名が未入力です';
-      if(!d.vehicleNo) return '車両番号が未入力です';
-      if(!d.managerName) return '点呼実施者が未入力です';
-      if(!d.method) return '点呼方法が未選択です';
-      if(!d.place) return '点呼場所が未入力です';
-      if(!d.breakMinutes) return '休憩時間が未入力です';
-      if(!d.condition) return '体調が未選択です';
-      if(!d.workType) return '業務内容が未入力です';
-      if(!d.workArea) return '配送エリアが未入力です';
-      if(!d.workHours) return '稼働時間が未入力です';
-      if(!d.accidentFlag) return '事故・接触・破損が未選択です';
-      if(!d.troubleFlag) return 'クレーム/トラブルが未選択です';
-      if(!d.nearMiss) return 'ヒヤリハットが未入力です';
-      if(!d.handoverNote) return '引継ぎ/改善メモが未入力です';
-      if(!d.licenseNo) return '免許証番号が未入力です';
-      if(!d.alcoholValue) return 'アルコール測定値が未入力です';
-      if(!d.alcoholBand) return '酒気帯び判定が未選択です';
-      return '';
-    }
-
-    document.getElementById('backBtn').onclick = ()=>location.href='./home.html';
-  </script>
+  <script src="./auth.js"></script>
+  <script src="./app.js"></script>
 </body>
 </html>
