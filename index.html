@@ -2,215 +2,101 @@
 <html lang="ja">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>OFA 点呼</title>
-  <style>
-    body { font-family: -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Noto Sans JP","Hiragino Kaku Gothic ProN",sans-serif; margin: 16px; }
-    .card { border:1px solid #e5e5e5; border-radius:14px; padding:14px; margin-bottom:14px; }
-    h2 { margin: 0 0 10px; }
-    label { display:block; font-weight: 700; margin-top: 10px; }
-    input, select, textarea { width: 100%; padding: 12px; border:1px solid #ddd; border-radius:12px; font-size: 16px; box-sizing: border-box; }
-    textarea { min-height: 90px; }
-    .row { display:flex; gap:10px; }
-    .row > div { flex:1; }
-    .tabs { display:flex; gap:10px; margin-bottom: 14px; }
-    .tab { flex:1; padding: 12px; border-radius: 12px; border:1px solid #ddd; text-align:center; font-weight:800; cursor:pointer; user-select:none; }
-    .tab.active { border-color:#111; }
-    .btn { width:100%; padding:14px; border:0; border-radius: 14px; font-weight: 900; font-size: 16px; cursor:pointer; background: linear-gradient(90deg,#ff4d4d,#ffd54d,#4dd0ff,#b86bff); }
-    .note { font-size: 12px; color:#666; margin-top:8px; }
-    .ok { padding:10px; border-radius:12px; background:#e9fff0; border:1px solid #b7f0c8; font-weight:800; display:none; margin-bottom: 14px; }
-    .err { padding:10px; border-radius:12px; background:#fff0f0; border:1px solid #ffb3b3; font-weight:800; display:none; margin-bottom: 14px; }
-    .small { font-size: 13px; color:#444; }
-  </style>
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <title>OFA 点呼システム</title>
+  <link rel="stylesheet" href="./style.css" />
 </head>
-<body>
-
-<div class="ok" id="okBox">送信しました（記録完了）</div>
-<div class="err" id="errBox">未入力の必須項目があります（入力を確認してください）</div>
-
-<div class="tabs">
-  <div class="tab active" id="tabStart" onclick="setType('出発')">出発点呼</div>
-  <div class="tab" id="tabEnd" onclick="setType('終了')">終了点呼</div>
-</div>
-
-<div class="card">
-  <h2>点呼（必須）</h2>
-
-  <!-- hidden iframe：CORS回避 -->
-  <iframe name="hiddenFrame" style="display:none;"></iframe>
-
-  <form id="tenkoForm" method="post" target="hiddenFrame" action="YOUR_WEBAPP_URL">
-    <input type="hidden" name="type" id="type" value="出発">
-
-    <label>ドライバーID（必須）</label>
-    <input name="driverId" id="driverId" required placeholder="例：D001">
-
-    <label>氏名（必須）</label>
-    <input name="name" id="name" required placeholder="例：山田 太郎">
-
-    <label>日付（必須）</label>
-    <input type="date" name="date" id="date" required>
-
-    <label>免許証番号（必須）</label>
-    <input name="licenseNo" id="licenseNo" required placeholder="免許証番号">
-
-    <label>アルコール測定値（必須）</label>
-    <input name="alcohol" id="alcohol" required placeholder="例：0.00">
-
-    <label>酒気帯び判定（必須）</label>
-    <select name="alcoholJudge" id="alcoholJudge" required>
-      <option value="">選択</option>
-      <option value="問題なし">問題なし</option>
-      <option value="酒気帯び疑い">酒気帯び疑い</option>
-    </select>
-
-    <label>メモ（任意：異常時は詳細）</label>
-    <textarea name="memo" id="memo" placeholder="体調・睡眠・注意点など"></textarea>
-
-    <!-- 車両点検：出発も終了も必須 -->
-    <div class="card" style="margin-top:14px;">
-      <h2 style="font-size:18px;">車両点検（必須）</h2>
-      <div class="small">※出発点呼・終了点呼どちらも必須</div>
-
-      <label>タイヤ（必須）</label>
-      <select name="insp_tire" id="insp_tire" required>
-        <option value="">選択</option><option value="OK">OK</option><option value="NG">NG</option>
-      </select>
-
-      <label>ブレーキ（必須）</label>
-      <select name="insp_brake" id="insp_brake" required>
-        <option value="">選択</option><option value="OK">OK</option><option value="NG">NG</option>
-      </select>
-
-      <label>灯火類（必須）</label>
-      <select name="insp_light" id="insp_light" required>
-        <option value="">選択</option><option value="OK">OK</option><option value="NG">NG</option>
-      </select>
-
-      <label>警告灯（必須）</label>
-      <select name="insp_warning" id="insp_warning" required>
-        <option value="">選択</option><option value="なし">なし</option><option value="あり">あり</option>
-      </select>
-
-      <label>液漏れ（必須）</label>
-      <select name="insp_leak" id="insp_leak" required>
-        <option value="">選択</option><option value="なし">なし</option><option value="あり">あり</option>
-      </select>
-
-      <label>異音・異臭（必須）</label>
-      <select name="insp_noise" id="insp_noise" required>
-        <option value="">選択</option><option value="なし">なし</option><option value="あり">あり</option>
-      </select>
-
-      <label>積載／荷崩れ（必須）</label>
-      <select name="insp_load" id="insp_load" required>
-        <option value="">選択</option><option value="問題なし">問題なし</option><option value="注意あり">注意あり</option>
-      </select>
-
-      <label>その他確認（必須）</label>
-      <select name="insp_other" id="insp_other" required>
-        <option value="">選択</option>
-        <option value="問題なし">問題なし</option>
-        <option value="注意あり">注意あり</option>
-      </select>
+<body data-page="home">
+  <div class="wrap">
+    <div class="topbar">
+      <div class="brand">
+        <div class="logo"></div>
+        <div>
+          <div class="title">OFA 点呼システム</div>
+          <div class="subtitle">出発点呼 / 帰着点呼・日報 / PDF・月報・CSV</div>
+        </div>
+      </div>
+      <span id="badge" class="badge gray">未ログイン</span>
     </div>
 
-    <button class="btn" type="submit" id="submitBtn">送信（出発点呼）→ 保存してトップへ</button>
-    <div class="note">※送信後、このページ上に「送信しました」が出ればOK</div>
-  </form>
-</div>
+    <div class="card">
+      <div class="titleSm">点呼の重要ルール（必読）</div>
+      <ul class="bullets">
+        <li>点呼は <b>業務開始前（出発）</b> と <b>業務終了後（帰着）</b> の2回</li>
+        <li>アルコールチェックは <b>数値必須</b>（写真は任意）</li>
+        <li>免許番号は <b>必須</b>（写真は任意）</li>
+        <li>車両点検も必須（NG時は異常箇所写真推奨）</li>
+        <li>帰着点呼の日報はPDF提出されるため丁寧に記載</li>
+      </ul>
+    </div>
 
-<div class="card">
-  <h2>日報／月報 出力</h2>
-  <div class="small">※ドライバーIDと日付／年月を入力して出力</div>
+    <div class="card rainbow-border">
+      <div class="titleSm">ログイン（パスワード）</div>
+      <p class="hint">
+        パスワードは社内LINEで案内します。分からない場合はLINE公式から確認してください。
+      </p>
 
-  <label>ドライバーID</label>
-  <input id="r_driverId" placeholder="例：D001">
+      <div class="grid grid2">
+        <div>
+          <label>パスワード <span class="req">*</span></label>
+          <input id="pass" type="password" placeholder="パスワードを入力" autocomplete="current-password" />
+        </div>
+        <div>
+          <label>パスワード確認</label>
+          <a class="btn dark" href="https://lin.ee/8dsZjAo" target="_blank" rel="noopener">LINE公式で確認</a>
+        </div>
+      </div>
 
-  <label>日付（yyyy-mm-dd）</label>
-  <input id="r_date" placeholder="例：2026-01-04">
+      <div class="btnrow">
+        <button class="btn rainbow" id="btnDriver" type="button">ドライバーでログイン</button>
+        <button class="btn dark" id="btnAdmin" type="button">管理者でログイン</button>
+      </div>
 
-  <button class="btn" type="button" onclick="openDailyPdf()">日報PDFを作成して開く</button>
+      <hr class="sep">
 
-  <div style="height:10px;"></div>
+      <div class="btnrow">
+        <a class="btn ghost" href="./departure.html">出発点呼へ</a>
+        <a class="btn ghost" href="./arrival.html">帰着点呼 / 日報へ</a>
+        <a class="btn ghost" href="./export.html">出力（本人/管理）へ</a>
+      </div>
 
-  <label>年月（yyyy-mm）</label>
-  <input id="r_ym" placeholder="例：2026-01">
+      <small class="hint">
+        ※ 未ログインでもページは開けますが、送信/出力はログイン必須です。
+      </small>
+    </div>
 
-  <button class="btn" type="button" onclick="openMonthlyPdf()">月報PDFを作成して開く</button>
-  <div style="height:10px;"></div>
-  <button class="btn" type="button" onclick="openMonthlyCsv()">月報CSVを作成して開く</button>
+  </div>
 
-  <div class="note">※初回はDrive作成の権限許可が求められます</div>
-</div>
+  <div class="toast" id="toast"></div>
 
-<script>
-  const WEBAPP = "https://script.google.com/macros/s/AKfycbxvYcM_LuHIR-nziEO6FgFKLPfbJvHQl9Soj2nZS0IApOoyjgbo64Hc9HWcXW7p_9ppqw/exec";
+  <script src="./config.js"></script>
+  <script src="./auth.js"></script>
+  <script>
+    const badge = document.getElementById("badge");
+    const pass = document.getElementById("pass");
+    const btnDriver = document.getElementById("btnDriver");
+    const btnAdmin = document.getElementById("btnAdmin");
 
-  function setType(t){
-    document.getElementById("type").value = t;
-    document.getElementById("tabStart").classList.toggle("active", t==="出発");
-    document.getElementById("tabEnd").classList.toggle("active", t==="終了");
-    document.getElementById("submitBtn").textContent = `送信（${t}点呼）→ 保存してトップへ`;
-  }
-
-  // 日付を今日に
-  (function init(){
-    const d = new Date();
-    const yyyy = d.getFullYear();
-    const mm = String(d.getMonth()+1).padStart(2,"0");
-    const dd = String(d.getDate()).padStart(2,"0");
-    document.getElementById("date").value = `${yyyy}-${mm}-${dd}`;
-  })();
-
-  // 送信前チェック（ブラウザrequiredに加えて、確実に弾く）
-  document.getElementById("tenkoForm").addEventListener("submit", function(ev){
-    hideMsg();
-    const requiredIds = [
-      "driverId","name","date","licenseNo","alcohol","alcoholJudge",
-      "insp_tire","insp_brake","insp_light","insp_warning","insp_leak","insp_noise","insp_load","insp_other"
-    ];
-    for (const id of requiredIds) {
-      const el = document.getElementById(id);
-      if (!el || !String(el.value||"").trim()) {
-        ev.preventDefault();
-        showErr();
-        el && el.focus();
-        return;
-      }
+    function renderBadge(){
+      const s = Auth.getSession();
+      if(!s){ badge.textContent="未ログイン"; badge.className="badge gray"; return; }
+      badge.textContent = s.role === "admin" ? "管理者" : "ドライバー";
+      badge.className = "badge " + (s.role === "admin" ? "red" : "green");
     }
 
-    // iframe送信なので、送信完了表示はタイマーで出す（確実に“送信した”を可視化）
-    setTimeout(() => { showOk(); window.scrollTo({top:0,behavior:"smooth"}); }, 700);
-  });
+    btnDriver.onclick = () => {
+      const p = (pass.value||"").trim();
+      if(Auth.loginDriver(p)) { toast("ログインしました（ドライバー）"); renderBadge(); }
+      else toast("パスワードが違います");
+    };
 
-  function hideMsg(){
-    document.getElementById("okBox").style.display = "none";
-    document.getElementById("errBox").style.display = "none";
-  }
-  function showOk(){ document.getElementById("okBox").style.display = "block"; }
-  function showErr(){ document.getElementById("errBox").style.display = "block"; }
+    btnAdmin.onclick = () => {
+      const p = (pass.value||"").trim();
+      if(Auth.loginAdmin(p)) { toast("ログインしました（管理者）"); renderBadge(); }
+      else toast("パスワードが違います");
+    };
 
-  // レポート
-  function openDailyPdf(){
-    const id = document.getElementById("r_driverId").value.trim();
-    const date = document.getElementById("r_date").value.trim();
-    if(!id || !date) { alert("ドライバーIDと日付を入力してください"); return; }
-    window.open(`${WEBAPP}?action=dailyPdf&driverId=${encodeURIComponent(id)}&date=${encodeURIComponent(date)}`, "_blank");
-  }
-  function openMonthlyPdf(){
-    const id = document.getElementById("r_driverId").value.trim();
-    const ym = document.getElementById("r_ym").value.trim();
-    if(!id || !ym) { alert("ドライバーIDと年月を入力してください"); return; }
-    window.open(`${WEBAPP}?action=monthlyPdf&driverId=${encodeURIComponent(id)}&ym=${encodeURIComponent(ym)}`, "_blank");
-  }
-  function openMonthlyCsv(){
-    const id = document.getElementById("r_driverId").value.trim();
-    const ym = document.getElementById("r_ym").value.trim();
-    if(!id || !ym) { alert("ドライバーIDと年月を入力してください"); return; }
-    window.open(`${WEBAPP}?action=monthlyCsv&driverId=${encodeURIComponent(id)}&ym=${encodeURIComponent(ym)}`, "_blank");
-  }
-</script>
-
+    renderBadge();
+  </script>
 </body>
 </html>
