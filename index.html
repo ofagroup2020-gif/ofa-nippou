@@ -5,98 +5,61 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
   <title>OFA 点呼システム</title>
   <link rel="stylesheet" href="./style.css" />
+  <style>
+    .disabledLink{opacity:.45;pointer-events:none}
+  </style>
 </head>
-<body data-page="home">
+<body>
   <div class="wrap">
-    <div class="topbar">
-      <div class="brand">
-        <div class="logo"></div>
-        <div>
-          <div class="title">OFA 点呼システム</div>
-          <div class="subtitle">出発点呼 / 帰着点呼・日報 / PDF・月報・CSV</div>
-        </div>
+    <header class="card head">
+      <div class="logo"></div>
+      <div>
+        <h1>OFA 点呼システム</h1>
+        <p class="sub">業務開始（出発点呼）/ 業務終了（帰着点呼＋日報）/ 日報PDF・月報PDF・CSV</p>
       </div>
-      <span id="badge" class="badge gray">未ログイン</span>
-    </div>
+    </header>
 
-    <div class="card">
-      <div class="titleSm">点呼の重要ルール（必読）</div>
-      <ul class="bullets">
-        <li>点呼は <b>業務開始前（出発）</b> と <b>業務終了後（帰着）</b> の2回</li>
-        <li>アルコールチェックは <b>数値必須</b>（写真は任意）</li>
-        <li>免許番号は <b>必須</b>（写真は任意）</li>
-        <li>車両点検も必須（NG時は異常箇所写真推奨）</li>
-        <li>帰着点呼の日報はPDF提出されるため丁寧に記載</li>
-      </ul>
-    </div>
+    <section class="card rulebox">
+      <b>🚚 点呼の重要ルール（必読）</b><br>
+      ・点呼は <b>業務開始前（出発）</b> と <b>業務終了後（帰着）</b> の2回<br>
+      ・<b>免許証番号は必須</b> / 免許証写真は任意<br>
+      ・<b>アルコール測定値は必須</b> / 指標写真は任意（推奨）<br>
+      ・点検（タイヤ/灯火/ブレーキ等）は必須（異常はメモ＋異常箇所写真）<br><br>
+      <b>パスワードは社内LINEで案内します：</b><br>
+      メンバーLINE公式：<a href="https://lin.ee/8dsZjAo" target="_blank" rel="noopener">https://lin.ee/8dsZjAo</a>
+    </section>
 
-    <div class="card rainbow-border">
-      <div class="titleSm">ログイン（パスワード）</div>
-      <p class="hint">
-        パスワードは社内LINEで案内します。分からない場合はLINE公式から確認してください。
-      </p>
+    <section class="card" style="margin-top:12px;">
+      <div class="title" style="font-size:16px;">ログイン（必須）</div>
+      <div class="hint">※一般ドライバー用パスワードを入力してください（画面にパスワードは表示しません）</div>
 
-      <div class="grid grid2">
-        <div>
-          <label>パスワード <span class="req">*</span></label>
-          <input id="pass" type="password" placeholder="パスワードを入力" autocomplete="current-password" />
-        </div>
-        <div>
-          <label>パスワード確認</label>
-          <a class="btn dark" href="https://lin.ee/8dsZjAo" target="_blank" rel="noopener">LINE公式で確認</a>
-        </div>
-      </div>
+      <label>ドライバーパスワード</label>
+      <input id="driverPass" type="password" placeholder="社内LINEで案内" />
 
       <div class="btnrow">
-        <button class="btn rainbow" id="btnDriver" type="button">ドライバーでログイン</button>
-        <button class="btn dark" id="btnAdmin" type="button">管理者でログイン</button>
+        <button class="btn primary" id="btnDriverLogin" type="button">ログイン</button>
+        <button class="btn ghost" id="btnLogout" type="button">ログアウト</button>
       </div>
 
-      <hr class="sep">
+      <div class="hint" id="loginStateIndex" style="margin-top:8px;">未ログイン</div>
+    </section>
 
-      <div class="btnrow">
-        <a class="btn ghost" href="./departure.html">出発点呼へ</a>
-        <a class="btn ghost" href="./arrival.html">帰着点呼 / 日報へ</a>
-        <a class="btn ghost" href="./export.html">出力（本人/管理）へ</a>
+    <section class="card" style="margin-top:12px;">
+      <div class="title" style="font-size:16px;">メニュー</div>
+      <div class="hint">ログイン後に利用できます</div>
+
+      <div class="btnCol" style="margin-top:10px;">
+        <a class="btn rainbow" data-require-login="1" href="./departure.html">業務開始（出発点呼）</a>
+        <a class="btn rainbow" data-require-login="1" href="./arrival.html">業務終了（帰着点呼 / 日報）</a>
+        <a class="btn" data-require-login="1" href="./export.html">日報PDF / 月報PDF / CSV（出力）</a>
       </div>
+    </section>
 
-      <small class="hint">
-        ※ 未ログインでもページは開けますが、送信/出力はログイン必須です。
-      </small>
-    </div>
-
+    <div id="toast" class="toast"></div>
   </div>
-
-  <div class="toast" id="toast"></div>
 
   <script src="./config.js"></script>
   <script src="./auth.js"></script>
-  <script>
-    const badge = document.getElementById("badge");
-    const pass = document.getElementById("pass");
-    const btnDriver = document.getElementById("btnDriver");
-    const btnAdmin = document.getElementById("btnAdmin");
-
-    function renderBadge(){
-      const s = Auth.getSession();
-      if(!s){ badge.textContent="未ログイン"; badge.className="badge gray"; return; }
-      badge.textContent = s.role === "admin" ? "管理者" : "ドライバー";
-      badge.className = "badge " + (s.role === "admin" ? "red" : "green");
-    }
-
-    btnDriver.onclick = () => {
-      const p = (pass.value||"").trim();
-      if(Auth.loginDriver(p)) { toast("ログインしました（ドライバー）"); renderBadge(); }
-      else toast("パスワードが違います");
-    };
-
-    btnAdmin.onclick = () => {
-      const p = (pass.value||"").trim();
-      if(Auth.loginAdmin(p)) { toast("ログインしました（管理者）"); renderBadge(); }
-      else toast("パスワードが違います");
-    };
-
-    renderBadge();
-  </script>
+  <script src="./app.js"></script>
 </body>
 </html>
