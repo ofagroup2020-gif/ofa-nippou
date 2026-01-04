@@ -1,49 +1,118 @@
 /****************************************************
- * auth.js（パスログイン）
- * - driver pass: 202601
- * - admin  pass: ofa-2026
+ * auth.js - OFA 点呼システム（パスワード方式）
  ****************************************************/
-const AUTH = {
-  DRIVER_PASS: "202601",
-  ADMIN_PASS: "ofa-2026",
-  KEY_ROLE: "ofa_role",      // "driver" | "admin"
-  KEY_NAME: "ofa_name",
-  KEY_PASS: "ofa_pass"       // driver pass or admin pass
-};
 
-function authSet(role, name, pass){
-  localStorage.setItem(AUTH.KEY_ROLE, role);
-  localStorage.setItem(AUTH.KEY_NAME, name || "");
-  localStorage.setItem(AUTH.KEY_PASS, pass || "");
-}
-function authClear(){
-  localStorage.removeItem(AUTH.KEY_ROLE);
-  localStorage.removeItem(AUTH.KEY_NAME);
-  localStorage.removeItem(AUTH.KEY_PASS);
-}
-function authGet(){
-  return {
-    role: localStorage.getItem(AUTH.KEY_ROLE) || "",
-    name: localStorage.getItem(AUTH.KEY_NAME) || "",
-    pass: localStorage.getItem(AUTH.KEY_PASS) || ""
-  };
-}
-function isAuthed(){
-  const a = authGet();
-  if (!a.role || !a.pass) return false;
-  if (a.role === "driver") return a.pass === AUTH.DRIVER_PASS && !!a.name;
-  if (a.role === "admin") return a.pass === AUTH.ADMIN_PASS;
-  return false;
+const APP_KEY = "OFA_TENKO_V2";
+const DRIVER_PASS = "202601";
+const ADMIN_PASS  = "ofa-2026";
+
+function $(id){ return document.getElementById(id); }
+
+function toast(msg, ok=false){
+  const el = $("toast");
+  if(!el){ alert(msg); return; }
+  el.textContent = msg;
+  el.className = "toast " + (ok ? "ok":"ng");
+  el.style.display = "block";
+  setTimeout(()=> el.style.display="none", 2500);
 }
 
-function requireAuth(allowAdmin=true){
-  const a = authGet();
-  if (!isAuthed()) {
+function setSession(role){
+  const s = { role, at: Date.now() };
+  localStorage.setItem(APP_KEY, JSON.stringify(s));
+}
+function getSession(){
+  try{
+    return JSON.parse(localStorage.getItem(APP_KEY) || "null");
+  }catch(e){ return null; }
+}
+function logout(){
+  localStorage.removeItem(APP_KEY);
+}
+
+function requireLogin(allowAdmin=false){
+  const s = getSession();
+  if(!s || !s.role){
     location.href = "./index.html";
     return null;
   }
-  if (!allowAdmin && a.role === "admin") {
-    // driver専用ページにadminで入った場合は許可する（実害なし）
+  if(!allowAdmin && s.role === "admin"){
+    // adminは全ページ使えるが、ここでは特に制限しない
   }
-  return a;
+  return s;
 }
+
+/* index.html 用 */
+function initIndexAuth(){
+  const pass = $("passcode");
+  const btnDriver = $("btnDriverLogin");
+  const btnAdmin = $("btnAdminLogin");
+  const btnLogout = $("btnLogout");
+  const badge = $("loginBadge");
+  const menu = $("menuArea");
+  const login = $("loginArea");
+
+  const refreshUI = ()=>{
+    const s = getSession();
+    if(s && s.role){
+      login.classList.add("hidden");
+      menu.classList.remove("hidden");
+      badge.textContent = (s.role==="admin") ? "管理者ログイン済" : "ドライバーログイン済";
+      badge.className = "badge " + ((s.role==="admin") ? "admin":"driver");
+      $("btnExport").textContent = (s.role==="admin") ? "PDF / 月報 / CSV（管理者）" : "PDF / 月報 / CSV（本人）";
+    }else{
+      menu.classList.add("hidden");
+      login.classList.remove("hidden");
+      badge.textContent = "未ログイン";
+      badge.className = "badge";
+    }
+  };
+
+  if(btnDriver){
+    btnDriver.addEventListener("click", ()=>{
+      const v = (pass.value||"").trim();
+      if(v !== DRIVER_PASS){
+        toast("ドライバー用パスワードが違います");
+        return;
+      }
+      setSession("driver");
+      toast("ドライバーでログインしました", true);
+      refreshUI();
+    });
+  }
+
+  if(btnAdmin){
+    btnAdmin.addEventListener("click", ()=>{
+      const v = (pass.value||"").trim();
+      if(v !== ADMIN_PASS){
+        toast("管理者パスワードが違います");
+        return;
+      }
+      setSession("admin");
+      toast("管理者でログインしました", true);
+      refreshUI();
+    });
+  }
+
+  if(btnLogout){
+    btnLogout.addEventListener("click", ()=>{
+      logout();
+      if(pass) pass.value="";
+      toast("ログアウトしました", true);
+      refreshUI();
+    });
+  }
+
+  refreshUI();
+}
+
+/* export.html で管理者モード切替（追加パス入力） */
+function adminGate(){
+  const s = getSession();
+  if(!s) return false;
+  return s.role === "admin";
+}
+
+window.addEventListener("DOMContentLoaded", ()=>{
+  if(document.body?.dataset?.page === "index") initIndexAuth();
+});
