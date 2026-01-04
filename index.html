@@ -6,40 +6,71 @@
   <title>OFA 点呼システム</title>
   <link rel="stylesheet" href="./style.css" />
 </head>
-<body>
+<body data-page="index">
   <div class="wrap">
-    <div class="card">
-      <h1>OFA 点呼システム</h1>
-      <div class="muted">出発点呼 / 帰着点呼（日報） / PDF・CSV</div>
-    </div>
+    <header class="card" style="margin-bottom:12px;">
+      <div class="brand">
+        <div class="logo"></div>
+        <div>
+          <div class="title">OFA 点呼システム</div>
+          <div class="subtitle">業務開始（出発点呼）/ 業務終了（帰着点呼・日報）/ PDF・CSV出力</div>
+        </div>
+      </div>
+      <hr class="sep">
+      <div class="rulebox">
+        <b>🚚 点呼の重要ルール（必読）</b><br>
+        ・点呼は <b>業務開始前（出発）</b> と <b>業務終了後（帰着）</b> の2回<br>
+        ・アルコール測定（数値＋酒気帯び判定）必須<br>
+        ・点検（タイヤ/灯火/ブレーキ等）必須。異常はメモに詳細<br>
+        ・帰着点呼の「日報」はPDF提出されるため丁寧に記載
+      </div>
 
-    <section class="card rule">
-      <h2>🚚 点呼の重要ルール（必読）</h2>
-      <ul>
-        <li>点呼は <b>業務開始前（出発）</b> と <b>業務終了後（帰着）</b> の2回</li>
-        <li>アルコール測定は必須（数値＋酒気帯び判定）</li>
-        <li>車両点検は必須（異常時はメモ＋写真推奨）</li>
-        <li>帰着の日報内容は <b>PDF提出</b> されます</li>
-      </ul>
-    </section>
+      <div class="hint" id="sessionState" style="margin-top:10px;">未ログイン</div>
+      <button class="btn ghost" id="logoutBtn" type="button" style="margin-top:10px;">ログアウト</button>
+    </header>
 
-    <section class="card">
-      <h2>メニュー</h2>
+    <!-- LOGIN -->
+    <section class="card rainbow-border" id="loginBox" style="display:none;">
+      <div class="title">ログイン（必須）</div>
+      <div class="hint">一般ドライバー：パス <b>202601</b> / 管理者：パス <b>ofa-2026</b></div>
+
+      <hr class="sep">
+
+      <div class="title" style="font-size:14px;">🔵 一般ドライバー</div>
+      <label>本名（必須）</label>
+      <input id="driverNameLogin" type="text" placeholder="例：森下 洸">
+      <label>ログインパスワード</label>
+      <input id="driverPassLogin" type="password" placeholder="202601">
       <div class="btnrow">
-        <button class="btn btnRainbow" onclick="location.href='./departure.html'">✅ 業務開始（出発点呼）</button>
-        <button class="btn btnRainbow" onclick="location.href='./arrival.html'">✅ 業務終了（帰着点呼 / 日報）</button>
-        <button class="btn btnDark" onclick="location.href='./export.html'">📄 本人PDF / 月次CSV（出力）</button>
+        <button class="btn rainbow" id="driverLoginBtn" type="button">ドライバーでログイン</button>
       </div>
-      <div style="margin-top:10px;">
-        <button class="btn btnGhost" onclick="location.href='./admin.html'">🔒 管理者</button>
+
+      <hr class="sep">
+
+      <div class="title" style="font-size:14px;">🔴 管理者</div>
+      <label>管理者パスワード</label>
+      <input id="adminPassLogin" type="password" placeholder="ofa-2026">
+      <div class="btnrow">
+        <button class="btn primary" id="adminLoginBtn" type="button">管理者でログイン</button>
       </div>
     </section>
 
-    <div id="toast" class="toast"></div>
+    <!-- MENU -->
+    <section class="card rainbow-border" id="menuBox" style="display:none;">
+      <div class="title">メニュー</div>
+      <div class="btnCol">
+        <a class="btn rainbow" href="./departure.html">✅ 出発点呼（業務開始）</a>
+        <a class="btn rainbow" href="./arrival.html">✅ 帰着点呼（業務終了 / 日報）</a>
+        <a class="btn rainbow" href="./export.html">📄 日報PDF / 月報PDF（詳細）/ CSV（本人のみ）</a>
+        <a class="btn primary" href="./admin.html">🔴 管理者（検索・全件）</a>
+      </div>
+      <div class="hint">※管理者ページは管理者ログイン時のみ利用できます。</div>
+    </section>
+
+    <div class="toast" id="toast"></div>
   </div>
-<script src="./auth.js"></script>
-<script>
-  requireLogin(); // ← これでログイン必須
-</script>
-<script src="./app.js"></script></body>
+
+  <script src="./auth.js"></script>
+  <script src="./app.js"></script>
+</body>
 </html>
