@@ -3,68 +3,101 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-  <title>OFA | 本人PDF / 月次CSV</title>
+  <title>OFA | 日報PDF / 月報PDF / CSV</title>
   <link rel="stylesheet" href="./style.css" />
 </head>
 <body data-page="export">
   <div class="wrap">
     <div class="topbar">
-      <div>
-        <div class="title">本人PDF / 月次CSV（出力）</div>
-        <div class="subtitle">本人分のみ出力 / 管理者は別ログインで全件検索</div>
+      <div class="brand">
+        <div class="logo"></div>
+        <div>
+          <div class="title">日報PDF / 月報PDF（詳細）/ CSV</div>
+          <div class="subtitle">ドライバー：本人のみ出力</div>
+        </div>
       </div>
-      <span class="badge" id="adminBadge">一般</span>
+      <button class="btn ghost" id="backBtn" type="button">戻る</button>
     </div>
 
-    <div class="card">
-      <label>運転者氏名（本名）</label>
-      <input id="driverNameExport" type="text" placeholder="例：森下 洸" />
+    <div class="card rainbow-border">
+      <div class="grid grid2">
+        <div id="loginState" class="hint" style="margin:0;"></div>
+        <div style="text-align:right;"><span id="badgeMode" class="badge">ドライバー</span></div>
+      </div>
 
-      <hr style="border:none;border-top:1px solid #e6e8ef;margin:14px 0;">
+      <hr class="sep">
+
+      <label>対象運転者（本人固定）</label>
+      <input id="driverNameExport" type="text" placeholder="本人のみ" />
 
       <div class="grid grid2">
         <div>
-          <label>日報PDF（日付）</label>
+          <label>日報（日付）</label>
           <input id="dateDaily" type="date" />
-          <div class="muted">帰着点呼（日報）をPDF化します</div>
         </div>
         <div>
-          <label>月次CSV（月）</label>
+          <label>月報（月）</label>
           <input id="month" type="month" />
-          <div class="muted">本人の月次データをCSV出力</div>
         </div>
       </div>
 
       <div class="btnrow">
-        <button class="btn btnRainbow" id="btnDailyPdf">日報PDFを作成</button>
-        <button class="btn btnPrimary" id="btnMonthlyCsv">月次CSVを作成</button>
+        <button class="btn rainbow" id="btnDailyPdf" type="button">日報PDFを作成</button>
+        <button class="btn rainbow" id="btnMonthlyPdf" type="button">月報PDF（詳細）を作成</button>
+        <button class="btn primary" id="btnMonthlyCsv" type="button">月次CSVを作成</button>
       </div>
 
-      <hr style="border:none;border-top:1px solid #e6e8ef;margin:14px 0;">
+      <hr class="sep">
 
+      <div class="title" style="font-size:14px;font-weight:900;">CSV（日付範囲）</div>
+      <div class="grid grid2">
+        <div>
+          <label>開始日（from）</label>
+          <input id="fromDate" type="date" />
+        </div>
+        <div>
+          <label>終了日（to）</label>
+          <input id="toDate" type="date" />
+        </div>
+      </div>
       <div class="btnrow">
-        <button class="btn btnGhost" id="btnGoAdmin">🔒 管理者ログインへ</button>
+        <button class="btn rainbow" id="btnCsvRange" type="button">範囲CSVを作成</button>
       </div>
 
-      <!-- 管理者ON時だけ表示 -->
-      <div id="adminBox" style="display:none;margin-top:14px;">
-        <h2 style="margin:0 0 10px;">管理者検索（全員）</h2>
-        <div class="grid grid3">
-          <div><label>名前</label><input id="qName" type="text"></div>
-          <div><label>電話</label><input id="qPhone" type="text"></div>
-          <div><label>車両番号</label><input id="qVehicle" type="text"></div>
+      <hr class="sep">
+
+      <div class="title" style="font-size:14px;font-weight:900;">日報PDF 履歴（一覧）</div>
+      <div class="grid grid2">
+        <div>
+          <label>履歴対象月</label>
+          <input id="historyMonth" type="month" />
         </div>
-        <div class="btnrow">
-          <button class="btn btnPrimary" id="btnAdminSearch">検索</button>
-          <button class="btn btnGhost" id="btnAdminOff">管理者OFF</button>
+        <div style="display:flex;align-items:flex-end;">
+          <button class="btn ghost" id="btnLoadHistory" type="button" style="width:100%;">履歴を読み込む</button>
         </div>
-        <div id="adminResult" class="card" style="margin-top:10px;"></div>
       </div>
+
+      <div class="history" id="historyBox" style="display:none;">
+        <div class="head">
+          <div>記録がある日付（タップで日報PDF）</div>
+          <div id="historyCount">0件</div>
+        </div>
+        <div class="list" id="historyList"></div>
+      </div>
+
+      <div id="resultBox" class="rulebox" style="display:none;"></div>
+
+      <div class="rulebox" style="margin-top:10px;">
+        GAS: <span id="gasUrlView"></span>
+      </div>
+
+      <div class="hint">※管理者の検索・全件出力は「管理者ページ」へ。</div>
+      <a class="btn primary" href="./admin.html" style="margin-top:10px;display:inline-block;text-decoration:none;">管理者ページへ</a>
     </div>
-
-    <div id="toast" class="toast"></div>
   </div>
 
+  <div class="toast" id="toast"></div>
+  <script src="./auth.js"></script>
   <script src="./app.js"></script>
 </body>
 </html>
