@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <title>OFA | 自分のPDF/CSV</title>
+  <link rel="stylesheet" href="./style.css" />
+</head>
+<body>
+  <div class="wrap">
+    <div class="topbar">
+      <div class="brand">
+        <div class="logo"></div>
+        <div>
+          <div class="title">自分のPDF / CSV（本人用）</div>
+          <div class="subtitle">名前一致で出力（管理者検索は別）</div>
+        </div>
+      </div>
+      <button class="btn ghost" id="backBtn" type="button">戻る</button>
+    </div>
+
+    <div class="card">
+      <div class="grid grid2">
+        <div>
+          <label>運転者氏名（本名） <span class="req">*</span></label>
+          <input id="driverName" type="text" placeholder="例：森下 洸" />
+        </div>
+        <div>
+          <label>対象月（YYYY-MM） <span class="req">*</span></label>
+          <input id="month" type="month" />
+        </div>
+      </div>
+
+      <div class="btnrow">
+        <button class="btn dark" id="btnDailyPdf" type="button">📄 日報PDF（指定日）</button>
+        <input id="day" type="date" />
+      </div>
+
+      <div class="btnrow">
+        <button class="btn ghost" id="btnMonthPdf" type="button">📄 月報PDF（詳細）</button>
+        <button class="btn ghost" id="btnCsv" type="button">⬇️ CSV（本人分）</button>
+      </div>
+
+      <small class="hint">
+        ※PDF/CSVはGAS側で生成します（内容がそのまま反映）。<br>
+        ※写真は日報にリンク掲載。月報は有無のみ。
+      </small>
+
+      <div class="toast" id="toast"></div>
+    </div>
+  </div>
+
+  <script src="./config.js"></script>
+  <script src="./common.js"></script>
+  <script>
+    requireLogin();
+    initPageCommon();
+
+    const nameEl = document.getElementById('driverName');
+    const monthEl = document.getElementById('month');
+    const dayEl = document.getElementById('day');
+
+    document.getElementById('btnDailyPdf').onclick = ()=>{
+      const name = (nameEl.value||'').trim();
+      const day = dayEl.value;
+      if(!name) return showToast('氏名が未入力です');
+      if(!day) return showToast('日付が未入力です');
+      openGAS(`?action=dailyPdf&name=${encodeURIComponent(name)}&day=${encodeURIComponent(day)}`);
+    };
+
+    document.getElementById('btnMonthPdf').onclick = ()=>{
+      const name = (nameEl.value||'').trim();
+      const m = monthEl.value;
+      if(!name) return showToast('氏名が未入力です');
+      if(!m) return showToast('対象月が未入力です');
+      openGAS(`?action=monthPdf&name=${encodeURIComponent(name)}&month=${encodeURIComponent(m)}`);
+    };
+
+    document.getElementById('btnCsv').onclick = ()=>{
+      const name = (nameEl.value||'').trim();
+      const m = monthEl.value;
+      if(!name) return showToast('氏名が未入力です');
+      if(!m) return showToast('対象月が未入力です');
+      openGAS(`?action=myCsv&name=${encodeURIComponent(name)}&month=${encodeURIComponent(m)}`);
+    };
+
+    document.getElementById('backBtn').onclick = ()=>location.href='./home.html';
+
+    function openGAS(qs){
+      window.open(GAS_WEBAPP_URL + qs, '_blank', 'noopener');
+    }
+  </script>
+</body>
+</html>
