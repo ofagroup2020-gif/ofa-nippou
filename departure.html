@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
   <title>OFA | 出発点呼（業務開始）</title>
   <link rel="stylesheet" href="./style.css" />
+  <style>.hidden{display:none!important}</style>
 </head>
 <body data-page="departure">
   <div class="wrap">
@@ -13,20 +14,13 @@
         <div class="logo"></div>
         <div>
           <div class="title">業務開始（出発点呼）</div>
-          <div class="subtitle">出発前点呼・点検・走行距離・免許・写真（任意）</div>
+          <div class="subtitle">睡眠時間・アルコール指標写真・免許番号は必須</div>
         </div>
       </div>
-      <button class="btn ghost" id="backBtn" type="button">戻る</button>
+      <button class="btn ghost small" id="backBtn" type="button">戻る</button>
     </div>
 
     <div class="card rainbow-border">
-      <div class="grid grid2">
-        <div id="loginState" class="hint" style="margin:0;"></div>
-        <div style="text-align:right;"><span id="badgeMode" class="badge">ドライバー</span></div>
-      </div>
-
-      <hr class="sep">
-
       <div class="grid grid2">
         <div>
           <label>日付 <span class="req">*</span></label>
@@ -51,9 +45,16 @@
 
       <div class="grid grid2">
         <div>
+          <label>車両番号 / ナンバー <span class="req">*</span></label>
+          <input id="vehicleNo" type="text" placeholder="例：鹿児島 480 れ 21-15" />
+        </div>
+        <div>
           <label>睡眠時間（h） <span class="req">*</span></label>
           <input id="sleepHours" type="number" step="0.5" min="0" max="24" placeholder="例：6.0" />
         </div>
+      </div>
+
+      <div class="grid grid2">
         <div>
           <label>体調 <span class="req">*</span></label>
           <select id="condition">
@@ -62,13 +63,6 @@
             <option>普通</option>
             <option>不良</option>
           </select>
-        </div>
-      </div>
-
-      <div class="grid grid2">
-        <div>
-          <label>車両番号 / ナンバー <span class="req">*</span></label>
-          <input id="vehicleNo" type="text" placeholder="例：鹿児島 480 れ 21-15" />
         </div>
         <div>
           <label>点呼実施者 <span class="req">*</span></label>
@@ -108,30 +102,38 @@
         </div>
       </div>
 
+      <label>アルコール指標写真 <span class="req">*</span></label>
+      <input id="alcoholPhotos" type="file" accept="image/*" capture="environment" />
+
+      <hr class="sep">
+
+      <label>免許証番号 <span class="req">*</span></label>
+      <input id="licenseNo" type="text" placeholder="免許証番号（必須）" />
+
       <label>メモ（異常時は必ず詳細）</label>
       <textarea id="memo" placeholder="体調・睡眠・指示事項など"></textarea>
 
       <hr class="sep">
 
-      <div class="title" style="font-size:14px;font-weight:900;">走行距離（業務開始）</div>
+      <div class="title">走行距離（任意）</div>
       <div class="grid grid3">
         <div>
           <label>開始メーター</label>
           <input id="odoStart" inputmode="numeric" placeholder="例：12345" />
         </div>
         <div>
-          <label>終了メーター（帰着で入力でもOK）</label>
-          <input id="odoEnd" inputmode="numeric" placeholder="任意" />
+          <label>終了メーター</label>
+          <input id="odoEnd" inputmode="numeric" placeholder="例：12500" />
         </div>
         <div>
-          <label>走行距離（自動計算）</label>
+          <label>走行距離（自動）</label>
           <input id="odoTotal" readonly placeholder="自動計算" />
         </div>
       </div>
 
       <hr class="sep">
 
-      <div class="title" style="font-size:14px;font-weight:900;">車両点検（必須）</div>
+      <div class="title">車両点検（必須）</div>
       <div class="grid grid3">
         <div><label>タイヤ <span class="req">*</span></label><select id="insp_tire"><option value="">選択</option><option>OK</option><option>NG</option></select></div>
         <div><label>灯火 <span class="req">*</span></label><select id="insp_light"><option value="">選択</option><option>OK</option><option>NG</option></select></div>
@@ -155,35 +157,21 @@
       <label>点検メモ（任意：NGは必ず詳細）</label>
       <textarea id="insp_note" placeholder="NGの場合は必ず詳細"></textarea>
 
-      <label>異常箇所写真（任意：NG時推奨）</label>
-      <input id="abnormalPhotos" type="file" accept="image/*" multiple />
-
-      <hr class="sep">
-
-      <div class="title" style="font-size:14px;font-weight:900;">免許（番号 or 写真）</div>
-      <div class="grid grid2">
-        <div>
-          <label>免許番号（任意）</label>
-          <input id="licenseNo" type="text" placeholder="任意" />
-        </div>
-        <div>
-          <label>免許写真（任意）</label>
-          <input id="licensePhotos" type="file" accept="image/*" multiple />
-        </div>
-      </div>
+      <label>異常箇所写真（NG時は必須）</label>
+      <input id="abnormalPhotos" type="file" accept="image/*" multiple capture="environment" />
 
       <label>点呼写真（任意）</label>
-      <input id="tenkoPhotos" type="file" accept="image/*" multiple />
+      <input id="tenkoPhotos" type="file" accept="image/*" multiple capture="environment" />
 
       <div class="btnrow">
         <button class="btn rainbow" id="btnSubmit" type="button">送信（出発点呼）</button>
       </div>
-
-      <small class="hint">※送信後、スプレッドシート＆Drive保存。</small>
+      <p class="hint">※送信は必ず <b>JSON</b> で行い、失敗時は原因を表示します。</p>
     </div>
   </div>
 
   <div class="toast" id="toast"></div>
+
   <script src="./auth.js"></script>
   <script src="./app.js"></script>
 </body>
