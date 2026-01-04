@@ -1,8 +1,7 @@
-// https://script.google.com/macros/s/AKfycbxwqbzvq0LuER_N1KERrQhh0fDJu_OpiqG_OL5yeCNb0JxTPII2u1j1u9oPzq2EC2jYGQ/exec
-//
-window.OFA_CONFIG = {
-  WEBAPP_URL: "https://script.google.com/macros/s/AKfycbxwqbzvq0LuER_N1KERrQhh0fDJu_OpiqG_OL5yeCNb0JxTPII2u1j1u9oPzq2EC2jYGQ/exec",
+// config.js
+window.OFA_CFG = {
+  GAS_WEBAPP_URL: "https://script.google.com/macros/s/AKfycbzhROZ8ZJ_ERv5m430lbJ3h_4C8g7E9x2oOJUI4AbRcasRGi-EsNnCKyHSglc1jp0uTCA/exec",
   DRIVER_PASS: "202601",
   ADMIN_PASS: "ofa-2026",
-  APP_NAME: "OFA Tenko"
+  APP_KEY: "OFA_TENKO"
 };
