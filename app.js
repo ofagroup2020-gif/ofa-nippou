@@ -3,7 +3,7 @@
  ****************************************************/
 
 const GAS_WEBAPP_URL =
-  "https://script.google.com/macros/s/AKfycbwvairPzgugAoB-51_9JcnAOKBxKF6hRDdj2hfwaGvq8KcczWFKDdBBia_mepTVEhoBGQ/exec"; // ←あなたのURL
+  "https://script.google.com/macros/s/AKfycbxmu3Vet9GHp1rgqDVc27xsepZKEo7qYgEsamwxdKyCXFP_GSK9Gd6ro4yNEn4ovMcGZA/exec"; // ←あなたのURL
 
 function $(id){ return document.getElementById(id); }
 
