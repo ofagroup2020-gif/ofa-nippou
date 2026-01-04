@@ -8,81 +8,82 @@
 </head>
 <body>
   <div class="wrap">
-    <div class="topbar">
-      <div class="brand">
+    <div class="card">
+      <div class="brandRow">
         <div class="logo"></div>
         <div>
-          <div class="title">OFA 点呼システム</div>
-          <div class="subtitle">出発点呼 / 帰着点呼・日報 / PDF・月報・CSV</div>
+          <div class="appTitle">OFA 点呼システム</div>
+          <div class="appSub">出発点呼 / 帰着点呼・日報 / PDF・月報・CSV</div>
         </div>
+        <div class="badge" id="statusBadge">未ログイン</div>
       </div>
-    </div>
 
-    <div class="card rainbow-border">
-      <div class="h2">点呼の重要ルール（必読）</div>
-      <ul style="margin:0;padding-left:18px;line-height:1.8;color:#334155">
-        <li>点呼は <b>業務開始前（出発）</b> と <b>業務終了後（帰着）</b> の2回</li>
-        <li><b>アルコール数値</b> は必須（必要に応じて指標写真）</li>
-        <li>点検は必須（NG時は <b>異常箇所写真</b> 推奨）</li>
-        <li>帰着点呼の日報は <b>PDF提出</b> されます（丁寧に記載）</li>
-      </ul>
-    </div>
-
-    <div class="card rainbow-border">
-      <div class="h2">ログイン（パスワード）</div>
-      <div class="hint">
-        パスワードは社内LINEで案内しています：
-        <a class="kbd" href="https://lin.ee/8dsZjAo" target="_blank" rel="noopener">メンバーLINE</a>
+      <div class="notice">
+        <div class="noticeTitle">点呼の重要ルール（必読）</div>
+        <ul>
+          <li>点呼は <b>業務開始前（出発）</b> と <b>業務終了後（帰着）</b> の2回</li>
+          <li>アルコールチェックは必須（<b>数値＋酒気判定</b>）</li>
+          <li>免許証番号は必須（写真は任意）</li>
+          <li>帰着点呼の日報はPDF提出されます</li>
+        </ul>
       </div>
 
       <hr class="sep">
 
+      <div class="titleSm">ログイン（パスワード）</div>
       <label>パスワード <span class="req">*</span></label>
-      <input id="pw" type="password" placeholder="パスワードを入力" autocomplete="current-password">
+      <input id="pw" type="password" placeholder="パスワードを入力" autocomplete="current-password" />
 
       <div class="btnrow">
-        <button class="btn rainbow block" id="btnDriver" type="button">ドライバーでログイン</button>
-        <button class="btn dark block" id="btnAdmin" type="button">管理者でログイン</button>
+        <button class="btn rainbow" id="btnDriver" type="button">ドライバーでログイン</button>
+        <button class="btn dark" id="btnAdmin" type="button">管理者でログイン</button>
       </div>
 
-      <div class="hint">
-        ※ログインは24時間有効（自動で切れたら再ログイン）  
-        ※このサイトにパスワードは表示しません
-      </div>
+      <small class="hint">
+        パスワードは社内LINE/LINE公式で配布し、定期的に更新します。<br>
+        LINE公式：<a href="https://lin.ee/8dsZjAo" target="_blank" rel="noopener">https://lin.ee/8dsZjAo</a>
+      </small>
+
+      <div class="toast" id="toast"></div>
     </div>
-
-    <div class="toast" id="toast"></div>
   </div>
 
   <script src="./config.js"></script>
   <script src="./common.js"></script>
   <script>
-    const {CFG, toast, setAuth} = window.OFA;
+    (function(){
+      const pw = document.getElementById('pw');
+      const toast = document.getElementById('toast');
+      const badge = document.getElementById('statusBadge');
 
-    function go(mode){
-      if(mode==="driver") location.href = "./departure.html";
-      if(mode==="admin") location.href = "./admin.html";
-    }
-
-    document.getElementById("btnDriver").onclick = ()=>{
-      const pw = (document.getElementById("pw").value||"").trim();
-      if(pw !== CFG.DRIVER_PASS){
-        toast("パスワードが違います（社内LINEで確認）");
-        return;
+      function setBadge(){
+        const role = sessionStorage.getItem('ofa_role');
+        badge.textContent = role ? (role === 'admin' ? '管理者ログイン中' : 'ログイン済') : '未ログイン';
       }
-      setAuth("driver");
-      go("driver");
-    };
+      setBadge();
 
-    document.getElementById("btnAdmin").onclick = ()=>{
-      const pw = (document.getElementById("pw").value||"").trim();
-      if(pw !== CFG.ADMIN_PASS){
-        toast("管理者パスワードが違います");
-        return;
+      document.getElementById('btnDriver').addEventListener('click', () => {
+        const v = (pw.value||'').trim();
+        if(v !== OFA_DRIVER_PASSWORD){ showToast('パスワードが違います'); return; }
+        sessionStorage.setItem('ofa_role','driver');
+        sessionStorage.setItem('ofa_login_at', String(Date.now()));
+        location.href = './home.html';
+      });
+
+      document.getElementById('btnAdmin').addEventListener('click', () => {
+        const v = (pw.value||'').trim();
+        if(v !== OFA_ADMIN_PASSWORD){ showToast('パスワードが違います'); return; }
+        sessionStorage.setItem('ofa_role','admin');
+        sessionStorage.setItem('ofa_login_at', String(Date.now()));
+        location.href = './home.html';
+      });
+
+      function showToast(msg){
+        toast.textContent = msg;
+        toast.classList.add('show');
+        setTimeout(()=>toast.classList.remove('show'), 2400);
       }
-      setAuth("admin");
-      go("admin");
-    };
+    })();
   </script>
 </body>
 </html>
