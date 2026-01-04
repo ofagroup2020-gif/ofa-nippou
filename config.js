@@ -1,12 +1,12 @@
-// config.js
-window.OFA_CONFIG = {
-  // ▼ここに Apps Script の WebアプリURL（/exec）を入れる
-  WEBAPP_URL: "https://script.google.com/macros/s/AKfycbz125_pS_rxMUETFB-n_xe-XCYkGGPuKzAUM-YhTv04vfMGg26Dh1SbVecmq01dqGAtIw/exec",
+// ★あなたのGAS WebアプリURL（/exec）
+const GAS_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbz125_pS_rxMUETFB-n_xe-XCYkGGPuKzAUM-YhTv04vfMGg26Dh1SbVecmq01dqGAtIw/exec";
 
-  // ログイン（フロントで保持するだけ。※実際の判定もサーバで行う）
-  DRIVER_PASS: "202601",
-  ADMIN_PASS: "ofa-2026",
+// ★パスワード（画面には表示しない）
+// ※定期更新するならここだけ差し替え
+const OFA_DRIVER_PASSWORD = "202601";
+const OFA_ADMIN_PASSWORD  = "ofa-2026";
 
-  // パスワード案内（トップにはパス表示しないでLINEへ）
-  PASS_HELP_URL: "https://lin.ee/8dsZjAo"
-};
+// 画像送信の最大（多すぎると失敗するので安全値）
+const MAX_REPORT_PHOTOS = 3;          // 日報写真最大3枚
+const IMAGE_MAX_SIDE = 1280;          // 圧縮最大辺
+const IMAGE_QUALITY = 0.78;           // 圧縮率
