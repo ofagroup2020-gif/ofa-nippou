@@ -1,45 +1,218 @@
 <!doctype html>
 <html lang="ja">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>出発点呼</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <title>OFA | 出発点呼（業務開始）</title>
+  <link rel="stylesheet" href="./style.css" />
 </head>
-<body>
+<body data-page="departure">
+  <div class="wrap">
+    <div class="topbar">
+      <div class="brand">
+        <div class="logo"></div>
+        <div>
+          <div class="title">業務開始（出発点呼）</div>
+          <div class="subtitle">睡眠時間は必須 / 免許番号・アルコール数値は必須</div>
+        </div>
+      </div>
+      <a class="btn ghost" href="./index.html">戻る</a>
+    </div>
 
-<h2>出発点呼</h2>
+    <div class="card rainbow-border">
+      <div class="row" style="align-items:center;">
+        <div class="hint" id="loginState" style="margin:0;"></div>
+        <span class="badge">出発点呼</span>
+      </div>
 
-<form id="tenkoForm">
-  <!-- ★最重要：type -->
-  <input type="hidden" name="type" value="departure">
+      <div class="hr"></div>
 
-  <label>氏名 *</label><br>
-  <input name="driverName" required><br><br>
+      <div class="grid grid2">
+        <div>
+          <label>日付 <span class="req">*</span></label>
+          <input id="date" type="date" />
+        </div>
+        <div>
+          <label>時刻 <span class="req">*</span></label>
+          <input id="time" type="time" />
+        </div>
+      </div>
 
-  <label>日付 *</label><br>
-  <input type="date" name="date" required><br><br>
+      <div class="grid grid2">
+        <div>
+          <label>氏名（本名） <span class="req">*</span></label>
+          <input id="name" type="text" placeholder="例：森下 洸" />
+        </div>
+        <div>
+          <label>車両番号/ナンバー <span class="req">*</span></label>
+          <input id="vehicle" type="text" placeholder="例：鹿児島 480 れ 21-15" />
+        </div>
+      </div>
 
-  <label>睡眠時間（時間）*</label><br>
-  <input name="sleepHours" required><br><br>
+      <div class="grid grid2">
+        <div>
+          <label>睡眠時間（時間） <span class="req">*</span></label>
+          <input id="sleep" type="number" min="0" max="24" step="0.5" placeholder="例：6.0" />
+        </div>
+        <div>
+          <label>体調 <span class="req">*</span></label>
+          <select id="condition">
+            <option value="">選択</option>
+            <option>良好</option>
+            <option>普通</option>
+            <option>不良</option>
+          </select>
+        </div>
+      </div>
 
-  <label>アルコール数値 *</label><br>
-  <input name="alcoholValue" required><br><br>
+      <div class="titleSm">アルコールチェック（必須）</div>
+      <div class="grid grid3">
+        <div>
+          <label>アルコール数値 <span class="req">*</span></label>
+          <input id="alcValue" type="text" placeholder="例：0.00" />
+        </div>
+        <div>
+          <label>酒気帯び判定 <span class="req">*</span></label>
+          <select id="alcJudge">
+            <option value="">選択</option>
+            <option>なし</option>
+            <option>あり</option>
+          </select>
+        </div>
+        <div>
+          <label>アルコール写真（任意）</label>
+          <input id="alcPhoto" type="file" accept="image/*" />
+        </div>
+      </div>
 
-  <label>免許証番号 *</label><br>
-  <input name="licenseNumber" required><br><br>
+      <div class="titleSm">免許（番号必須 / 写真任意）</div>
+      <div class="grid grid2">
+        <div>
+          <label>免許証番号 <span class="req">*</span></label>
+          <input id="licenseNo" type="text" placeholder="例：第123456789012号" />
+        </div>
+        <div>
+          <label>免許写真（任意）</label>
+          <input id="licensePhoto" type="file" accept="image/*" />
+        </div>
+      </div>
 
-  <label>点呼方法</label><br>
-  <select name="tenkoMethod">
-    <option>対面</option>
-    <option>電話</option>
-    <option>ビデオ</option>
-  </select><br><br>
+      <div class="titleSm">点呼項目（増量）</div>
+      <div class="grid grid2">
+        <div>
+          <label>点呼方法 <span class="req">*</span></label>
+          <select id="method">
+            <option value="">選択</option>
+            <option>対面</option>
+            <option>電話</option>
+            <option>ビデオ通話</option>
+            <option>チャット</option>
+          </select>
+        </div>
+        <div>
+          <label>点呼実施者 <span class="req">*</span></label>
+          <input id="checker" type="text" placeholder="例：太田" />
+        </div>
+      </div>
 
-  <button type="submit">送信（出発点呼）</button>
-</form>
+      <div class="grid grid3">
+        <div>
+          <label>疲労 <span class="req">*</span></label>
+          <select id="fatigue">
+            <option value="">選択</option>
+            <option>なし</option>
+            <option>少し</option>
+            <option>強い</option>
+          </select>
+        </div>
+        <div>
+          <label>服薬/体調不良の申告 <span class="req">*</span></label>
+          <select id="med">
+            <option value="">選択</option>
+            <option>なし</option>
+            <option>あり</option>
+          </select>
+        </div>
+        <div>
+          <label>運転可否 <span class="req">*</span></label>
+          <select id="driveOk">
+            <option value="">選択</option>
+            <option>可</option>
+            <option>不可</option>
+          </select>
+        </div>
+      </div>
 
-<div id="result"></div>
+      <label>指示・申し送り（任意）</label>
+      <textarea id="memo" placeholder="例：注意点、体調、特記事項など"></textarea>
 
-<script src="app.js"></script>
+      <div class="btnrow">
+        <button class="btn rainbow" id="btnSend" type="button">送信（出発点呼）</button>
+      </div>
+      <small class="hint">※送信はCORSで落ちない“確実方式（no-cors + URLエンコード）”で送ります。</small>
+
+      <div class="toast" id="toast"></div>
+    </div>
+  </div>
+
+  <script src="./config.js"></script>
+  <script src="./common.js"></script>
+  <script>
+    (function(){
+      guardLogin(); // 未ログイン弾く
+
+      const toast = document.getElementById('toast');
+      const loginState = document.getElementById('loginState');
+      loginState.textContent = 'ログイン中：' + (sessionStorage.getItem('ofa_role')||'未ログイン');
+
+      setNow('date','time');
+
+      document.getElementById('btnSend').addEventListener('click', async ()=>{
+        try{
+          const data = {
+            type: 'departure', // ★ missing type 対策
+            date: val('date'),
+            time: val('time'),
+            name: val('name'),
+            vehicle: val('vehicle'),
+            sleep: val('sleep'),
+            condition: val('condition'),
+            alcValue: val('alcValue'),
+            alcJudge: val('alcJudge'),
+            licenseNo: val('licenseNo'),
+            method: val('method'),
+            checker: val('checker'),
+            fatigue: val('fatigue'),
+            med: val('med'),
+            driveOk: val('driveOk'),
+            memo: val('memo')
+          };
+
+          // 必須チェック
+          const required = ['date','time','name','vehicle','sleep','condition','alcValue','alcJudge','licenseNo','method','checker','fatigue','med','driveOk'];
+          const miss = required.filter(k => !String(data[k]||'').trim());
+          if(miss.length){
+            showToast(toast, '未入力があります：' + miss.join(', '));
+            return;
+          }
+          if(data.driveOk === '不可'){
+            showToast(toast, '運転可否が「不可」です。管理者へ連絡してください。');
+            return;
+          }
+
+          // 画像（任意）を縮小してBase64化
+          data.alcPhoto = await fileToBase64Small(document.getElementById('alcPhoto').files[0]);
+          data.licensePhoto = await fileToBase64Small(document.getElementById('licensePhoto').files[0]);
+
+          // 送信（確実方式）
+          await postNoCors(data);
+          showToast(toast, '送信しました（出発点呼）→トップへ戻ります');
+          setTimeout(()=>location.href='./index.html', 1200);
+        }catch(e){
+          showToast(toast, '送信でエラー：' + (e && e.message ? e.message : String(e)));
+        }
+      });
+    })();
+  </script>
 </body>
 </html>
