@@ -5,61 +5,129 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
   <title>OFA 点呼システム</title>
   <link rel="stylesheet" href="./style.css" />
-  <style>
-    .disabledLink{opacity:.45;pointer-events:none}
-  </style>
 </head>
-<body>
+<body data-page="index">
   <div class="wrap">
-    <header class="card head">
-      <div class="logo"></div>
-      <div>
-        <h1>OFA 点呼システム</h1>
-        <p class="sub">業務開始（出発点呼）/ 業務終了（帰着点呼＋日報）/ 日報PDF・月報PDF・CSV</p>
+    <div class="topbar">
+      <div class="brand">
+        <div class="logo"></div>
+        <div>
+          <div class="title">OFA 点呼システム</div>
+          <div class="subtitle">出発点呼 / 帰着点呼・日報 / PDF・月報・CSV</div>
+        </div>
       </div>
-    </header>
+    </div>
 
-    <section class="card rulebox">
-      <b>🚚 点呼の重要ルール（必読）</b><br>
-      ・点呼は <b>業務開始前（出発）</b> と <b>業務終了後（帰着）</b> の2回<br>
-      ・<b>免許証番号は必須</b> / 免許証写真は任意<br>
-      ・<b>アルコール測定値は必須</b> / 指標写真は任意（推奨）<br>
-      ・点検（タイヤ/灯火/ブレーキ等）は必須（異常はメモ＋異常箇所写真）<br><br>
-      <b>パスワードは社内LINEで案内します：</b><br>
-      メンバーLINE公式：<a href="https://lin.ee/8dsZjAo" target="_blank" rel="noopener">https://lin.ee/8dsZjAo</a>
-    </section>
+    <div class="card">
+      <div class="titleSm">点呼の重要ルール（必読）</div>
+      <ul class="rules">
+        <li>点呼は <b>業務開始前（出発）</b> と <b>業務終了後（帰着）</b> の2回</li>
+        <li>アルコールチェックは必須（<b>数値</b> + 酒気帯び判定）</li>
+        <li>免許証番号は必須（写真は任意）</li>
+        <li>日報はPDF提出されるため丁寧に記載</li>
+      </ul>
+    </div>
 
-    <section class="card" style="margin-top:12px;">
-      <div class="title" style="font-size:16px;">ログイン（必須）</div>
-      <div class="hint">※一般ドライバー用パスワードを入力してください（画面にパスワードは表示しません）</div>
+    <div class="card rainbow-border">
+      <div class="row">
+        <span class="badge" id="badgeState">未ログイン</span>
+        <button class="btn ghost" id="logoutBtn" type="button">ログアウト</button>
+      </div>
 
-      <label>ドライバーパスワード</label>
-      <input id="driverPass" type="password" placeholder="社内LINEで案内" />
+      <div class="titleSm" style="margin-top:10px;">ログイン（パスワード）</div>
+      <p class="hint">
+        パスワードはLINE公式で通知します（定期更新）<br>
+        <a href="https://lin.ee/8dsZjAo" target="_blank" rel="noopener">▶ OFA メンバーLINE公式</a>
+      </p>
+
+      <label>パスワード <span class="req">*</span></label>
+      <input id="pw" type="password" placeholder="パスワードを入力" autocomplete="current-password" />
 
       <div class="btnrow">
-        <button class="btn primary" id="btnDriverLogin" type="button">ログイン</button>
-        <button class="btn ghost" id="btnLogout" type="button">ログアウト</button>
+        <button class="btn rainbow" id="btnDriver" type="button">ドライバーでログイン</button>
+        <button class="btn dark" id="btnAdmin" type="button">管理者でログイン</button>
       </div>
 
-      <div class="hint" id="loginStateIndex" style="margin-top:8px;">未ログイン</div>
-    </section>
+      <div class="hr"></div>
 
-    <section class="card" style="margin-top:12px;">
-      <div class="title" style="font-size:16px;">メニュー</div>
-      <div class="hint">ログイン後に利用できます</div>
-
-      <div class="btnCol" style="margin-top:10px;">
-        <a class="btn rainbow" data-require-login="1" href="./departure.html">業務開始（出発点呼）</a>
-        <a class="btn rainbow" data-require-login="1" href="./arrival.html">業務終了（帰着点呼 / 日報）</a>
-        <a class="btn" data-require-login="1" href="./export.html">日報PDF / 月報PDF / CSV（出力）</a>
+      <div class="grid grid2">
+        <a class="btn gray" id="goDeparture" href="./departure.html">出発点呼</a>
+        <a class="btn gray" id="goArrival" href="./arrival.html">帰着点呼・日報</a>
       </div>
-    </section>
 
-    <div id="toast" class="toast"></div>
+      <div class="btnrow">
+        <a class="btn dark" id="goAdmin" href="./admin.html">管理者：出力/検索</a>
+      </div>
+
+      <div class="toast" id="toast"></div>
+    </div>
   </div>
 
   <script src="./config.js"></script>
-  <script src="./auth.js"></script>
-  <script src="./app.js"></script>
+  <script src="./common.js"></script>
+  <script>
+    (function(){
+      const toast = document.getElementById('toast');
+      const badge = document.getElementById('badgeState');
+      const pw = document.getElementById('pw');
+      const logoutBtn = document.getElementById('logoutBtn');
+
+      function show(msg){ toast.textContent = msg; toast.classList.add('show'); setTimeout(()=>toast.classList.remove('show'), 2500); }
+      function setBadge(){
+        const role = sessionStorage.getItem('ofa_role') || '';
+        badge.textContent = role ? ('ログイン済：' + role) : '未ログイン';
+      }
+
+      setBadge();
+
+      document.getElementById('btnDriver').addEventListener('click', ()=>{
+        const v = (pw.value||'').trim();
+        if(v === OFA_DRIVER_PASSWORD){
+          sessionStorage.setItem('ofa_role','driver');
+          show('ドライバーでログインしました');
+          setBadge();
+        }else{
+          show('パスワードが違います');
+        }
+      });
+
+      document.getElementById('btnAdmin').addEventListener('click', ()=>{
+        const v = (pw.value||'').trim();
+        if(v === OFA_ADMIN_PASSWORD){
+          sessionStorage.setItem('ofa_role','admin');
+          show('管理者でログインしました');
+          setBadge();
+        }else{
+          show('パスワードが違います');
+        }
+      });
+
+      logoutBtn.addEventListener('click', ()=>{
+        sessionStorage.removeItem('ofa_role');
+        show('ログアウトしました');
+        setBadge();
+      });
+
+      // 未ログインならボタンで弾く（ページ移動は止めないが、各ページで再チェック）
+      document.getElementById('goAdmin').addEventListener('click', (e)=>{
+        if(sessionStorage.getItem('ofa_role')!=='admin'){
+          e.preventDefault();
+          show('管理者ログインが必要です');
+        }
+      });
+      document.getElementById('goDeparture').addEventListener('click', (e)=>{
+        if(!sessionStorage.getItem('ofa_role')){
+          e.preventDefault();
+          show('ログインが必要です');
+        }
+      });
+      document.getElementById('goArrival').addEventListener('click', (e)=>{
+        if(!sessionStorage.getItem('ofa_role')){
+          e.preventDefault();
+          show('ログインが必要です');
+        }
+      });
+    })();
+  </script>
 </body>
 </html>
