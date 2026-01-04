@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-  <title>OFA | 管理者（検索 / PDF / CSV）</title>
+  <title>OFA | 管理者</title>
   <link rel="stylesheet" href="./style.css" />
 </head>
 <body>
@@ -12,155 +12,81 @@
       <div class="brand">
         <div class="logo"></div>
         <div>
-          <div class="title">管理者モード</div>
-          <div class="subtitle">検索 / PDF / CSV（全員分）</div>
+          <div class="title">管理者（検索 / PDF / CSV / 月報）</div>
+          <div class="subtitle">※このページは管理者ログインのみ</div>
         </div>
       </div>
       <button class="btn ghost" id="backBtn" type="button">戻る</button>
     </div>
 
-    <div class="card rainbow-border">
-      <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;">
-        <span class="badge">管理者</span>
-        <button class="btn ghost" id="logoutBtn" type="button">ログアウト</button>
-      </div>
-
-      <hr class="sep">
-
+    <div class="card">
       <div class="grid grid2">
         <div>
-          <label>日付（検索）</label>
-          <input id="qDate" type="date" />
+          <label>検索：運転者氏名（空なら全員）</label>
+          <input id="name" type="text" placeholder="例：森下 洸" />
         </div>
         <div>
-          <label>運転者氏名（部分一致OK）</label>
-          <input id="qName" type="text" placeholder="例：森下" />
+          <label>対象月（YYYY-MM） <span class="req">*</span></label>
+          <input id="month" type="month" />
         </div>
       </div>
 
       <div class="btnrow">
-        <button class="btn dark" id="btnSearch" type="button">検索</button>
-        <button class="btn ghost" id="btnToday" type="button">今日</button>
+        <button class="btn ghost" id="btnCsvAll" type="button">⬇️ CSV（全員/条件）</button>
+        <button class="btn ghost" id="btnMonthPdfAll" type="button">📄 月報PDF（条件）</button>
       </div>
 
-      <hr class="sep">
-
-      <div class="h2" style="font-size:16px;margin:0 0 8px;">出力</div>
-
+      <div class="titleSm">日報PDF（指定日・個人）</div>
       <div class="grid grid2">
-        <div>
-          <label>日報PDF（対象：日付＋氏名）</label>
-          <button class="btn rainbow block" id="btnPdfDaily" type="button">日報PDFを開く</button>
-        </div>
-        <div>
-          <label>月報PDF（詳細）（対象：月＋氏名）</label>
-          <div class="grid" style="grid-template-columns:1fr 1fr;gap:10px;">
-            <input id="qMonth" type="month" />
-            <button class="btn rainbow" id="btnPdfMonthly" type="button">月報PDF</button>
-          </div>
-          <div class="hint">※月報は写真の有無のみ（写真は日報PDFのみ）</div>
-        </div>
+        <input id="day" type="date" />
+        <button class="btn dark" id="btnDailyPdf" type="button">📄 日報PDFを開く</button>
       </div>
 
-      <div class="grid grid2" style="margin-top:10px">
-        <div>
-          <label>CSV（全員：日付範囲）</label>
-          <div class="grid" style="grid-template-columns:1fr 1fr;gap:10px;">
-            <input id="from" type="date" />
-            <input id="to" type="date" />
-          </div>
-          <button class="btn dark block" id="btnCsvRange" type="button" style="margin-top:10px">範囲CSVを開く</button>
-        </div>
-        <div>
-          <label>CSV（今月）</label>
-          <button class="btn dark block" id="btnCsvThisMonth" type="button">今月CSVを開く</button>
-        </div>
-      </div>
+      <small class="hint">
+        ※出力はGAS側で生成し、内容がそのまま反映されます。<br>
+        ※写真は日報のみリンク掲載。月報は有無のみ。
+      </small>
 
-      <hr class="sep">
-      <div class="h2" style="font-size:16px;margin:0 0 8px;">検索結果</div>
-      <div id="result" class="small">未検索</div>
+      <div class="toast" id="toast"></div>
     </div>
-
-    <div class="toast" id="toast"></div>
   </div>
 
   <script src="./config.js"></script>
   <script src="./common.js"></script>
   <script>
-    const {requireAuth, clearAuth, toast} = window.OFA;
-    requireAuth("admin");
+    requireAdmin();
 
-    const WEB = (window.OFA_CONFIG.WEBAPP_URL||"").trim();
-    const ADMIN_PASS = window.OFA_CONFIG.ADMIN_PASS;
+    const nameEl = document.getElementById('name');
+    const monthEl = document.getElementById('month');
+    const dayEl = document.getElementById('day');
 
-    document.getElementById("backBtn").onclick = ()=>location.href="./index.html";
-    document.getElementById("logoutBtn").onclick = ()=>{ clearAuth(); location.href="./index.html"; };
+    document.getElementById('btnCsvAll').onclick = ()=>{
+      const m = monthEl.value;
+      if(!m) return showToast('対象月が未入力です');
+      const name = (nameEl.value||'').trim();
+      openGAS(`?action=adminCsv&month=${encodeURIComponent(m)}&name=${encodeURIComponent(name)}`);
+    };
 
-    function ymd(d){
-      const z=(n)=>String(n).padStart(2,"0");
-      return `${d.getFullYear()}-${z(d.getMonth()+1)}-${z(d.getDate())}`;
+    document.getElementById('btnMonthPdfAll').onclick = ()=>{
+      const m = monthEl.value;
+      if(!m) return showToast('対象月が未入力です');
+      const name = (nameEl.value||'').trim();
+      openGAS(`?action=adminMonthPdf&month=${encodeURIComponent(m)}&name=${encodeURIComponent(name)}`);
+    };
+
+    document.getElementById('btnDailyPdf').onclick = ()=>{
+      const day = dayEl.value;
+      const name = (nameEl.value||'').trim();
+      if(!name) return showToast('氏名が未入力です');
+      if(!day) return showToast('日付が未入力です');
+      openGAS(`?action=dailyPdf&name=${encodeURIComponent(name)}&day=${encodeURIComponent(day)}`);
+    };
+
+    document.getElementById('backBtn').onclick = ()=>location.href='./home.html';
+
+    function openGAS(qs){
+      window.open(GAS_WEBAPP_URL + qs, '_blank', 'noopener');
     }
-
-    document.getElementById("btnToday").onclick = ()=>{
-      document.getElementById("qDate").value = ymd(new Date());
-    };
-
-    // 検索は CORS不要：iframe送信で結果だけ返す
-    async function adminSearch(){
-      const qDate = (document.getElementById("qDate").value||"").trim();
-      const qName = (document.getElementById("qName").value||"").trim();
-      toast("検索中…");
-      try{
-        const res = await window.OFA.postViaIframe({
-          action:"search",
-          qDate, qName,
-          authMode:"admin",
-          authPass: ADMIN_PASS
-        });
-        document.getElementById("result").textContent = res.text || "結果なし";
-        toast("検索完了");
-      }catch(e){
-        toast("検索失敗：サーバー応答が不正です");
-      }
-    }
-    document.getElementById("btnSearch").onclick = adminSearch;
-
-    // PDF/CSVは GET で開く（CORS無関係）
-    function openUrl(params){
-      const usp = new URLSearchParams(params);
-      const url = WEB + "?" + usp.toString();
-      window.open(url, "_blank", "noopener");
-    }
-
-    document.getElementById("btnPdfDaily").onclick = ()=>{
-      const date = (document.getElementById("qDate").value||"").trim();
-      const name = (document.getElementById("qName").value||"").trim();
-      if(!date || !name){ toast("日付と氏名を入力してください"); return; }
-      openUrl({action:"pdf_daily", date, name, pass: ADMIN_PASS});
-    };
-
-    document.getElementById("btnPdfMonthly").onclick = ()=>{
-      const month = (document.getElementById("qMonth").value||"").trim();
-      const name = (document.getElementById("qName").value||"").trim();
-      if(!month || !name){ toast("月と氏名を入力してください"); return; }
-      openUrl({action:"pdf_monthly", month, name, pass: ADMIN_PASS});
-    };
-
-    document.getElementById("btnCsvRange").onclick = ()=>{
-      const from = (document.getElementById("from").value||"").trim();
-      const to = (document.getElementById("to").value||"").trim();
-      if(!from || !to){ toast("開始日と終了日を入力してください"); return; }
-      openUrl({action:"csv_range", from, to, pass: ADMIN_PASS});
-    };
-
-    document.getElementById("btnCsvThisMonth").onclick = ()=>{
-      const d=new Date();
-      const z=(n)=>String(n).padStart(2,"0");
-      const from = `${d.getFullYear()}-${z(d.getMonth()+1)}-01`;
-      const to = ymd(new Date(d.getFullYear(), d.getMonth()+1, 0));
-      openUrl({action:"csv_range", from, to, pass: ADMIN_PASS});
-    };
   </script>
 </body>
 </html>
