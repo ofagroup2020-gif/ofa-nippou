@@ -1,155 +1,184 @@
 // app.js
-document.addEventListener("DOMContentLoaded", () => {
-  // 共通
-  if ($("#backBtn")) $("#backBtn").addEventListener("click", () => (location.href = "./index.html"));
+(function(){
+  const cfg = () => window.OFA_CONFIG;
 
-  // ログイン必須
-  if (document.body.dataset.page === "departure" || document.body.dataset.page === "arrival") {
-    auth.requireAnyLogin();
+  function toast(msg, ms=2200){
+    const el = document.createElement("div");
+    el.className="toast";
+    el.textContent = msg;
+    document.body.appendChild(el);
+    setTimeout(()=>{ el.remove(); }, ms);
   }
-  if (typeof renderLoginState === "function") renderLoginState();
 
-  // 初期値
-  if ($("#date")) $("#date").value = todayISO();
-  if ($("#time")) $("#time").value = nowTime();
+  function qs(sel){ return document.querySelector(sel); }
+  function qsa(sel){ return Array.from(document.querySelectorAll(sel)); }
 
-  // 出発点呼
-  if (document.body.dataset.page === "departure") {
-    $("#btnSubmit").addEventListener("click", async () => {
-      try {
-        const data = await collectDeparture();
-        toast("送信中…", "info");
-        const r = await sender.submitRecord("departure", data);
-        toast("送信完了", "ok");
-        // 送信後トップへ
-        location.href = "./index.html";
-      } catch (e) {
-        toast(e.message || String(e), "error");
-      }
+  function setVersion(){
+    qsa("[data-version]").forEach(el => el.textContent = cfg()?.VERSION || "");
+    qsa("[data-appname]").forEach(el => el.textContent = cfg()?.APP_NAME || "OFA");
+  }
+
+  function todayYMD(){
+    const d = new Date();
+    const y = d.getFullYear();
+    const m = String(d.getMonth()+1).padStart(2,"0");
+    const da = String(d.getDate()).padStart(2,"0");
+    return `${y}-${m}-${da}`;
+  }
+
+  async function fileToBase64(file){
+    if(!file) return null;
+    return new Promise((resolve,reject)=>{
+      const r = new FileReader();
+      r.onload = () => {
+        const res = String(r.result || "");
+        const base64 = res.split(",")[1] || "";
+        resolve({
+          name: file.name,
+          type: file.type || "application/octet-stream",
+          size: file.size || 0,
+          base64
+        });
+      };
+      r.onerror = () => reject(new Error("ファイル読込失敗"));
+      r.readAsDataURL(file);
     });
   }
 
-  // 帰着点呼
-  if (document.body.dataset.page === "arrival") {
-    $("#btnSubmit").addEventListener("click", async () => {
-      try {
-        const data = await collectArrival();
-        toast("送信中…", "info");
-        const r = await sender.submitRecord("arrival", data);
-        toast("送信完了", "ok");
-        location.href = "./index.html";
-      } catch (e) {
-        toast(e.message || String(e), "error");
-      }
+  // -------- API --------
+  async function apiPost(payload){
+    const url = cfg()?.GAS_URL;
+    if(!url) throw new Error("GAS_URL 未設定");
+    const res = await fetch(url, {
+      method:"POST",
+      mode:"cors",
+      headers: { "Content-Type":"application/json" },
+      body: JSON.stringify(payload)
     });
+    const text = await res.text();
+    let data=null;
+    try{ data = JSON.parse(text); }catch(e){
+      throw new Error("サーバー応答がJSONではありません: " + text.slice(0,120));
+    }
+    if(!data.ok) throw new Error(data.message || "サーバーエラー");
+    return data;
   }
-});
 
-function must(v, label) {
-  if (!safeVal(v)) throw new Error(`${label} は必須です`);
-  return safeVal(v);
-}
+  // 共通：フォーム送信（type必須）
+  async function submitForm(type, form){
+    // typeは必須：ここが missing/unknown の原因なので、必ずセット
+    if(!type) throw new Error("missing type");
 
-async function collectDeparture() {
-  const data = {
-    date: must($("#date").value, "日付"),
-    time: must($("#time").value, "時刻"),
-    driverName: must($("#driverName").value, "氏名"),
-    vehicleNo: must($("#vehicleNo").value, "車両番号"),
-    managerName: must($("#managerName").value, "点呼実施者"),
-    method: must($("#method").value, "点呼方法"),
-    place: must($("#place").value, "点呼場所"),
+    const fd = new FormData(form);
 
-    // 点呼項目（増量）
-    temperature: safeVal($("#temperature").value),
-    sleepHours: must($("#sleepHours").value, "睡眠時間"),
-    condition: must($("#condition").value, "体調"),
-    fatigue: must($("#fatigue").value, "疲労の有無"),
-    medicine: must($("#medicine").value, "服薬の有無"),
-    drivingRisk: must($("#drivingRisk").value, "運転支障"),
-    goNogo: must($("#goNogo").value, "運行可否"),
-    instructions: safeVal($("#instructions").value),
+    // 必須フィールドざっくりチェック（HTML側 required もあるが念のため）
+    const driverName = (fd.get("driverName")||"").toString().trim();
+    if(!driverName) throw new Error("氏名が未入力です");
 
-    // アルコール
-    alcoholValue: must($("#alcoholValue").value, "アルコール数値"),
-    alcoholBand: must($("#alcoholBand").value, "酒気帯び判定"),
+    const date = (fd.get("date")||"").toString().trim();
+    if(!date) throw new Error("日付が未入力です");
 
-    // 免許
-    licenseNo: must($("#licenseNo").value, "免許証番号"),
+    const alcoholValue = (fd.get("alcoholValue")||"").toString().trim();
+    if(alcoholValue==="") throw new Error("アルコール数値が未入力です");
 
-    memo: safeVal($("#memo").value),
+    const licenseNo = (fd.get("licenseNo")||"").toString().trim();
+    if(!licenseNo) throw new Error("免許証番号が未入力です");
 
-    photos: {
-      alcohol: [],
-      license: [],
-      tenko: [],
-      report: [], // 出発は使わない
-    },
+    // ファイル（任意）
+    const files = {};
+    for(const key of ["alcoholPhoto","licensePhoto","tenkoPhoto","abnormalPhoto","dailyPhoto"]){
+      const f = fd.get(key);
+      if(f && f instanceof File && f.size>0){
+        files[key] = await fileToBase64(f);
+      }
+    }
+
+    // チェック項目は「insp_」で拾う
+    const inspections = {};
+    for(const [k,v] of fd.entries()){
+      if(String(k).startsWith("insp_")){
+        inspections[k] = String(v);
+      }
+    }
+
+    // 点呼項目は「tenko_」で拾う
+    const tenko = {};
+    for(const [k,v] of fd.entries()){
+      if(String(k).startsWith("tenko_")){
+        tenko[k] = String(v);
+      }
+    }
+
+    const payload = {
+      action: "submit",
+      type, // departure / arrival
+      driverName,
+      date,
+      // 共通
+      phone: (fd.get("phone")||"").toString(),
+      company: (fd.get("company")||"OFA").toString(),
+      project: (fd.get("project")||"").toString(),
+      area: (fd.get("area")||"").toString(),
+      method: (fd.get("method")||"対面").toString(),
+
+      // 必須
+      alcoholValue: Number(alcoholValue),
+      alcoholJudge: (fd.get("alcoholJudge")||"なし").toString(),
+      licenseNo,
+
+      // 出発：睡眠 / 帰着：休憩
+      sleepHours: (fd.get("sleepHours")||"").toString(),
+      restHours: (fd.get("restHours")||"").toString(),
+
+      // 体調系（tenkoに入れてもOKだが一覧化）
+      temperature: (fd.get("temperature")||"").toString(),
+      condition: (fd.get("condition")||"良好").toString(),
+      fatigue: (fd.get("fatigue")||"なし").toString(),
+      medication: (fd.get("medication")||"なし").toString(),
+
+      // メーター等（任意）
+      odoStart: (fd.get("odoStart")||"").toString(),
+      odoEnd: (fd.get("odoEnd")||"").toString(),
+
+      // 日報（arrivalのみ）
+      workContent: (fd.get("workContent")||"").toString(),
+      workingTime: (fd.get("workingTime")||"").toString(),
+      deliveryCount: (fd.get("deliveryCount")||"").toString(),
+      trouble: (fd.get("trouble")||"").toString(),
+      dailyMemo: (fd.get("dailyMemo")||"").toString(),
+
+      // 点検メモ
+      inspMemo: (fd.get("inspMemo")||"").toString(),
+
+      // まとめ
+      tenko,
+      inspections,
+      files
+    };
+
+    return await apiPost(payload);
+  }
+
+  async function generateDailyPdf(date, driverName){
+    return await apiPost({ action:"generateDailyPdf", date, driverName });
+  }
+  async function generateMonthlyCsv(ym, driverName){
+    return await apiPost({ action:"generateMonthlyCsv", ym, driverName });
+  }
+  async function generateMonthlyPdf(ym, driverName){
+    return await apiPost({ action:"generateMonthlyPdf", ym, driverName });
+  }
+  async function listMy(dateFrom, dateTo, driverName){
+    return await apiPost({ action:"listMy", dateFrom, dateTo, driverName });
+  }
+  async function adminSearch(dateFrom, dateTo, keyword){
+    return await apiPost({ action:"adminSearch", dateFrom, dateTo, keyword });
+  }
+
+  // ---- export ----
+  window.OFA_APP = {
+    toast, setVersion, todayYMD, submitForm,
+    generateDailyPdf, generateMonthlyCsv, generateMonthlyPdf,
+    listMy, adminSearch
   };
-
-  // 写真（任意）
-  const a = $("#alcoholPhoto");
-  if (a?.files?.length) data.photos.alcohol = await pickFilesAsDataURLs(a);
-
-  const l = $("#licensePhoto");
-  if (l?.files?.length) data.photos.license = await pickFilesAsDataURLs(l);
-
-  const t = $("#tenkoPhoto");
-  if (t?.files?.length) data.photos.tenko = await pickFilesAsDataURLs(t);
-
-  return data;
-}
-
-async function collectArrival() {
-  const data = {
-    date: must($("#date").value, "日付"),
-    time: must($("#time").value, "時刻"),
-    driverName: must($("#driverName").value, "氏名"),
-    vehicleNo: must($("#vehicleNo").value, "車両番号"),
-    managerName: must($("#managerName").value, "点呼実施者"),
-    method: must($("#method").value, "点呼方法"),
-    place: must($("#place").value, "点呼場所"),
-
-    // 点呼項目（終了）
-    restHours: must($("#restHours").value, "休憩時間"),
-    fatigue: must($("#fatigue").value, "疲労の有無"),
-    abnormal: must($("#abnormal").value, "異常の有無"),
-    goNogo: must($("#goNogo").value, "運行可否"),
-    memo: safeVal($("#memo").value),
-
-    // アルコール
-    alcoholValue: must($("#alcoholValue").value, "アルコール数値"),
-    alcoholBand: must($("#alcoholBand").value, "酒気帯び判定"),
-
-    // 免許
-    licenseNo: must($("#licenseNo").value, "免許証番号"),
-
-    // 日報（必須）
-    workType: must($("#workType").value, "業務内容"),
-    workArea: must($("#workArea").value, "配送エリア"),
-    workHours: must($("#workHours").value, "稼働時間"),
-    deliveryCount: safeVal($("#deliveryCount").value),
-    trouble: safeVal($("#trouble").value),
-    dailyNote: safeVal($("#dailyNote").value),
-
-    photos: {
-      alcohol: [],
-      license: [],
-      tenko: [],
-      report: [], // 日報写真のみ
-    },
-  };
-
-  const a = $("#alcoholPhoto");
-  if (a?.files?.length) data.photos.alcohol = await pickFilesAsDataURLs(a);
-
-  const l = $("#licensePhoto");
-  if (l?.files?.length) data.photos.license = await pickFilesAsDataURLs(l);
-
-  // tenkoPhotoはこのページでは無し（必要なら追加してOK）
-
-  const r = $("#reportPhotos");
-  if (r?.files?.length) data.photos.report = await pickFilesAsDataURLs(r);
-
-  return data;
-}
+})();
