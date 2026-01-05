@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-  <title>OFA | 出発点呼（業務開始）</title>
+  <title>OFA | 出発点呼</title>
   <link rel="stylesheet" href="./style.css" />
 </head>
 <body data-page="departure">
@@ -12,20 +12,20 @@
       <div class="brand">
         <div class="logo"></div>
         <div>
-          <div class="title">業務開始（出発点呼）</div>
-          <div class="subtitle">睡眠時間は必須 / 免許番号・アルコール数値は必須</div>
+          <div class="title">出発点呼（業務開始前）</div>
+          <div class="subtitle">必須：睡眠・酒気・免許番号・点呼項目</div>
         </div>
       </div>
-      <a class="btn ghost" href="./index.html">戻る</a>
+      <button class="btn ghost" id="backBtn" type="button">戻る</button>
     </div>
 
     <div class="card rainbow-border">
-      <div class="row" style="align-items:center;">
-        <div class="hint" id="loginState" style="margin:0;"></div>
-        <span class="badge">出発点呼</span>
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:10px">
+        <div id="loginState" class="hint" style="margin:0;"></div>
+        <span id="badgeMode" class="badge">—</span>
       </div>
 
-      <div class="hr"></div>
+      <hr class="sep">
 
       <div class="grid grid2">
         <div>
@@ -38,66 +38,20 @@
         </div>
       </div>
 
-      <div class="grid grid2">
-        <div>
-          <label>氏名（本名） <span class="req">*</span></label>
-          <input id="name" type="text" placeholder="例：森下 洸" />
-        </div>
-        <div>
-          <label>車両番号/ナンバー <span class="req">*</span></label>
-          <input id="vehicle" type="text" placeholder="例：鹿児島 480 れ 21-15" />
-        </div>
-      </div>
+      <label>氏名 <span class="req">*</span></label>
+      <input id="driverName" type="text" placeholder="例：森下 洸" />
 
       <div class="grid grid2">
         <div>
-          <label>睡眠時間（時間） <span class="req">*</span></label>
-          <input id="sleep" type="number" min="0" max="24" step="0.5" placeholder="例：6.0" />
+          <label>車両番号 / ナンバー <span class="req">*</span></label>
+          <input id="vehicleNo" type="text" placeholder="例：鹿児島 480 れ 21-15" />
         </div>
         <div>
-          <label>体調 <span class="req">*</span></label>
-          <select id="condition">
-            <option value="">選択</option>
-            <option>良好</option>
-            <option>普通</option>
-            <option>不良</option>
-          </select>
+          <label>点呼実施者 <span class="req">*</span></label>
+          <input id="managerName" type="text" placeholder="例：太田" />
         </div>
       </div>
 
-      <div class="titleSm">アルコールチェック（必須）</div>
-      <div class="grid grid3">
-        <div>
-          <label>アルコール数値 <span class="req">*</span></label>
-          <input id="alcValue" type="text" placeholder="例：0.00" />
-        </div>
-        <div>
-          <label>酒気帯び判定 <span class="req">*</span></label>
-          <select id="alcJudge">
-            <option value="">選択</option>
-            <option>なし</option>
-            <option>あり</option>
-          </select>
-        </div>
-        <div>
-          <label>アルコール写真（任意）</label>
-          <input id="alcPhoto" type="file" accept="image/*" />
-        </div>
-      </div>
-
-      <div class="titleSm">免許（番号必須 / 写真任意）</div>
-      <div class="grid grid2">
-        <div>
-          <label>免許証番号 <span class="req">*</span></label>
-          <input id="licenseNo" type="text" placeholder="例：第123456789012号" />
-        </div>
-        <div>
-          <label>免許写真（任意）</label>
-          <input id="licensePhoto" type="file" accept="image/*" />
-        </div>
-      </div>
-
-      <div class="titleSm">点呼項目（増量）</div>
       <div class="grid grid2">
         <div>
           <label>点呼方法 <span class="req">*</span></label>
@@ -110,32 +64,65 @@
           </select>
         </div>
         <div>
-          <label>点呼実施者 <span class="req">*</span></label>
-          <input id="checker" type="text" placeholder="例：太田" />
+          <label>点呼場所 <span class="req">*</span></label>
+          <input id="place" type="text" placeholder="例：Amazon鹿児島" />
         </div>
       </div>
 
+      <hr class="sep">
+      <div class="title" style="font-size:16px">健康・勤務状態（点呼項目）</div>
+
       <div class="grid grid3">
         <div>
-          <label>疲労 <span class="req">*</span></label>
-          <select id="fatigue">
-            <option value="">選択</option>
-            <option>なし</option>
-            <option>少し</option>
-            <option>強い</option>
-          </select>
+          <label>体温（℃）</label>
+          <input id="temperature" type="text" placeholder="例：36.5" />
         </div>
         <div>
-          <label>服薬/体調不良の申告 <span class="req">*</span></label>
-          <select id="med">
+          <label>睡眠時間（時間）<span class="req">*</span></label>
+          <input id="sleepHours" type="number" step="0.5" min="0" max="24" placeholder="例：6.0" />
+        </div>
+        <div>
+          <label>体調 <span class="req">*</span></label>
+          <select id="condition">
+            <option value="">選択</option>
+            <option>良好</option>
+            <option>普通</option>
+            <option>不良</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="grid grid2">
+        <div>
+          <label>疲労の有無 <span class="req">*</span></label>
+          <select id="fatigue">
             <option value="">選択</option>
             <option>なし</option>
             <option>あり</option>
           </select>
         </div>
         <div>
-          <label>運転可否 <span class="req">*</span></label>
-          <select id="driveOk">
+          <label>服薬の有無 <span class="req">*</span></label>
+          <select id="medicine">
+            <option value="">選択</option>
+            <option>なし</option>
+            <option>あり</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="grid grid2">
+        <div>
+          <label>運転に支障（眠気/めまい等）<span class="req">*</span></label>
+          <select id="drivingRisk">
+            <option value="">選択</option>
+            <option>なし</option>
+            <option>あり</option>
+          </select>
+        </div>
+        <div>
+          <label>運行可否（点呼判断）<span class="req">*</span></label>
+          <select id="goNogo">
             <option value="">選択</option>
             <option>可</option>
             <option>不可</option>
@@ -143,76 +130,59 @@
         </div>
       </div>
 
-      <label>指示・申し送り（任意）</label>
-      <textarea id="memo" placeholder="例：注意点、体調、特記事項など"></textarea>
+      <label>指示事項（あれば）</label>
+      <textarea id="instructions" placeholder="例：安全第一、再配達対応、連絡事項など"></textarea>
+
+      <hr class="sep">
+      <div class="title" style="font-size:16px">アルコール（必須）</div>
+
+      <div class="grid grid2">
+        <div>
+          <label>アルコール数値（mg/L等）<span class="req">*</span></label>
+          <input id="alcoholValue" type="text" placeholder="例：0.00" />
+        </div>
+        <div>
+          <label>酒気帯び判定 <span class="req">*</span></label>
+          <select id="alcoholBand">
+            <option value="">選択</option>
+            <option>なし</option>
+            <option>あり</option>
+          </select>
+        </div>
+      </div>
+
+      <label>アルコールチェック写真（任意）</label>
+      <input id="alcoholPhoto" type="file" accept="image/*" />
+
+      <hr class="sep">
+      <div class="title" style="font-size:16px">免許（番号必須 / 写真任意）</div>
+
+      <label>免許証番号 <span class="req">*</span></label>
+      <input id="licenseNo" type="text" placeholder="例：1234567890" />
+
+      <label>免許写真（任意）</label>
+      <input id="licensePhoto" type="file" accept="image/*" />
+
+      <hr class="sep">
+      <div class="title" style="font-size:16px">点呼写真（任意）</div>
+      <input id="tenkoPhoto" type="file" accept="image/*" />
+
+      <label>メモ</label>
+      <textarea id="memo" placeholder="異常や注意事項があれば詳細"></textarea>
 
       <div class="btnrow">
-        <button class="btn rainbow" id="btnSend" type="button">送信（出発点呼）</button>
+        <button class="btn rainbow" id="btnSubmit" type="button">送信（出発点呼）</button>
       </div>
-      <small class="hint">※送信はCORSで落ちない“確実方式（no-cors + URLエンコード）”で送ります。</small>
-
-      <div class="toast" id="toast"></div>
+      <small class="hint">※送信後：スプレッドシート保存 / 写真はDrive保存（リンク保持）</small>
     </div>
   </div>
 
+  <div class="toast" id="toast"></div>
+
   <script src="./config.js"></script>
-  <script src="./common.js"></script>
-  <script>
-    (function(){
-      guardLogin(); // 未ログイン弾く
-
-      const toast = document.getElementById('toast');
-      const loginState = document.getElementById('loginState');
-      loginState.textContent = 'ログイン中：' + (sessionStorage.getItem('ofa_role')||'未ログイン');
-
-      setNow('date','time');
-
-      document.getElementById('btnSend').addEventListener('click', async ()=>{
-        try{
-          const data = {
-            type: 'departure', // ★ missing type 対策
-            date: val('date'),
-            time: val('time'),
-            name: val('name'),
-            vehicle: val('vehicle'),
-            sleep: val('sleep'),
-            condition: val('condition'),
-            alcValue: val('alcValue'),
-            alcJudge: val('alcJudge'),
-            licenseNo: val('licenseNo'),
-            method: val('method'),
-            checker: val('checker'),
-            fatigue: val('fatigue'),
-            med: val('med'),
-            driveOk: val('driveOk'),
-            memo: val('memo')
-          };
-
-          // 必須チェック
-          const required = ['date','time','name','vehicle','sleep','condition','alcValue','alcJudge','licenseNo','method','checker','fatigue','med','driveOk'];
-          const miss = required.filter(k => !String(data[k]||'').trim());
-          if(miss.length){
-            showToast(toast, '未入力があります：' + miss.join(', '));
-            return;
-          }
-          if(data.driveOk === '不可'){
-            showToast(toast, '運転可否が「不可」です。管理者へ連絡してください。');
-            return;
-          }
-
-          // 画像（任意）を縮小してBase64化
-          data.alcPhoto = await fileToBase64Small(document.getElementById('alcPhoto').files[0]);
-          data.licensePhoto = await fileToBase64Small(document.getElementById('licensePhoto').files[0]);
-
-          // 送信（確実方式）
-          await postNoCors(data);
-          showToast(toast, '送信しました（出発点呼）→トップへ戻ります');
-          setTimeout(()=>location.href='./index.html', 1200);
-        }catch(e){
-          showToast(toast, '送信でエラー：' + (e && e.message ? e.message : String(e)));
-        }
-      });
-    })();
-  </script>
+  <script src="./utils.js"></script>
+  <script src="./auth.js"></script>
+  <script src="./sender.js"></script>
+  <script src="./app.js"></script>
 </body>
 </html>
