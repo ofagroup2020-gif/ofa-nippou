@@ -2,93 +2,164 @@
 <html lang="ja">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-  <title>OFA | 自分のPDF/CSV</title>
-  <link rel="stylesheet" href="./style.css" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>ドライバー出力/履歴 | OFA</title>
+  <link rel="stylesheet" href="style.css" />
+  <script defer src="config.js"></script>
+  <script defer src="app.js"></script>
+  <script defer src="auth.js"></script>
 </head>
 <body>
-  <div class="wrap">
-    <div class="topbar">
-      <div class="brand">
-        <div class="logo"></div>
-        <div>
-          <div class="title">自分のPDF / CSV（本人用）</div>
-          <div class="subtitle">名前一致で出力（管理者検索は別）</div>
-        </div>
+  <div class="container">
+    <div class="header">
+      <div class="logo">OFA</div>
+      <div class="title">
+        <h1>ドライバー：出力/履歴</h1>
+        <p>v<span data-version></span></p>
       </div>
-      <button class="btn ghost" id="backBtn" type="button">戻る</button>
     </div>
 
-    <div class="card">
-      <div class="grid grid2">
-        <div>
-          <label>運転者氏名（本名） <span class="req">*</span></label>
-          <input id="driverName" type="text" placeholder="例：森下 洸" />
-        </div>
-        <div>
-          <label>対象月（YYYY-MM） <span class="req">*</span></label>
-          <input id="month" type="month" />
+    <div class="card rainbow-border">
+      <div class="topbar">
+        <span class="badge" data-login-badge>未ログイン</span>
+        <div class="right">
+          <a class="badge" href="index.html">メニューへ</a>
         </div>
       </div>
 
-      <div class="btnrow">
-        <button class="btn dark" id="btnDailyPdf" type="button">📄 日報PDF（指定日）</button>
-        <input id="day" type="date" />
+      <label class="req">氏名（自分）</label>
+      <input id="name" placeholder="例：森下 洸" required />
+
+      <div class="hr"></div>
+      <div class="section-title">日報PDF</div>
+      <div class="row">
+        <div class="col">
+          <label class="req">日付</label>
+          <input id="dailyDate" type="date" required />
+        </div>
+        <div class="col" style="display:flex;align-items:flex-end;">
+          <button class="btn btn-ghost" id="dailyBtn" type="button">日報PDFを作成（Drive保存→リンク）</button>
+        </div>
       </div>
 
-      <div class="btnrow">
-        <button class="btn ghost" id="btnMonthPdf" type="button">📄 月報PDF（詳細）</button>
-        <button class="btn ghost" id="btnCsv" type="button">⬇️ CSV（本人分）</button>
+      <div class="hr"></div>
+      <div class="section-title">月報</div>
+      <div class="row">
+        <div class="col">
+          <label class="req">年月（YYYY-MM）</label>
+          <input id="ym" type="month" required />
+        </div>
+        <div class="col" style="display:flex;align-items:flex-end;gap:10px;">
+          <button class="btn btn-ghost" id="csvBtn" type="button">月報CSV（Drive保存→リンク）</button>
+          <button class="btn btn-ghost" id="mpdfBtn" type="button">月報PDF（Drive保存→リンク）</button>
+        </div>
       </div>
 
-      <small class="hint">
-        ※PDF/CSVはGAS側で生成します（内容がそのまま反映）。<br>
-        ※写真は日報にリンク掲載。月報は有無のみ。
-      </small>
+      <div class="hr"></div>
+      <div class="section-title">履歴（直近）</div>
+      <div class="row">
+        <div class="col">
+          <label>期間From</label>
+          <input id="from" type="date" />
+        </div>
+        <div class="col">
+          <label>期間To</label>
+          <input id="to" type="date" />
+        </div>
+      </div>
+      <button class="btn btn-dark" id="listBtn" type="button">履歴を表示</button>
 
-      <div class="toast" id="toast"></div>
+      <div class="hr"></div>
+      <div id="out"></div>
     </div>
   </div>
 
-  <script src="./config.js"></script>
-  <script src="./common.js"></script>
-  <script>
-    requireLogin();
-    initPageCommon();
+<script>
+document.addEventListener("DOMContentLoaded", ()=>{
+  OFA_APP.setVersion();
+  OFA_AUTH.requireRole("driver");
+  OFA_AUTH.setLoginBadge();
 
-    const nameEl = document.getElementById('driverName');
-    const monthEl = document.getElementById('month');
-    const dayEl = document.getElementById('day');
+  const today = OFA_APP.todayYMD();
+  document.getElementById("dailyDate").value = today;
 
-    document.getElementById('btnDailyPdf').onclick = ()=>{
-      const name = (nameEl.value||'').trim();
-      const day = dayEl.value;
-      if(!name) return showToast('氏名が未入力です');
-      if(!day) return showToast('日付が未入力です');
-      openGAS(`?action=dailyPdf&name=${encodeURIComponent(name)}&day=${encodeURIComponent(day)}`);
-    };
-
-    document.getElementById('btnMonthPdf').onclick = ()=>{
-      const name = (nameEl.value||'').trim();
-      const m = monthEl.value;
-      if(!name) return showToast('氏名が未入力です');
-      if(!m) return showToast('対象月が未入力です');
-      openGAS(`?action=monthPdf&name=${encodeURIComponent(name)}&month=${encodeURIComponent(m)}`);
-    };
-
-    document.getElementById('btnCsv').onclick = ()=>{
-      const name = (nameEl.value||'').trim();
-      const m = monthEl.value;
-      if(!name) return showToast('氏名が未入力です');
-      if(!m) return showToast('対象月が未入力です');
-      openGAS(`?action=myCsv&name=${encodeURIComponent(name)}&month=${encodeURIComponent(m)}`);
-    };
-
-    document.getElementById('backBtn').onclick = ()=>location.href='./home.html';
-
-    function openGAS(qs){
-      window.open(GAS_WEBAPP_URL + qs, '_blank', 'noopener');
+  document.getElementById("dailyBtn").addEventListener("click", async ()=>{
+    try{
+      const name = document.getElementById("name").value.trim();
+      const date = document.getElementById("dailyDate").value;
+      if(!name) return OFA_APP.toast("氏名を入力してください");
+      OFA_APP.toast("PDF作成中…", 2000);
+      const r = await OFA_APP.generateDailyPdf(date, name);
+      OFA_APP.toast("作成完了：リンクを開きます");
+      window.open(r.url, "_blank");
+    }catch(e){
+      OFA_APP.toast("失敗：" + (e.message||e));
     }
-  </script>
+  });
+
+  document.getElementById("csvBtn").addEventListener("click", async ()=>{
+    try{
+      const name = document.getElementById("name").value.trim();
+      const ym = document.getElementById("ym").value;
+      if(!name) return OFA_APP.toast("氏名を入力してください");
+      if(!ym) return OFA_APP.toast("年月を入力してください");
+      OFA_APP.toast("CSV作成中…", 2000);
+      const r = await OFA_APP.generateMonthlyCsv(ym, name);
+      OFA_APP.toast("作成完了：リンクを開きます");
+      window.open(r.url, "_blank");
+    }catch(e){
+      OFA_APP.toast("失敗：" + (e.message||e));
+    }
+  });
+
+  document.getElementById("mpdfBtn").addEventListener("click", async ()=>{
+    try{
+      const name = document.getElementById("name").value.trim();
+      const ym = document.getElementById("ym").value;
+      if(!name) return OFA_APP.toast("氏名を入力してください");
+      if(!ym) return OFA_APP.toast("年月を入力してください");
+      OFA_APP.toast("PDF作成中…", 2000);
+      const r = await OFA_APP.generateMonthlyPdf(ym, name);
+      OFA_APP.toast("作成完了：リンクを開きます");
+      window.open(r.url, "_blank");
+    }catch(e){
+      OFA_APP.toast("失敗：" + (e.message||e));
+    }
+  });
+
+  document.getElementById("listBtn").addEventListener("click", async ()=>{
+    try{
+      const name = document.getElementById("name").value.trim();
+      if(!name) return OFA_APP.toast("氏名を入力してください");
+      const from = document.getElementById("from").value || "2000-01-01";
+      const to   = document.getElementById("to").value || "2100-01-01";
+      const r = await OFA_APP.listMy(from, to, name);
+      const out = document.getElementById("out");
+      if(!r.items || r.items.length===0){
+        out.innerHTML = "<div class='mini'>履歴なし</div>";
+        return;
+      }
+      out.innerHTML = `
+        <table class="table">
+          <thead><tr><th>日付</th><th>種別</th><th>案件</th><th>エリア</th><th>リンク</th></tr></thead>
+          <tbody>
+            ${r.items.map(x=>`
+              <tr>
+                <td>${x.date}</td>
+                <td>${x.type}</td>
+                <td>${x.project||""}</td>
+                <td>${x.area||""}</td>
+                <td>${x.driveUrl?`<a target="_blank" rel="noopener" href="${x.driveUrl}">Drive</a>`:""}</td>
+              </tr>
+            `).join("")}
+          </tbody>
+        </table>
+      `;
+    }catch(e){
+      OFA_APP.toast("失敗：" + (e.message||e));
+    }
+  });
+});
+</script>
 </body>
 </html>
