@@ -3,19 +3,32 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-  <title>OFA 点呼システム</title>
+  <title>OFA | 点呼システム</title>
   <link rel="stylesheet" href="./style.css" />
 </head>
-<body data-page="index">
+<body>
   <div class="wrap">
+    <div class="topbar">
+      <div class="brand">
+        <div class="logo"></div>
+        <div>
+          <div class="title">OFA 点呼システム</div>
+          <div class="subtitle">出発点呼 / 帰着点呼・日報 / PDF / 月報CSV</div>
+        </div>
+      </div>
+      <button class="btn ghost" id="btnLogout" type="button">ログアウト</button>
+    </div>
+
     <div class="card rainbow-border">
-      <h2 style="margin:0 0 6px;">OFA 点呼システム</h2>
-      <div class="hint">出発点呼 / 帰着点呼・日報 / PDF / 月報CSV</div>
+      <div class="row" style="display:flex;align-items:center;justify-content:space-between;gap:10px">
+        <div id="loginState" class="hint" style="margin:0;"></div>
+        <span id="badgeMode" class="badge">未ログイン</span>
+      </div>
 
       <hr class="sep">
 
-      <div class="titleSm">点呼の重要ルール（必読）</div>
-      <ul class="hint" style="margin-top:6px;">
+      <div class="title" style="font-size:16px">点呼の重要ルール（必読）</div>
+      <ul class="hint" style="line-height:1.7;margin:8px 0 0 18px">
         <li>点呼は「業務開始前（出発）」と「業務終了後（帰着）」の2回</li>
         <li>アルコールチェックは必須（数値 + 酒気帯び判定）</li>
         <li>免許証番号は必須（写真は任意）</li>
@@ -24,42 +37,105 @@
 
       <hr class="sep">
 
-      <div class="row" style="justify-content:space-between; gap:10px;">
-        <span id="badgeLogin" class="badge">未ログイン</span>
-        <button class="btn ghost" id="btnLogout" type="button">ログアウト</button>
-      </div>
-
-      <div class="titleSm" style="margin-top:12px;">ログイン（パスワード）</div>
+      <div class="title" style="font-size:16px">ログイン（パスワード）</div>
       <div class="hint">
-        パスワードはLINE公式で通知します（定期更新）<br>
-        ▶ <a href="https://lin.ee/8dsZjAo" target="_blank" rel="noopener">OFA メンバーLINE公式</a>
+        パスワードはLINE公式で通知します（定期更新）：
+        <a href="https://lin.ee/8dsZjAo" target="_blank" rel="noopener">OFA メンバーLINE公式</a>
       </div>
 
-      <label style="margin-top:10px;">パスワード <span class="req">*</span></label>
-      <input id="passInput" type="password" placeholder="パスワードを入力" autocomplete="current-password" />
+      <label>パスワード <span class="req">*</span></label>
+      <input id="pw" type="password" placeholder="パスワードを入力" autocomplete="current-password" />
 
-      <div class="btnrow" style="gap:10px; margin-top:12px;">
-        <button class="btn rainbow" id="btnLoginDriver" type="button">ドライバーでログイン</button>
-        <button class="btn dark" id="btnLoginAdmin" type="button">管理者でログイン</button>
+      <div class="actions">
+        <button class="btn rainbow block" id="btnDriverLogin" type="button">ドライバーでログイン</button>
+        <button class="btn dark block" id="btnAdminLogin" type="button">管理者でログイン</button>
       </div>
 
       <hr class="sep">
 
-      <div class="btnrow" style="flex-direction:column;">
-        <button class="btn light" id="goDeparture" type="button">出発点呼</button>
-        <button class="btn light" id="goArrival" type="button">帰着点呼・日報</button>
-        <button class="btn dark" id="goAdmin" type="button">管理者：出力/検索</button>
+      <div class="actions">
+        <button class="btn ghost block disabled" id="goDeparture" type="button">出発点呼</button>
+        <button class="btn ghost block disabled" id="goArrival" type="button">帰着点呼・日報</button>
+        <button class="btn dark block disabled" id="goAdmin" type="button">管理者：出力/検索</button>
       </div>
 
-      <small class="hint">※ログイン後に各ページへ進めます。</small>
+      <div class="hint">※ログイン後に各ページへ進めます。</div>
     </div>
   </div>
 
   <div class="toast" id="toast"></div>
 
-  <!-- ✅ 超重要：この順番で読み込む -->
-  <script src="./config.js?v=20260105"></script>
-  <script src="./auth.js?v=20260105"></script>
-  <script src="./index.js?v=20260105"></script>
+  <script src="./config.js"></script>
+  <script src="./utils.js"></script>
+  <script src="./auth.js"></script>
+
+  <script>
+    function setButtons() {
+      renderLoginState();
+      const role = auth.getRole();
+      const dep = document.getElementById("goDeparture");
+      const arr = document.getElementById("goArrival");
+      const adm = document.getElementById("goAdmin");
+
+      // 全部一旦無効
+      dep.classList.add("disabled");
+      arr.classList.add("disabled");
+      adm.classList.add("disabled");
+
+      if (role === "driver") {
+        dep.classList.remove("disabled");
+        arr.classList.remove("disabled");
+      } else if (role === "admin") {
+        dep.classList.remove("disabled");
+        arr.classList.remove("disabled");
+        adm.classList.remove("disabled");
+      }
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+      setButtons();
+
+      $("#btnLogout").addEventListener("click", () => {
+        auth.logout();
+        toast("ログアウトしました", "ok");
+        setButtons();
+      });
+
+      $("#btnDriverLogin").addEventListener("click", () => {
+        const pw = $("#pw").value || "";
+        if (auth.login("driver", pw)) {
+          toast("ドライバーでログインしました", "ok");
+          setButtons();
+        } else {
+          toast("パスワードが違います", "error");
+        }
+      });
+
+      $("#btnAdminLogin").addEventListener("click", () => {
+        const pw = $("#pw").value || "";
+        if (auth.login("admin", pw)) {
+          toast("管理者でログインしました", "ok");
+          setButtons();
+        } else {
+          toast("パスワードが違います", "error");
+        }
+      });
+
+      $("#goDeparture").addEventListener("click", () => {
+        if (!auth.getRole()) return toast("ログインしてください", "error");
+        location.href = "./departure.html";
+      });
+
+      $("#goArrival").addEventListener("click", () => {
+        if (!auth.getRole()) return toast("ログインしてください", "error");
+        location.href = "./arrival.html";
+      });
+
+      $("#goAdmin").addEventListener("click", () => {
+        if (!auth.isAdmin()) return toast("管理者ログインが必要です", "error");
+        location.href = "./admin.html";
+      });
+    });
+  </script>
 </body>
 </html>
