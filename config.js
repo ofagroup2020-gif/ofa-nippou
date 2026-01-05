@@ -1,16 +1,17 @@
 // config.js
 window.OFA_CONFIG = {
-  // ★ここをあなたの最新exec URLにする
-  GAS_EXEC_URL: "https://script.google.com/macros/s/AKfycbx6wYurFfhn4s3vUY7I8kEq0n-6ZZUrdg-vXxSrLcEVd3jObhWj72_A-b-XB6sH6CpWaw/exec",
+  GAS_URL: "https://script.google.com/macros/s/AKfycbweAQwC_7xZr7oZpOgZelnA84PyCrm3bEvHzomVi-SPzLTJSy2Siulh4iEHZZ1viwFA3w/exec",
 
-  // ログインPW（フロント完結＝完全秘匿は不可。表示しないだけ）
-  DRIVER_PASSWORD: "202601",
-  ADMIN_PASSWORD: "ofa-2026",
-
-  // LINE案内リンク（パスワードはLINEで流す運用）
   LINE_URL: "https://lin.ee/8dsZjAo",
 
-  // 画像圧縮（大きいとGASで落ちる）
-  IMAGE_MAX_W: 1280,
-  IMAGE_JPEG_QUALITY: 0.72,
+  // ログインパス（LINEで通知・定期更新）
+  DRIVER_PASS: "202601",
+  ADMIN_PASS: "ofa-2026",
+
+  // 表示用
+  APP_NAME: "OFA 点呼システム",
+  VERSION: "2026.01.06",
+
+  // ログイン有効期限（時間）
+  SESSION_HOURS: 12
 };
