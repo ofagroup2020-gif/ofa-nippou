@@ -2,165 +2,90 @@
 <html lang="ja">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-  <title>OFA | 管理者 出力/検索</title>
-  <link rel="stylesheet" href="./style.css" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>管理者 出力/検索 | OFA</title>
+  <link rel="stylesheet" href="style.css" />
+  <script defer src="config.js"></script>
+  <script defer src="app.js"></script>
+  <script defer src="auth.js"></script>
 </head>
 <body>
-  <div class="wrap">
-    <div class="topbar">
-      <div class="brand">
-        <div class="logo"></div>
-        <div>
-          <div class="title">管理者：出力/検索</div>
-          <div class="subtitle">PDF / 月報CSV / 検索</div>
-        </div>
+  <div class="container">
+    <div class="header">
+      <div class="logo">OFA</div>
+      <div class="title">
+        <h1>管理者：出力/検索</h1>
+        <p>v<span data-version></span></p>
       </div>
-      <button class="btn ghost" id="backBtn" type="button">戻る</button>
     </div>
 
     <div class="card rainbow-border">
-      <div style="display:flex;align-items:center;justify-content:space-between;gap:10px">
-        <div id="loginState" class="hint" style="margin:0;"></div>
-        <span id="badgeMode" class="badge">—</span>
-      </div>
-
-      <hr class="sep">
-
-      <div class="title" style="font-size:16px">ドライバー出力（本人/管理者共通フォーマット）</div>
-
-      <label>対象ドライバー名 <span class="req">*</span></label>
-      <input id="driverName" type="text" placeholder="例：森下 洸" />
-
-      <div class="grid grid2">
-        <div>
-          <label>日報PDF（日付）<span class="req">*</span></label>
-          <input id="dailyDate" type="date" />
-        </div>
-        <div>
-          <label>月報（年月）<span class="req">*</span></label>
-          <input id="monthYm" type="month" />
+      <div class="topbar">
+        <span class="badge" data-login-badge>未ログイン</span>
+        <div class="right">
+          <a class="badge" href="index.html">メニューへ</a>
         </div>
       </div>
 
-      <div class="actions">
-        <button class="btn rainbow" id="btnDailyPdf" type="button">日報PDFを作成（Drive保存→リンク）</button>
-        <button class="btn ghost" id="btnMonthlyCsv" type="button">月報CSVを作成（Drive保存→リンク）</button>
-        <button class="btn dark" id="btnMonthlyPdf" type="button">月報PDFを作成（Drive保存→リンク）</button>
-      </div>
-
-      <hr class="sep">
-
-      <div class="title" style="font-size:16px">検索（全員）</div>
-      <div class="grid grid2">
-        <div>
-          <label>開始日</label>
-          <input id="fromDate" type="date" />
+      <div class="section-title">検索</div>
+      <div class="row">
+        <div class="col">
+          <label>期間From</label>
+          <input id="from" type="date" />
         </div>
-        <div>
-          <label>終了日</label>
-          <input id="toDate" type="date" />
+        <div class="col">
+          <label>期間To</label>
+          <input id="to" type="date" />
         </div>
       </div>
-      <label>キーワード（氏名/車両/メモ等）</label>
-      <input id="keyword" type="text" placeholder="例：森下 / 21-15 / Amazon" />
+      <label>キーワード（氏名/案件/エリア）</label>
+      <input id="kw" placeholder="例：森下 / Amazon / 姶良" />
+      <button class="btn btn-dark" id="btn" type="button">検索</button>
 
-      <div class="actions">
-        <button class="btn ghost" id="btnSearch" type="button">検索</button>
-      </div>
-
-      <div id="result" class="hint" style="margin-top:10px"></div>
+      <div class="hr"></div>
+      <div id="out"></div>
     </div>
   </div>
 
-  <div class="toast" id="toast"></div>
+<script>
+document.addEventListener("DOMContentLoaded", ()=>{
+  OFA_APP.setVersion();
+  OFA_AUTH.requireRole("admin");
+  OFA_AUTH.setLoginBadge();
 
-  <script src="./config.js"></script>
-  <script src="./utils.js"></script>
-  <script src="./auth.js"></script>
-  <script src="./sender.js"></script>
-
-  <script>
-    document.addEventListener("DOMContentLoaded", () => {
-      auth.requireAdmin();
-      renderLoginState();
-
-      $("#backBtn").addEventListener("click", () => location.href = "./index.html");
-
-      $("#dailyDate").value = todayISO();
-      // month input: yyyy-mm
-      $("#monthYm").value = ymFromISO(todayISO());
-
-      $("#btnDailyPdf").addEventListener("click", async () => {
-        try {
-          const name = safeVal($("#driverName").value);
-          const dateISO = $("#dailyDate").value;
-          if (!name || !dateISO) return toast("氏名と日付は必須です", "error");
-          toast("作成中…", "info");
-          const r = await sender.exportDailyPdf(name, dateISO);
-          toast("作成しました", "ok");
-          $("#result").innerHTML = `日報PDF：<a target="_blank" rel="noopener" href="${r.url}">開く</a>`;
-        } catch (e) {
-          toast(e.message || String(e), "error");
-        }
-      });
-
-      $("#btnMonthlyCsv").addEventListener("click", async () => {
-        try {
-          const name = safeVal($("#driverName").value);
-          const ym = $("#monthYm").value;
-          if (!name || !ym) return toast("氏名と年月は必須です", "error");
-          toast("作成中…", "info");
-          const r = await sender.exportMonthlyCsv(name, ym);
-          toast("作成しました", "ok");
-          $("#result").innerHTML = `月報CSV：<a target="_blank" rel="noopener" href="${r.url}">開く</a>`;
-        } catch (e) {
-          toast(e.message || String(e), "error");
-        }
-      });
-
-      $("#btnMonthlyPdf").addEventListener("click", async () => {
-        try {
-          const name = safeVal($("#driverName").value);
-          const ym = $("#monthYm").value;
-          if (!name || !ym) return toast("氏名と年月は必須です", "error");
-          toast("作成中…", "info");
-          const r = await sender.exportMonthlyPdf(name, ym);
-          toast("作成しました", "ok");
-          $("#result").innerHTML = `月報PDF：<a target="_blank" rel="noopener" href="${r.url}">開く</a>`;
-        } catch (e) {
-          toast(e.message || String(e), "error");
-        }
-      });
-
-      $("#btnSearch").addEventListener("click", async () => {
-        try {
-          toast("検索中…", "info");
-          const filters = {
-            fromDate: $("#fromDate").value,
-            toDate: $("#toDate").value,
-            keyword: safeVal($("#keyword").value),
-          };
-          const r = await sender.adminSearch(filters);
-          const rows = r.rows || [];
-          if (!rows.length) {
-            $("#result").textContent = "該当なし";
-            toast("該当なし", "ok");
-            return;
-          }
-          const html = rows.slice(0, 50).map(x =>
-            `<div style="padding:10px;border:1px solid #e5e7eb;border-radius:12px;margin:8px 0">
-              <b>${x.date} ${x.time}</b> / ${x.type} / ${x.driverName} / ${x.vehicleNo}<br>
-              <span class="hint">${x.memo || ""}</span>
-            </div>`
-          ).join("");
-          $("#result").innerHTML = `件数：${rows.length}<br>${html}`;
-          toast("検索完了", "ok");
-        } catch (e) {
-          toast(e.message || String(e), "error");
-        }
-      });
-    });
-  </script>
+  document.getElementById("btn").addEventListener("click", async ()=>{
+    try{
+      const from = document.getElementById("from").value || "2000-01-01";
+      const to   = document.getElementById("to").value || "2100-01-01";
+      const kw   = document.getElementById("kw").value || "";
+      const r = await OFA_APP.adminSearch(from, to, kw);
+      const out = document.getElementById("out");
+      if(!r.items || r.items.length===0){
+        out.innerHTML = "<div class='mini'>該当なし</div>";
+        return;
+      }
+      out.innerHTML = `
+        <table class="table">
+          <thead><tr><th>日付</th><th>氏名</th><th>種別</th><th>案件</th><th>エリア</th><th>Drive</th></tr></thead>
+          <tbody>
+            ${r.items.map(x=>`
+              <tr>
+                <td>${x.date}</td>
+                <td>${x.driverName}</td>
+                <td>${x.type}</td>
+                <td>${x.project||""}</td>
+                <td>${x.area||""}</td>
+                <td>${x.driveUrl?`<a target="_blank" rel="noopener" href="${x.driveUrl}">開く</a>`:""}</td>
+              </tr>
+            `).join("")}
+          </tbody>
+        </table>
+      `;
+    }catch(e){
+      OFA_APP.toast("失敗：" + (e.message||e));
+    }
+  });
+});
+</script>
 </body>
 </html>
