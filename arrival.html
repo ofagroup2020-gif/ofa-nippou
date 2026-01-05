@@ -1,266 +1,294 @@
 <!doctype html>
 <html lang="ja">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-  <title>OFA | 帰着点呼（業務終了）/ 日報</title>
-  <link rel="stylesheet" href="./style.css" />
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
+  <title>OFA | 帰着点呼・日報</title>
+  <link rel="stylesheet" href="./style.css"/>
 </head>
-<body data-page="arrival">
+<body>
   <div class="wrap">
-    <div class="topbar">
-      <div class="brand">
-        <div class="logo"></div>
-        <div>
-          <div class="title">業務終了（帰着点呼・日報）</div>
-          <div class="subtitle">休憩時間は必須 / 日報写真は任意（※月報は有無のみ）</div>
-        </div>
-      </div>
-      <a class="btn ghost" href="./index.html">戻る</a>
-    </div>
+    <div class="card">
+      <div class="h1">帰着点呼・日報（終了点呼）</div>
+      <div class="p">必須：健康確認 / 酒気 / 免許番号 / 日報 / 終了時点検</div>
 
-    <div class="card rainbow-border">
-      <div class="row" style="align-items:center;">
-        <div class="hint" id="loginState" style="margin:0;"></div>
-        <span class="badge">帰着点呼・日報</span>
+      <div class="btnrow">
+        <button class="btnGhost" onclick="location.href='./menu.html'">戻る</button>
       </div>
 
       <div class="hr"></div>
 
-      <div class="grid grid2">
+      <div class="grid g2">
         <div>
           <label>日付 <span class="req">*</span></label>
-          <input id="date" type="date" />
+          <input id="date" type="date"/>
         </div>
         <div>
           <label>時刻 <span class="req">*</span></label>
-          <input id="time" type="time" />
+          <input id="time" type="time"/>
         </div>
       </div>
 
-      <div class="grid grid2">
-        <div>
-          <label>氏名（本名） <span class="req">*</span></label>
-          <input id="name" type="text" placeholder="例：森下 洸" />
-        </div>
+      <label>氏名（本名） <span class="req">*</span></label>
+      <input id="name" type="text" placeholder="例：森下 洸"/>
+
+      <div class="grid g2">
         <div>
           <label>車両番号/ナンバー <span class="req">*</span></label>
-          <input id="vehicle" type="text" placeholder="例：鹿児島 480 れ 21-15" />
+          <input id="vehicleNo" type="text" placeholder="例：鹿児島 480 れ 21-15"/>
+        </div>
+        <div>
+          <label>点呼実施者（管理者名） <span class="req">*</span></label>
+          <input id="caller" type="text" placeholder="例：太田"/>
         </div>
       </div>
 
-      <div class="grid grid2">
+      <div class="grid g3">
         <div>
-          <label>休憩時間（時間） <span class="req">*</span></label>
-          <input id="rest" type="number" min="0" max="24" step="0.25" placeholder="例：1.0" />
+          <label>点呼方法 <span class="req">*</span></label>
+          <select id="method">
+            <option value="対面">対面</option>
+            <option value="電話">電話</option>
+            <option value="ビデオ通話">ビデオ通話</option>
+            <option value="チャット">チャット</option>
+          </select>
+        </div>
+        <div>
+          <label>体温（℃） <span class="req">*</span></label>
+          <input id="temp" type="number" step="0.1" placeholder="例：36.6"/>
         </div>
         <div>
           <label>体調 <span class="req">*</span></label>
           <select id="condition">
             <option value="">選択</option>
-            <option>良好</option>
-            <option>普通</option>
-            <option>不良</option>
+            <option>良好</option><option>普通</option><option>不良</option>
           </select>
         </div>
       </div>
 
-      <div class="titleSm">アルコールチェック（必須）</div>
-      <div class="grid grid3">
+      <div class="grid g3">
         <div>
-          <label>アルコール数値 <span class="req">*</span></label>
-          <input id="alcValue" type="text" placeholder="例：0.00" />
+          <label>休憩時間（時間）<span class="req">*</span></label>
+          <input id="rest" type="number" step="0.5" min="0" max="24" placeholder="例：1.5"/>
         </div>
         <div>
-          <label>酒気帯び判定 <span class="req">*</span></label>
-          <select id="alcJudge">
-            <option value="">選択</option>
-            <option>なし</option>
-            <option>あり</option>
-          </select>
-        </div>
-        <div>
-          <label>アルコール写真（任意）</label>
-          <input id="alcPhoto" type="file" accept="image/*" />
-        </div>
-      </div>
-
-      <div class="titleSm">免許（番号必須 / 写真任意）</div>
-      <div class="grid grid2">
-        <div>
-          <label>免許証番号 <span class="req">*</span></label>
-          <input id="licenseNo" type="text" placeholder="例：第123456789012号" />
-        </div>
-        <div>
-          <label>免許写真（任意）</label>
-          <input id="licensePhoto" type="file" accept="image/*" />
-        </div>
-      </div>
-
-      <div class="titleSm">点呼項目（増量）</div>
-      <div class="grid grid2">
-        <div>
-          <label>点呼方法 <span class="req">*</span></label>
-          <select id="method">
-            <option value="">選択</option>
-            <option>対面</option>
-            <option>電話</option>
-            <option>ビデオ通話</option>
-            <option>チャット</option>
-          </select>
-        </div>
-        <div>
-          <label>点呼実施者 <span class="req">*</span></label>
-          <input id="checker" type="text" placeholder="例：太田" />
-        </div>
-      </div>
-
-      <div class="grid grid3">
-        <div>
-          <label>疲労 <span class="req">*</span></label>
+          <label>疲労感 <span class="req">*</span></label>
           <select id="fatigue">
             <option value="">選択</option>
-            <option>なし</option>
-            <option>少し</option>
-            <option>強い</option>
+            <option>低い</option><option>普通</option><option>高い</option>
           </select>
         </div>
         <div>
-          <label>事故/トラブル <span class="req">*</span></label>
-          <select id="troubleFlag">
+          <label>服薬/影響のある薬 <span class="req">*</span></label>
+          <select id="medicine">
             <option value="">選択</option>
-            <option>なし</option>
-            <option>あり</option>
-          </select>
-        </div>
-        <div>
-          <label>運転可否 <span class="req">*</span></label>
-          <select id="driveOk">
-            <option value="">選択</option>
-            <option>可</option>
-            <option>不可</option>
+            <option>なし</option><option>あり</option>
           </select>
         </div>
       </div>
 
-      <label>点呼メモ（任意：異常時は必ず詳細）</label>
-      <textarea id="memo" placeholder="例：指示事項、反省点、異常など"></textarea>
+      <div class="grid g2">
+        <div>
+          <label>アルコール数値 <span class="req">*</span></label>
+          <input id="alcohol" type="text" placeholder="例：0.00"/>
+        </div>
+        <div>
+          <label>酒気帯び <span class="req">*</span></label>
+          <select id="alcoholBand">
+            <option value="">選択</option>
+            <option>なし</option><option>あり</option>
+          </select>
+        </div>
+      </div>
+
+      <label>免許証番号 <span class="req">*</span></label>
+      <input id="licenseNo" type="text" placeholder="番号を入力（必須）"/>
+
+      <label>アルコール測定器 写真（任意）</label>
+      <input id="alcoholPhoto" type="file" accept="image/*"/>
+
+      <label>免許証写真（任意）</label>
+      <input id="licensePhoto" type="file" accept="image/*"/>
+
+      <label>点呼写真（任意）</label>
+      <input id="tenkoPhoto" type="file" accept="image/*"/>
+
+      <div class="hr"></div>
+      <div class="h2">終了時点検（必須）</div>
+
+      <div class="grid g2">
+        <div><label>タイヤ<span class="req">*</span></label><select id="insp_tire"><option value="">選択</option><option>OK</option><option>NG</option></select></div>
+        <div><label>灯火類<span class="req">*</span></label><select id="insp_light"><option value="">選択</option><option>OK</option><option>NG</option></select></div>
+        <div><label>ブレーキ<span class="req">*</span></label><select id="insp_brake"><option value="">選択</option><option>OK</option><option>NG</option></select></div>
+        <div><label>ワイパー<span class="req">*</span></label><select id="insp_wiper"><option value="">選択</option><option>OK</option><option>NG</option></select></div>
+        <div><label>ホーン<span class="req">*</span></label><select id="insp_horn"><option value="">選択</option><option>OK</option><option>NG</option></select></div>
+        <div><label>ミラー<span class="req">*</span></label><select id="insp_mirror"><option value="">選択</option><option>OK</option><option>NG</option></select></div>
+        <div><label>外装/破損<span class="req">*</span></label><select id="insp_damage"><option value="">選択</option><option>OK</option><option>NG</option></select></div>
+        <div><label>積載状態<span class="req">*</span></label><select id="insp_cargo"><option value="">選択</option><option>OK</option><option>NG</option></select></div>
+        <div><label>消火器<span class="req">*</span></label><select id="insp_extinguisher"><option value="">選択</option><option>OK</option><option>NG</option></select></div>
+        <div><label>三角停止板<span class="req">*</span></label><select id="insp_triangle"><option value="">選択</option><option>OK</option><option>NG</option></select></div>
+      </div>
+
+      <label>点検メモ（任意：NGがある場合は必須）</label>
+      <textarea id="insp_memo" placeholder="NGの場合は必ず詳細"></textarea>
+
+      <label>異常箇所写真（NGがある場合は必須）</label>
+      <input id="abnormalPhoto" type="file" accept="image/*"/>
 
       <div class="hr"></div>
 
-      <div class="titleSm">日報（PDF提出用）</div>
-      <div class="grid grid2">
+      <div class="h2">日報（提出用）</div>
+
+      <div class="grid g2">
         <div>
           <label>業務内容 <span class="req">*</span></label>
-          <input id="workType" type="text" placeholder="例：Amazon配送" />
+          <input id="workType" type="text" placeholder="例：Amazon配送"/>
         </div>
         <div>
           <label>配送エリア <span class="req">*</span></label>
-          <input id="workArea" type="text" placeholder="例：姶良市" />
+          <input id="workArea" type="text" placeholder="例：姶良市"/>
         </div>
       </div>
 
-      <div class="grid grid3">
+      <div class="grid g3">
         <div>
           <label>稼働時間 <span class="req">*</span></label>
-          <input id="workHours" type="text" placeholder="例：9:00-20:45" />
+          <input id="workHours" type="text" placeholder="例：9:00-20:45"/>
         </div>
         <div>
           <label>配送個数（任意）</label>
-          <input id="count" type="number" min="0" step="1" placeholder="例：198" />
+          <input id="count" type="number" min="0" step="1" placeholder="例：198"/>
         </div>
         <div>
-          <label>トラブル詳細（任意）</label>
-          <input id="troubleDetail" type="text" placeholder="なければ空でOK" />
+          <label>トラブル/事故（任意）</label>
+          <input id="trouble" type="text" placeholder="なければ「なし」"/>
         </div>
       </div>
 
       <label>日報メモ（詳細：引継ぎ/改善）</label>
-      <textarea id="dailyNote" placeholder="例：再配達○件、注意点、引継ぎなど"></textarea>
+      <textarea id="dailyMemo" placeholder="例：再配達○件、注意点、引継ぎなど"></textarea>
 
-      <label>日報写真（任意：日報のみ）</label>
-      <input id="reportPhotos" type="file" accept="image/*" multiple />
+      <label>日報添付写真（任意）</label>
+      <input id="reportPhotos" type="file" accept="image/*" multiple/>
 
       <div class="btnrow">
-        <button class="btn rainbow" id="btnSend" type="button">送信（帰着点呼・日報）</button>
+        <button class="rainbow" id="sendBtn" type="button">送信（帰着点呼・日報）</button>
       </div>
-
-      <div class="toast" id="toast"></div>
+      <div class="small">※送信後、スプレッドシートへ保存。出力は「出力」ページから。</div>
     </div>
   </div>
 
+  <div class="toast" id="toast"></div>
+
   <script src="./config.js"></script>
-  <script src="./common.js"></script>
+  <script src="./auth.js"></script>
+  <script src="./utils.js"></script>
   <script>
-    (function(){
-      guardLogin();
+    requireLogin();
+    document.getElementById("date").value = todayISO();
+    document.getElementById("time").value = nowTime();
 
-      const toast = document.getElementById('toast');
-      const loginState = document.getElementById('loginState');
-      loginState.textContent = 'ログイン中：' + (sessionStorage.getItem('ofa_role')||'未ログイン');
+    const lastName = localStorage.getItem("ofa_last_name");
+    const lastVehicle = localStorage.getItem("ofa_last_vehicle");
+    if(lastName) document.getElementById("name").value = lastName;
+    if(lastVehicle) document.getElementById("vehicleNo").value = lastVehicle;
 
-      setNow('date','time');
-
-      document.getElementById('btnSend').addEventListener('click', async ()=>{
-        try{
-          const data = {
-            type: 'arrival', // ★ missing type 対策
-            date: val('date'),
-            time: val('time'),
-            name: val('name'),
-            vehicle: val('vehicle'),
-            rest: val('rest'),
-            condition: val('condition'),
-            alcValue: val('alcValue'),
-            alcJudge: val('alcJudge'),
-            licenseNo: val('licenseNo'),
-            method: val('method'),
-            checker: val('checker'),
-            fatigue: val('fatigue'),
-            troubleFlag: val('troubleFlag'),
-            driveOk: val('driveOk'),
-            memo: val('memo'),
-            workType: val('workType'),
-            workArea: val('workArea'),
-            workHours: val('workHours'),
-            count: val('count'),
-            troubleDetail: val('troubleDetail'),
-            dailyNote: val('dailyNote')
-          };
-
-          const required = [
-            'date','time','name','vehicle','rest','condition',
-            'alcValue','alcJudge','licenseNo','method','checker',
-            'fatigue','troubleFlag','driveOk',
-            'workType','workArea','workHours'
-          ];
-          const miss = required.filter(k => !String(data[k]||'').trim());
-          if(miss.length){
-            showToast(toast, '未入力があります：' + miss.join(', '));
-            return;
-          }
-
-          // 画像（任意）縮小してBase64
-          data.alcPhoto = await fileToBase64Small(document.getElementById('alcPhoto').files[0]);
-          data.licensePhoto = await fileToBase64Small(document.getElementById('licensePhoto').files[0]);
-
-          // 日報写真：最大3枚まで（重すぎ防止）
-          const files = Array.from(document.getElementById('reportPhotos').files || []).slice(0,3);
-          const b64s = [];
-          for(const f of files){
-            b64s.push(await fileToBase64Small(f));
-          }
-          data.reportPhotos = b64s.filter(Boolean).join('||');
-
-          await postNoCors(data);
-
-          showToast(toast, '送信しました（帰着点呼・日報）→トップへ戻ります');
-          setTimeout(()=>location.href='./index.html', 1200);
-        }catch(e){
-          showToast(toast, '送信でエラー：' + (e && e.message ? e.message : String(e)));
-        }
+    async function fileToBase64(file){
+      if(!file) return null;
+      const img = await new Promise((resolve,reject)=>{
+        const i=new Image();
+        i.onload=()=>resolve(i);
+        i.onerror=reject;
+        i.src=URL.createObjectURL(file);
       });
-    })();
+      const maxW=1280;
+      const scale=Math.min(1, maxW/img.width);
+      const w=Math.round(img.width*scale);
+      const h=Math.round(img.height*scale);
+      const c=document.createElement("canvas");
+      c.width=w; c.height=h;
+      c.getContext("2d").drawImage(img,0,0,w,h);
+      const dataUrl=c.toDataURL("image/jpeg",0.75);
+      URL.revokeObjectURL(img.src);
+      return { name:file.name, mime:"image/jpeg", data:dataUrl.split(",")[1] };
+    }
+
+    async function filesToBase64List(fileList, limit=5){
+      const arr=[...fileList].slice(0,limit);
+      const out=[];
+      for(const f of arr) out.push(await fileToBase64(f));
+      return out.filter(Boolean);
+    }
+
+    function anyNG(insp){
+      return Object.keys(insp).some(k=>k.startsWith("insp_") && insp[k]==="NG");
+    }
+
+    document.getElementById("sendBtn").onclick=async ()=>{
+      try{
+        const inspection = {
+          insp_tire: must("insp_tire","タイヤ"),
+          insp_light: must("insp_light","灯火類"),
+          insp_brake: must("insp_brake","ブレーキ"),
+          insp_wiper: must("insp_wiper","ワイパー"),
+          insp_horn: must("insp_horn","ホーン"),
+          insp_mirror: must("insp_mirror","ミラー"),
+          insp_damage: must("insp_damage","外装/破損"),
+          insp_cargo: must("insp_cargo","積載状態"),
+          insp_extinguisher: must("insp_extinguisher","消火器"),
+          insp_triangle: must("insp_triangle","三角停止板"),
+          insp_memo: val("insp_memo")
+        };
+
+        const need = anyNG(inspection);
+        const abnormalFile = document.getElementById("abnormalPhoto").files[0];
+        if(need && !inspection.insp_memo) throw new Error("点検でNGがあるため、点検メモは必須です");
+        if(need && !abnormalFile) throw new Error("点検でNGがあるため、異常箇所写真は必須です");
+
+        const payload = {
+          date: must("date","日付"),
+          time: must("time","時刻"),
+          name: must("name","氏名"),
+          vehicleNo: must("vehicleNo","車両番号"),
+          caller: must("caller","点呼実施者"),
+          method: must("method","点呼方法"),
+          temp: must("temp","体温"),
+          condition: must("condition","体調"),
+          restHours: must("rest","休憩時間"),
+          fatigue: must("fatigue","疲労感"),
+          medicine: must("medicine","服薬"),
+          alcoholValue: must("alcohol","アルコール数値"),
+          alcoholBand: must("alcoholBand","酒気帯び"),
+          licenseNo: must("licenseNo","免許証番号"),
+          inspection,
+          report: {
+            workType: must("workType","業務内容"),
+            workArea: must("workArea","配送エリア"),
+            workHours: must("workHours","稼働時間"),
+            deliveryCount: val("count"),
+            trouble: val("trouble"),
+            dailyMemo: val("dailyMemo"),
+          },
+          photos: {
+            alcohol: await fileToBase64(document.getElementById("alcoholPhoto").files[0]),
+            license: await fileToBase64(document.getElementById("licensePhoto").files[0]),
+            tenko:  await fileToBase64(document.getElementById("tenkoPhoto").files[0]),
+            abnormal: await fileToBase64(abnormalFile),
+            report: await filesToBase64List(document.getElementById("reportPhotos").files, 5)
+          }
+        };
+
+        toast("送信中...");
+        await postJSON({ type:"arrival", payload });
+
+        localStorage.setItem("ofa_last_name", payload.name);
+        localStorage.setItem("ofa_last_vehicle", payload.vehicleNo);
+
+        toast("送信完了");
+      }catch(e){
+        toast(e.message || "送信失敗");
+      }
+    };
   </script>
 </body>
 </html>
