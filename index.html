@@ -8,126 +8,58 @@
 </head>
 <body data-page="index">
   <div class="wrap">
-    <div class="topbar">
-      <div class="brand">
-        <div class="logo"></div>
-        <div>
-          <div class="title">OFA 点呼システム</div>
-          <div class="subtitle">出発点呼 / 帰着点呼・日報 / PDF・月報・CSV</div>
-        </div>
-      </div>
-    </div>
+    <div class="card rainbow-border">
+      <h2 style="margin:0 0 6px;">OFA 点呼システム</h2>
+      <div class="hint">出発点呼 / 帰着点呼・日報 / PDF / 月報CSV</div>
 
-    <div class="card">
+      <hr class="sep">
+
       <div class="titleSm">点呼の重要ルール（必読）</div>
-      <ul class="rules">
-        <li>点呼は <b>業務開始前（出発）</b> と <b>業務終了後（帰着）</b> の2回</li>
-        <li>アルコールチェックは必須（<b>数値</b> + 酒気帯び判定）</li>
+      <ul class="hint" style="margin-top:6px;">
+        <li>点呼は「業務開始前（出発）」と「業務終了後（帰着）」の2回</li>
+        <li>アルコールチェックは必須（数値 + 酒気帯び判定）</li>
         <li>免許証番号は必須（写真は任意）</li>
         <li>日報はPDF提出されるため丁寧に記載</li>
       </ul>
-    </div>
 
-    <div class="card rainbow-border">
-      <div class="row">
-        <span class="badge" id="badgeState">未ログイン</span>
-        <button class="btn ghost" id="logoutBtn" type="button">ログアウト</button>
+      <hr class="sep">
+
+      <div class="row" style="justify-content:space-between; gap:10px;">
+        <span id="badgeLogin" class="badge">未ログイン</span>
+        <button class="btn ghost" id="btnLogout" type="button">ログアウト</button>
       </div>
 
-      <div class="titleSm" style="margin-top:10px;">ログイン（パスワード）</div>
-      <p class="hint">
+      <div class="titleSm" style="margin-top:12px;">ログイン（パスワード）</div>
+      <div class="hint">
         パスワードはLINE公式で通知します（定期更新）<br>
-        <a href="https://lin.ee/8dsZjAo" target="_blank" rel="noopener">▶ OFA メンバーLINE公式</a>
-      </p>
-
-      <label>パスワード <span class="req">*</span></label>
-      <input id="pw" type="password" placeholder="パスワードを入力" autocomplete="current-password" />
-
-      <div class="btnrow">
-        <button class="btn rainbow" id="btnDriver" type="button">ドライバーでログイン</button>
-        <button class="btn dark" id="btnAdmin" type="button">管理者でログイン</button>
+        ▶ <a href="https://lin.ee/8dsZjAo" target="_blank" rel="noopener">OFA メンバーLINE公式</a>
       </div>
 
-      <div class="hr"></div>
+      <label style="margin-top:10px;">パスワード <span class="req">*</span></label>
+      <input id="passInput" type="password" placeholder="パスワードを入力" autocomplete="current-password" />
 
-      <div class="grid grid2">
-        <a class="btn gray" id="goDeparture" href="./departure.html">出発点呼</a>
-        <a class="btn gray" id="goArrival" href="./arrival.html">帰着点呼・日報</a>
+      <div class="btnrow" style="gap:10px; margin-top:12px;">
+        <button class="btn rainbow" id="btnLoginDriver" type="button">ドライバーでログイン</button>
+        <button class="btn dark" id="btnLoginAdmin" type="button">管理者でログイン</button>
       </div>
 
-      <div class="btnrow">
-        <a class="btn dark" id="goAdmin" href="./admin.html">管理者：出力/検索</a>
+      <hr class="sep">
+
+      <div class="btnrow" style="flex-direction:column;">
+        <button class="btn light" id="goDeparture" type="button">出発点呼</button>
+        <button class="btn light" id="goArrival" type="button">帰着点呼・日報</button>
+        <button class="btn dark" id="goAdmin" type="button">管理者：出力/検索</button>
       </div>
 
-      <div class="toast" id="toast"></div>
+      <small class="hint">※ログイン後に各ページへ進めます。</small>
     </div>
   </div>
 
-  <script src="./config.js"></script>
-  <script src="./common.js"></script>
-  <script>
-    (function(){
-      const toast = document.getElementById('toast');
-      const badge = document.getElementById('badgeState');
-      const pw = document.getElementById('pw');
-      const logoutBtn = document.getElementById('logoutBtn');
+  <div class="toast" id="toast"></div>
 
-      function show(msg){ toast.textContent = msg; toast.classList.add('show'); setTimeout(()=>toast.classList.remove('show'), 2500); }
-      function setBadge(){
-        const role = sessionStorage.getItem('ofa_role') || '';
-        badge.textContent = role ? ('ログイン済：' + role) : '未ログイン';
-      }
-
-      setBadge();
-
-      document.getElementById('btnDriver').addEventListener('click', ()=>{
-        const v = (pw.value||'').trim();
-        if(v === OFA_DRIVER_PASSWORD){
-          sessionStorage.setItem('ofa_role','driver');
-          show('ドライバーでログインしました');
-          setBadge();
-        }else{
-          show('パスワードが違います');
-        }
-      });
-
-      document.getElementById('btnAdmin').addEventListener('click', ()=>{
-        const v = (pw.value||'').trim();
-        if(v === OFA_ADMIN_PASSWORD){
-          sessionStorage.setItem('ofa_role','admin');
-          show('管理者でログインしました');
-          setBadge();
-        }else{
-          show('パスワードが違います');
-        }
-      });
-
-      logoutBtn.addEventListener('click', ()=>{
-        sessionStorage.removeItem('ofa_role');
-        show('ログアウトしました');
-        setBadge();
-      });
-
-      // 未ログインならボタンで弾く（ページ移動は止めないが、各ページで再チェック）
-      document.getElementById('goAdmin').addEventListener('click', (e)=>{
-        if(sessionStorage.getItem('ofa_role')!=='admin'){
-          e.preventDefault();
-          show('管理者ログインが必要です');
-        }
-      });
-      document.getElementById('goDeparture').addEventListener('click', (e)=>{
-        if(!sessionStorage.getItem('ofa_role')){
-          e.preventDefault();
-          show('ログインが必要です');
-        }
-      });
-      document.getElementById('goArrival').addEventListener('click', (e)=>{
-        if(!sessionStorage.getItem('ofa_role')){
-          e.preventDefault();
-          show('ログインが必要です');
-        }
-      });
-    })();
-  </script>
+  <!-- ✅ 超重要：この順番で読み込む -->
+  <script src="./config.js?v=20260105"></script>
+  <script src="./auth.js?v=20260105"></script>
+  <script src="./index.js?v=20260105"></script>
 </body>
 </html>
