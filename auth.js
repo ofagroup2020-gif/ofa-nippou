@@ -1,58 +1,57 @@
-// auth.js
-(function(){
-  const CFG = window.OFA_CFG;
+// auth.js（必ずプロジェクト直下 / ファイル名は auth.js 固定）
 
-  function setSession(type){
-    localStorage.setItem("ofa_session", type); // "driver" | "admin"
-    localStorage.setItem("ofa_session_ts", String(Date.now()));
-  }
-  function clearSession(){
-    localStorage.removeItem("ofa_session");
-    localStorage.removeItem("ofa_session_ts");
-  }
-  function getSession(){
-    return localStorage.getItem("ofa_session") || "";
-  }
+function _normalizePass(s){
+  s = (s ?? "").toString();
 
-  // 30日で自動ログアウト（任意）
-  function sessionValid(){
-    const ts = Number(localStorage.getItem("ofa_session_ts") || "0");
-    if(!ts) return false;
-    const days = (Date.now() - ts) / (1000*60*60*24);
-    return days <= 30;
-  }
+  // 全角→半角（０-９、Ａ-Ｚ、ａ-ｚ、記号も一部）
+  s = s.replace(/[！-～]/g, ch => String.fromCharCode(ch.charCodeAt(0) - 0xFEE0));
+  s = s.replace(/　/g, " "); // 全角スペース→半角
 
-  window.OFA_AUTH = {
-    loginDriver(pass){
-      if(String(pass||"").trim() !== CFG.DRIVER_PASS) return false;
-      setSession("driver"); return true;
-    },
-    loginAdmin(pass){
-      if(String(pass||"").trim() !== CFG.ADMIN_PASS) return false;
-      setSession("admin"); return true;
-    },
-    logout(){
-      clearSession();
-    },
-    requireLogin(){
-      const s = getSession();
-      if(!s || !sessionValid()){
-        clearSession();
-        location.href = "./index.html";
-        return false;
-      }
-      return true;
-    },
-    isAdmin(){
-      return getSession() === "admin" && sessionValid();
-    },
-    authToken(){
-      // GASへ渡す認証トークン（サーバ側でも弾く）
-      return (getSession()==="admin") ? CFG.ADMIN_PASS : CFG.DRIVER_PASS;
-    },
-    sessionType(){
-      const s = getSession();
-      return (s && sessionValid()) ? s : "";
-    }
-  };
-})();
+  // 前後空白除去 + 中間の空白も除去（コピペ事故対策）
+  s = s.trim().replace(/\s+/g, "");
+  return s;
+}
+
+function clearSession(){
+  localStorage.removeItem(LS_SESSION_ROLE);
+  localStorage.removeItem(LS_SESSION_PASS);
+}
+
+function getSessionRole(){
+  const ok = localStorage.getItem(LS_SESSION_PASS) === "1";
+  const role = localStorage.getItem(LS_SESSION_ROLE) || "";
+  return (ok && role) ? role : "";
+}
+
+function loginDriver(pass){
+  // config.js 読み込みチェック
+  if(typeof PASS_DRIVER === "undefined"){
+    alert("config.js が読み込めていません（PASS_DRIVER 未定義）");
+    return false;
+  }
+  const input = _normalizePass(pass);
+  const expect = _normalizePass(PASS_DRIVER);
+
+  if(input === expect){
+    localStorage.setItem(LS_SESSION_ROLE, "driver");
+    localStorage.setItem(LS_SESSION_PASS, "1");
+    return true;
+  }
+  return false;
+}
+
+function loginAdmin(pass){
+  if(typeof PASS_ADMIN === "undefined"){
+    alert("config.js が読み込めていません（PASS_ADMIN 未定義）");
+    return false;
+  }
+  const input = _normalizePass(pass);
+  const expect = _normalizePass(PASS_ADMIN);
+
+  if(input === expect){
+    localStorage.setItem(LS_SESSION_ROLE, "admin");
+    localStorage.setItem(LS_SESSION_PASS, "1");
+    return true;
+  }
+  return false;
+}
