@@ -1,6 +1,6 @@
 // config.js
 window.OFA_CONFIG = {
-  GAS_URL: "https://script.google.com/macros/s/AKfycbweAQwC_7xZr7oZpOgZelnA84PyCrm3bEvHzomVi-SPzLTJSy2Siulh4iEHZZ1viwFA3w/exec",
+  GAS_URL: "https://script.google.com/macros/s/AKfycbwZ1xcndTeFELrSStMp0oRwsm5SmJ3pd-XLPAHhS3w8bC1PbEdCYzHjRuISS2tzVbKhiQ/exec",
 
   LINE_URL: "https://lin.ee/8dsZjAo",
 
