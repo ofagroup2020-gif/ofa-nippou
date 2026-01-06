@@ -2,125 +2,209 @@
 <html lang="ja">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>OFA 点呼システム</title>
-  <link rel="stylesheet" href="style.css" />
-  <script defer src="config.js"></script>
-  <script defer src="app.js"></script>
-  <script defer src="auth.js"></script>
+  <link rel="stylesheet" href="./style.css" />
+  <script defer src="./config.js"></script>
+  <script defer src="./app.js"></script>
 </head>
+
 <body>
-  <div class="container">
-    <div class="header">
+  <header class="top">
+    <div class="brand">
       <div class="logo">OFA</div>
-      <div class="title">
-        <h1><span data-appname>OFA</span></h1>
-        <p>出発点呼 / 帰着点呼・日報 / PDF / 月報CSV（Drive保存）　v<span data-version></span></p>
+      <div>
+        <div class="title">OFA 点呼システム</div>
+        <div class="sub">出発点呼 / 帰着点呼・日報 / PDF / 月報CSV（Drive保存）</div>
+        <div class="ver">v2026.01.06</div>
       </div>
     </div>
 
-    <div class="card rainbow-border rule">
-      <div class="section-title">点呼の重要ルール（必読）</div>
-      <ul>
+    <div class="top-actions">
+      <div id="loginState" class="pill">未ログイン</div>
+      <button id="logoutBtn" class="btn ghost" type="button">ログアウト</button>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <!-- ルール -->
+    <section class="card rainbow">
+      <h2>点呼の重要ルール（必読）</h2>
+      <ul class="rules">
         <li>点呼は「業務開始前（出発）」と「業務終了後（帰着）」の2回</li>
         <li>アルコールチェックは必須（数値 + 酒気帯び判定）</li>
         <li>免許証番号は必須（写真は任意）</li>
         <li>日常点検（車両点検）は必須（NG時は異常写真推奨）</li>
         <li>帰着点呼は日報PDF提出のため丁寧に記載</li>
       </ul>
-    </div>
+    </section>
 
-    <div class="card rainbow-border">
-      <div class="topbar">
-        <span class="badge" data-login-badge>未ログイン</span>
-        <div class="right">
-          <button class="btn btn-ghost" id="logoutBtn" type="button">ログアウト</button>
+    <!-- ログイン -->
+    <section class="card rainbow">
+      <h2>ログイン（パスワード）</h2>
+      <p class="hint">
+        パスワードは <b>OFAメンバーLINE公式</b> で通知します（定期更新）。<br>
+        ※ページ上にパスワードを表示しません。
+      </p>
+
+      <label class="label">パスワード <span class="req">*</span></label>
+      <input id="pw" class="input" type="password" placeholder="パスワードを入力" />
+
+      <div class="row">
+        <button id="driverLoginBtn" class="btn rainbow" type="button">ドライバーでログイン</button>
+        <button id="adminLoginBtn" class="btn dark" type="button">管理者でログイン</button>
+      </div>
+
+      <div id="loginMsg" class="msg"></div>
+      <hr class="sep" />
+
+      <div class="menu">
+        <button id="goDeparture" class="btn menuBtn" type="button" disabled>出発点呼</button>
+        <button id="goArrival" class="btn menuBtn" type="button" disabled>帰着点呼・日報</button>
+        <button id="goDriverHistory" class="btn menuBtn soft" type="button" disabled>ドライバー：出力/履歴</button>
+        <button id="goAdmin" class="btn menuBtn dark" type="button" disabled>管理者：出力/検索</button>
+      </div>
+
+      <p class="foot">※ログイン後に各ページへ進めます。</p>
+    </section>
+
+    <!-- 画面：出発点呼 -->
+    <section id="viewDeparture" class="card hidden">
+      <h2>出発点呼</h2>
+
+      <div class="grid">
+        <div>
+          <label class="label">氏名 <span class="req">*</span></label>
+          <input id="dep_name" class="input" placeholder="例）森下 洸" />
+        </div>
+        <div>
+          <label class="label">日付 <span class="req">*</span></label>
+          <input id="dep_date" class="input" type="date" />
+        </div>
+        <div>
+          <label class="label">睡眠時間（時間） <span class="req">*</span></label>
+          <input id="dep_sleep" class="input" type="number" step="0.5" placeholder="例）6" />
+        </div>
+        <div>
+          <label class="label">アルコール数値（mg/L等） <span class="req">*</span></label>
+          <input id="dep_alc" class="input" type="number" step="0.01" placeholder="0" />
+        </div>
+        <div>
+          <label class="label">酒気帯び判定 <span class="req">*</span></label>
+          <select id="dep_judge" class="input">
+            <option value="">選択</option>
+            <option>なし</option>
+            <option>あり</option>
+          </select>
+        </div>
+        <div>
+          <label class="label">免許証番号 <span class="req">*</span></label>
+          <input id="dep_license" class="input" placeholder="例）1234567890" />
+        </div>
+        <div>
+          <label class="label">点呼方法</label>
+          <select id="dep_method" class="input">
+            <option>対面</option>
+            <option>電話</option>
+            <option>ビデオ通話</option>
+            <option>LINE</option>
+            <option>その他</option>
+          </select>
+        </div>
+
+        <div class="col2">
+          <label class="label">メモ（任意）</label>
+          <textarea id="dep_memo" class="input" rows="3" placeholder="異常や注意事項があれば詳細"></textarea>
         </div>
       </div>
 
-      <div class="hr"></div>
+      <div class="row">
+        <button class="btn ghost" type="button" data-back>戻る</button>
+        <button id="saveDeparture" class="btn rainbow" type="button">送信（出発点呼）→ 保存</button>
+      </div>
+      <div id="depMsg" class="msg"></div>
+    </section>
 
-      <div class="section-title">ログイン（パスワード）</div>
-      <div class="mini">
-        パスワードは <a id="lineLink" target="_blank" rel="noopener">OFAメンバーLINE公式</a> で通知します（定期更新）。<br>
-        ※ページ上にパスワードは表示しません。
+    <!-- 画面：帰着点呼・日報 -->
+    <section id="viewArrival" class="card hidden">
+      <h2>帰着点呼・日報</h2>
+
+      <div class="grid">
+        <div>
+          <label class="label">氏名 <span class="req">*</span></label>
+          <input id="arr_name" class="input" placeholder="例）森下 洸" />
+        </div>
+        <div>
+          <label class="label">日付 <span class="req">*</span></label>
+          <input id="arr_date" class="input" type="date" />
+        </div>
+        <div>
+          <label class="label">休憩時間（時間） <span class="req">*</span></label>
+          <input id="arr_break" class="input" type="number" step="0.5" placeholder="例）1" />
+        </div>
+        <div>
+          <label class="label">アルコール数値（mg/L等） <span class="req">*</span></label>
+          <input id="arr_alc" class="input" type="number" step="0.01" placeholder="0" />
+        </div>
+        <div>
+          <label class="label">酒気帯び判定 <span class="req">*</span></label>
+          <select id="arr_judge" class="input">
+            <option value="">選択</option>
+            <option>なし</option>
+            <option>あり</option>
+          </select>
+        </div>
+        <div>
+          <label class="label">免許証番号 <span class="req">*</span></label>
+          <input id="arr_license" class="input" placeholder="例）1234567890" />
+        </div>
+
+        <div class="col2">
+          <label class="label">業務内容 <span class="req">*</span></label>
+          <input id="arr_work" class="input" placeholder="例）Amazon配達 / ヤマト集荷 など" />
+        </div>
+
+        <div class="col2">
+          <label class="label">日報メモ（任意）</label>
+          <textarea id="arr_memo" class="input" rows="4" placeholder="件数・トラブル・注意点など"></textarea>
+        </div>
       </div>
 
-      <label class="req">パスワード</label>
-      <input id="pass" type="password" placeholder="パスワードを入力" />
+      <div class="row">
+        <button class="btn ghost" type="button" data-back>戻る</button>
+        <button id="saveArrival" class="btn rainbow" type="button">送信（帰着点呼・日報）→ 保存</button>
+        <button id="printPdf" class="btn dark" type="button">この画面をPDF（印刷）</button>
+      </div>
+      <div id="arrMsg" class="msg"></div>
+    </section>
 
-      <div class="row" style="margin-top:10px;">
-        <div class="col">
-          <button class="btn btn-rainbow" id="loginDriver" type="button">ドライバーでログイン</button>
-        </div>
-        <div class="col">
-          <button class="btn btn-dark" id="loginAdmin" type="button">管理者でログイン</button>
-        </div>
+    <!-- 画面：ドライバー履歴 -->
+    <section id="viewDriverHistory" class="card hidden">
+      <h2>ドライバー：出力 / 履歴</h2>
+
+      <div class="row">
+        <button class="btn ghost" type="button" data-back>戻る</button>
+        <button id="exportCsv" class="btn rainbow" type="button">CSV出力（端末内データ）</button>
+        <button id="clearLocal" class="btn dark" type="button">端末内データ削除（注意）</button>
       </div>
 
-      <div class="hr"></div>
+      <div id="historyList" class="list"></div>
+    </section>
 
-      <a class="navbtn primary" id="goDeparture" href="departure.html">出発点呼</a>
-      <a class="navbtn primary" id="goArrival" href="arrival.html">帰着点呼・日報</a>
-      <a class="navbtn" id="goMy" href="my.html">ドライバー：出力/履歴</a>
-      <a class="navbtn dark" id="goAdmin" href="admin.html">管理者：出力/検索</a>
+    <!-- 画面：管理者 -->
+    <section id="viewAdmin" class="card hidden">
+      <h2>管理者：出力 / 検索（UIのみ）</h2>
+      <p class="hint">※ここは後で「本番DB/Drive/PDF」に接続します。まずUIを確定。</p>
 
-      <div class="mini">※ログイン後に各ページへ進めます。</div>
-    </div>
+      <div class="row">
+        <button class="btn ghost" type="button" data-back>戻る</button>
+        <button class="btn dark" type="button" onclick="alert('次は管理者検索UIを作り込みます')">管理者機能を追加</button>
+      </div>
+    </section>
 
-    <div class="mini" style="text-align:center;margin:18px 0;">© OFA GROUP</div>
-  </div>
+    <footer class="copyright">© OFA GROUP</footer>
+  </main>
 
-<script>
-document.addEventListener("DOMContentLoaded", () => {
-  OFA_APP.setVersion();
-  OFA_AUTH.setLoginBadge();
-
-  const cfg = window.OFA_CONFIG;
-  document.getElementById("lineLink").href = cfg.LINE_URL;
-
-  function guardLinks(){
-    const s = OFA_AUTH.getSession();
-    const dep = document.getElementById("goDeparture");
-    const arr = document.getElementById("goArrival");
-    const my  = document.getElementById("goMy");
-    const adm = document.getElementById("goAdmin");
-    if(!s){
-      [dep,arr,my,adm].forEach(a=>a.style.pointerEvents="none");
-      [dep,arr,my,adm].forEach(a=>a.style.opacity=".45");
-      return;
-    }
-    // driver: departure/arrival/my OK, adminボタンは開けてもadmin.html側で弾く
-    [dep,arr,my,adm].forEach(a=>a.style.pointerEvents="auto");
-    [dep,arr,my,adm].forEach(a=>a.style.opacity="1");
-  }
-  guardLinks();
-
-  document.getElementById("logoutBtn").addEventListener("click", ()=>{
-    OFA_AUTH.clearSession();
-    OFA_APP.toast("ログアウトしました");
-    OFA_AUTH.setLoginBadge();
-    guardLinks();
-  });
-
-  document.getElementById("loginDriver").addEventListener("click", ()=>{
-    const pass = document.getElementById("pass").value.trim();
-    const r = OFA_AUTH.login("driver", pass);
-    if(!r.ok){ OFA_APP.toast(r.message); return; }
-    OFA_APP.toast("ドライバーでログインしました");
-    OFA_AUTH.setLoginBadge();
-    guardLinks();
-  });
-
-  document.getElementById("loginAdmin").addEventListener("click", ()=>{
-    const pass = document.getElementById("pass").value.trim();
-    const r = OFA_AUTH.login("admin", pass);
-    if(!r.ok){ OFA_APP.toast(r.message); return; }
-    OFA_APP.toast("管理者でログインしました");
-    OFA_AUTH.setLoginBadge();
-    guardLinks();
-  });
-});
-</script>
+  <div id="toast" class="toast hidden"></div>
 </body>
 </html>
