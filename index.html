@@ -6,98 +6,63 @@
   <title>OFA 点呼 / 日報</title>
   <link rel="stylesheet" href="./style.css" />
 </head>
-<body>
-<div class="wrap">
-  <div class="brandTop">
-    <div class="logo">OFA</div>
-    <div>
-      <div class="h1">OFA 点呼 / 日報（Firebase版）</div>
-      <div class="sub">ログイン必須｜出発点呼 / 帰着点呼 / 日報 / 出力（CSV・月報）</div>
-    </div>
-  </div>
-
-  <div class="card rainbowBorder rule">
-    <h2>点呼の重要ルール（必読）</h2>
-    <ul>
-      <li>点呼は「業務開始前（出発）」と「業務終了後（帰着）」の2回</li>
-      <li>アルコール数値は必須（写真は任意・推奨）</li>
-      <li>免許証番号は必須（写真は任意）</li>
-      <li>日常点検（フル）は必須（NG時：詳細＋写真）</li>
-      <li>日報は「出力される資料」なので詳細に記載</li>
-    </ul>
-  </div>
-
-  <div class="card rainbowBorder" id="authCard">
-    <div class="row">
-      <span class="badge"><span class="dot ng" id="dot"></span><span id="state">未ログイン</span></span>
-      <button class="btnSmall" id="logoutBtn" style="display:none;">ログアウト</button>
+<body data-page="index">
+  <div class="wrap">
+    <div class="topbar">
+      <div class="brand">
+        <div class="logo">OFA</div>
+        <div>
+          <div class="title">OFA 点呼 / 日報</div>
+          <div class="subtitle">ログイン必須（共通パス）｜点呼・日常点検・日報・月報・CSV</div>
+        </div>
+      </div>
     </div>
 
-    <div id="authForm">
-      <label>メールアドレス <span class="req">*</span></label>
-      <input id="email" type="email" autocomplete="email" placeholder="例：driver@example.com" />
+    <div class="card rule rainbow-border">
+      <h2>点呼の重要ルール（必読）</h2>
+      <ul>
+        <li>点呼は「業務開始前（出発）」と「業務終了後（帰着）」の2回</li>
+        <li>アルコールチェックは必須（数値＋酒気帯び判定）</li>
+        <li>免許証番号は必須（写真は任意）</li>
+        <li>日常点検（車両点検）は必須（NG時は必ず詳細と写真推奨）</li>
+        <li>日報は毎日PDFで提出（写真は日報のみ）</li>
+      </ul>
+    </div>
 
-      <label>パスワード <span class="req">*</span></label>
-      <input id="pass" type="password" autocomplete="current-password" placeholder="社内LINEで案内のパスワード" />
+    <div class="card rainbow-border" id="loginCard">
+      <div class="badge"><span class="dot ng" id="authDot"></span><span id="authState">未ログイン</span></div>
 
-      <div class="btnRow">
-        <button class="btn btnGhost" id="loginBtn" type="button">ログイン</button>
-        <button class="btn btnGhost" id="signupBtn" type="button">新規登録（誰でもOK）</button>
+      <div class="err" id="errBox"></div>
+      <div class="okmsg" id="okBox"></div>
+
+      <label>共通ログインパスワード <span class="req">*</span></label>
+      <input id="driverPass" type="password" placeholder="社内LINEで配布のパスワード" />
+
+      <div class="btnrow">
+        <button class="btn primary" id="btnLogin" type="button">ログインして開始</button>
       </div>
 
       <div class="hint">
-        ※入場制限はしません。登録後すぐ使えます。<br>
-        ※パスワードは社内LINE/LINE公式で定期的に更新します。
+        ※パスワードは社内LINE公式で配布します（定期更新）<br>
+        ※管理者は「出力ページ」で管理者モードONできます（ここでは表示しません）
       </div>
     </div>
 
-    <div id="menu" style="display:none;">
-      <div class="sep"></div>
-      <div class="row">
-        <span class="badge"><span class="k">ログイン</span>&nbsp;<b id="who">-</b></span>
+    <div class="card hidden rainbow-border" id="menuCard">
+      <div class="badge"><span class="dot ok" id="authDot2"></span><span id="whoText">ログイン中</span></div>
+
+      <div class="btnrow">
+        <a class="btn rainbow" href="./departure.html" style="text-decoration:none;display:block;text-align:center;">業務開始（出発点呼）</a>
+        <a class="btn rainbow" href="./arrival.html" style="text-decoration:none;display:block;text-align:center;">業務終了（帰着点呼 / 日報）</a>
+        <a class="btn ghost" href="./export.html" style="text-decoration:none;display:block;text-align:center;">日報PDF / 月報PDF / CSV（出力）</a>
       </div>
-      <div class="btnRow">
-        <a class="btn btnGrad" href="./departure.html">業務開始（出発点呼）</a>
-        <a class="btn btnGrad" href="./arrival.html">業務終了（帰着点呼）</a>
-        <a class="btn btnGrad" href="./daily.html">日報（業務実績）</a>
-        <a class="btn btnGhost" href="./export.html">出力（CSV / 月報）</a>
-        <a class="btn btnGhost" href="./admin.html">管理者（ログイン状況・全件検索）</a>
+
+      <div class="btnrow" style="margin-top:10px;">
+        <button class="btn ghost" id="btnLogout" type="button">ログアウト</button>
       </div>
     </div>
   </div>
 
-  <p class="small" style="text-align:center;margin:12px 0 0;">© OFA GROUP</p>
-</div>
-
-<div id="toast" class="toast"></div>
-
-<script type="module">
-  import { bindAuthUI, watchAuth, auth } from "./app-auth.js";
-  import { $ } from "./app-common.js";
-
-  bindAuthUI();
-
-  const dot = $("dot");
-  const state = $("state");
-  const menu = $("menu");
-  const authForm = $("authForm");
-  const who = $("who");
-  const logoutBtn = $("logoutBtn");
-
-  watchAuth((user)=>{
-    dot.classList.remove("ng"); dot.classList.add("ok");
-    state.textContent = "ログイン中";
-    who.textContent = user.email || "(no email)";
-    menu.style.display = "block";
-    authForm.style.display = "none";
-    logoutBtn.style.display = "inline-block";
-  }, ()=>{
-    dot.classList.remove("ok"); dot.classList.add("ng");
-    state.textContent = "未ログイン";
-    menu.style.display = "none";
-    authForm.style.display = "block";
-    logoutBtn.style.display = "none";
-  });
-</script>
+  <script type="module" src="./app.js"></script>
 </body>
 </html>
