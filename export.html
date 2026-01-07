@@ -3,62 +3,119 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-  <title>OFA | 出力（CSV / 月報）</title>
+  <title>OFA | 出力（PDF / CSV）</title>
   <link rel="stylesheet" href="./style.css" />
 </head>
-<body>
-<div class="wrap">
-  <div class="topbar">
-    <div>
-      <div class="title">出力（CSV / 月報）</div>
-      <div class="subtitle">ドライバー：本人分のみ｜月報：日報/点呼から自動集計</div>
+<body data-page="export">
+  <div class="wrap">
+    <div class="topbar">
+      <div class="brand">
+        <div class="logo">OFA</div>
+        <div>
+          <div class="title">日報PDF / 月報PDF / CSV</div>
+          <div class="subtitle">ドライバー：本人のみ｜管理者：管理者モードONで検索出力</div>
+        </div>
+      </div>
+      <button class="btn ghost small" id="backBtn" type="button">戻る</button>
     </div>
-    <button class="btnSmall" id="backBtn" type="button">戻る</button>
+
+    <div class="card rainbow-border">
+      <div class="grid grid2">
+        <div class="badge"><span class="dot ok" id="authDot"></span><span id="authState">ログイン中</span></div>
+        <div style="text-align:right;">
+          <span class="badge"><span id="modeLabel">ドライバー</span></span>
+        </div>
+      </div>
+
+      <div class="err" id="errBox"></div>
+      <div class="okmsg" id="okBox"></div>
+
+      <hr class="sep">
+
+      <!-- 管理者モード -->
+      <div class="notice">
+        <b>管理者モード</b>（管理者のみ）<br>
+        管理者パスワード入力でON。通常はドライバー本人データのみ出力。
+      </div>
+
+      <div class="grid grid2" style="margin-top:10px;">
+        <div>
+          <label>管理者パスワード</label>
+          <input id="adminPass" type="password" placeholder="（管理者のみ）" />
+        </div>
+        <div class="btnrow" style="margin:0;align-items:flex-end;">
+          <button class="btn primary" id="btnAdminOn" type="button">管理者モードON</button>
+          <button class="btn ghost" id="btnAdminOff" type="button">OFF</button>
+        </div>
+      </div>
+
+      <div id="adminSearchBox" class="hidden" style="margin-top:12px;">
+        <div class="notice">
+          <b>🔎 管理者検索（全員）</b><br>
+          氏名 / 車両番号 / 拠点 で絞り込み（空欄なら全件）
+        </div>
+
+        <div class="grid grid3" style="margin-top:10px;">
+          <div>
+            <label>氏名</label>
+            <input id="qName" type="text" placeholder="例：森下" />
+          </div>
+          <div>
+            <label>車両番号</label>
+            <input id="qVehicle" type="text" placeholder="例：12-34" />
+          </div>
+          <div>
+            <label>拠点</label>
+            <select id="qBase"></select>
+          </div>
+        </div>
+      </div>
+
+      <hr class="sep">
+
+      <!-- 日報PDF -->
+      <div class="grid grid2">
+        <div>
+          <label>日報PDF（日付）</label>
+          <input id="dateDaily" type="date" />
+          <div class="hint">※当日データ（出発/帰着/日報）からPDF生成</div>
+        </div>
+        <div>
+          <label>月報（対象月）</label>
+          <input id="month" type="month" />
+          <div class="hint">※写真は「有/無」のみ表示</div>
+        </div>
+      </div>
+
+      <div class="btnrow">
+        <button class="btn rainbow" id="btnDailyPdf" type="button">日報PDFを作成</button>
+        <button class="btn rainbow" id="btnMonthlyPdf" type="button">月報PDFを作成</button>
+        <button class="btn primary" id="btnMonthlyCsv" type="button">月次CSVを作成</button>
+      </div>
+
+      <hr class="sep">
+
+      <div class="grid grid2">
+        <div>
+          <label>CSV（開始日）</label>
+          <input id="fromDate" type="date" />
+        </div>
+        <div>
+          <label>CSV（終了日）</label>
+          <input id="toDate" type="date" />
+        </div>
+      </div>
+
+      <div class="btnrow">
+        <button class="btn ghost" id="btnRangeCsv" type="button">範囲CSVを作成</button>
+      </div>
+
+      <div class="hint" id="resultBox" style="margin-top:12px;"></div>
+    </div>
   </div>
 
-  <div class="card rainbowBorder">
-    <div class="row">
-      <span class="badge"><span class="dot ng" id="dot"></span><span id="state">未ログイン</span></span>
-      <span class="badge"><span class="k">ログイン</span>&nbsp;<b id="who">-</b></span>
-    </div>
-
-    <hr class="sep">
-
-    <div class="grid2">
-      <div>
-        <label>月（YYYY-MM）<span class="req">*</span></label>
-        <input id="month" type="month" />
-      </div>
-      <div>
-        <label>期間CSV（from）</label>
-        <input id="from" type="date" />
-      </div>
-    </div>
-
-    <div class="grid2">
-      <div>
-        <label>期間CSV（to）</label>
-        <input id="to" type="date" />
-      </div>
-      <div style="display:flex;align-items:flex-end;gap:10px;">
-        <button class="btn btnGhost" id="csvRangeBtn" type="button" style="width:100%;">期間CSV（本人分）</button>
-      </div>
-    </div>
-
-    <div class="btnRow">
-      <button class="btn btnGrad" id="csvMonthBtn" type="button">月次CSV（本人分）</button>
-      <button class="btn btnGrad" id="monthlyBtn" type="button">月報（集計して表示）</button>
-      <button class="btn btnGhost" id="printMonthlyBtn" type="button">月報をPDF（印刷）</button>
-    </div>
-
-    <hr class="sep">
-    <div class="sectionTitle">月報プレビュー</div>
-    <div id="monthlyBox" class="small">まだ作成されていません</div>
-  </div>
-</div>
-
-<div id="toast" class="toast"></div>
-
-<script type="module" src="./app-export.js"></script>
+  <!-- jsPDF -->
+  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+  <script type="module" src="./app.js"></script>
 </body>
 </html>
