@@ -2,145 +2,591 @@
 <html lang="ja">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>OFA 点呼システム</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <title>OFA 点呼 / 日報</title>
   <style>
-    body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Hiragino Kaku Gothic ProN","Noto Sans JP",sans-serif;background:#0b0f1a;color:#fff;margin:0}
-    .wrap{max-width:520px;margin:0 auto;padding:18px}
-    .card{background:#121a2b;border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:16px;margin:12px 0}
-    .btn{width:100%;padding:14px 16px;border-radius:14px;border:none;font-weight:700;font-size:16px;cursor:pointer}
-    .btnA{background:linear-gradient(90deg,#51f,#f0a);color:#fff}
-    .btnB{background:#0f172a;color:#fff;border:1px solid rgba(255,255,255,.15)}
-    .in{width:100%;padding:12px 14px;border-radius:12px;border:1px solid rgba(255,255,255,.15);background:#0b1224;color:#fff;font-size:16px;box-sizing:border-box}
-    .row{display:flex;gap:10px}
-    .row > *{flex:1}
-    .muted{opacity:.75;font-size:13px}
-    .ok{color:#8bffb0}
-    .ng{color:#ff8b8b}
+    :root{
+      --bg:#0b0f1a;
+      --card:#111827;
+      --card2:#0f172a;
+      --text:#e5e7eb;
+      --muted:#94a3b8;
+      --line:#1f2937;
+      --good:#22c55e;
+      --bad:#ef4444;
+      --btn:#111827;
+      --radius:18px;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family: ui-sans-serif, system-ui, -apple-system, "Hiragino Sans", "Noto Sans JP", "Segoe UI", sans-serif;
+      background: radial-gradient(1200px 700px at 30% 10%, #1f2a5a 0%, rgba(31,42,90,0) 55%),
+                  radial-gradient(900px 600px at 80% 30%, #5a1f4c 0%, rgba(90,31,76,0) 55%),
+                  var(--bg);
+      color:var(--text);
+      padding:16px 12px 60px;
+    }
+    .wrap{max-width:520px;margin:0 auto}
+    .brand{
+      display:flex;gap:12px;align-items:center;margin:8px 4px 14px;
+    }
+    .logo{
+      width:44px;height:44px;border-radius:12px;
+      background: linear-gradient(135deg,#22c55e,#60a5fa,#a78bfa,#f472b6);
+      display:grid;place-items:center;font-weight:800;
+    }
+    .title{line-height:1.2}
+    .title h1{font-size:18px;margin:0}
+    .title p{margin:4px 0 0;color:var(--muted);font-size:12px}
+
+    .card{
+      background: rgba(17,24,39,.86);
+      border:1px solid rgba(255,255,255,.06);
+      border-radius: var(--radius);
+      padding:14px;
+      box-shadow: 0 12px 40px rgba(0,0,0,.35);
+      backdrop-filter: blur(10px);
+      margin:10px 0;
+    }
+    .rule{
+      border:2px solid transparent;
+      background:
+        linear-gradient(rgba(17,24,39,.86), rgba(17,24,39,.86)) padding-box,
+        linear-gradient(135deg,#22c55e,#60a5fa,#a78bfa,#f472b6) border-box;
+    }
+    .rule h2{font-size:14px;margin:0 0 8px}
+    .rule ul{margin:0;padding-left:18px;color:#d1d5db;font-size:13px}
+    .rule li{margin:6px 0}
+    .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+    .badge{
+      display:inline-flex;gap:8px;align-items:center;
+      padding:8px 10px;border-radius:999px;
+      background: rgba(148,163,184,.12);
+      border:1px solid rgba(148,163,184,.18);
+      color:#d1d5db;font-size:12px
+    }
+    .dot{width:8px;height:8px;border-radius:50%}
+    .dot.ok{background:var(--good)}
+    .dot.ng{background:var(--bad)}
+    .spacer{height:6px}
+    label{display:block;font-size:12px;color:var(--muted);margin:10px 0 6px}
+    input, select, textarea{
+      width:100%;
+      padding:12px 12px;
+      border-radius:14px;
+      border:1px solid rgba(255,255,255,.10);
+      background: rgba(15,23,42,.9);
+      color:var(--text);
+      outline:none;
+    }
+    textarea{min-height:84px;resize:vertical}
+    .btn{
+      width:100%;
+      border:0;
+      border-radius: 16px;
+      padding:13px 12px;
+      font-weight:800;
+      color:#0b1020;
+      cursor:pointer;
+      background: linear-gradient(90deg,#22c55e,#60a5fa,#a78bfa,#f472b6);
+    }
+    .btn2{
+      width:100%;
+      border:1px solid rgba(255,255,255,.14);
+      border-radius: 16px;
+      padding:12px 12px;
+      font-weight:800;
+      color:var(--text);
+      cursor:pointer;
+      background: rgba(2,6,23,.45);
+    }
+    .btnSmall{
+      border:1px solid rgba(255,255,255,.14);
+      border-radius: 14px;
+      padding:10px 12px;
+      font-weight:800;
+      color:var(--text);
+      cursor:pointer;
+      background: rgba(2,6,23,.45);
+      flex:1;
+      min-width: 160px;
+    }
+    .muted{color:var(--muted);font-size:12px}
+    .err{color:#fecaca;background:rgba(239,68,68,.12);border:1px solid rgba(239,68,68,.25);padding:10px;border-radius:14px;font-size:12px;display:none}
+    .okmsg{color:#bbf7d0;background:rgba(34,197,94,.12);border:1px solid rgba(34,197,94,.25);padding:10px;border-radius:14px;font-size:12px;display:none}
+    .hidden{display:none !important;}
+    .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    @media (max-width:420px){ .grid2{grid-template-columns:1fr} }
+    .hr{height:1px;background:rgba(255,255,255,.08);margin:12px 0}
+    .list{
+      border:1px solid rgba(255,255,255,.08);
+      border-radius:16px;
+      overflow:hidden;
+    }
+    .list .item{
+      padding:10px 12px;
+      display:flex;justify-content:space-between;gap:10px;
+      border-top:1px solid rgba(255,255,255,.06);
+      font-size:12px;
+      color:#d1d5db;
+    }
+    .list .item:first-child{border-top:0}
+    .k{color:var(--muted)}
+    .v{color:var(--text);font-weight:700;word-break:break-all}
+    .right{margin-left:auto;text-align:right}
   </style>
 </head>
+
 <body>
-  <div class="wrap">
-    <h2>OFA 点呼システム</h2>
-    <div class="card">
-      <div class="muted">ログイン（メール / パスワード）</div>
-      <div style="height:10px"></div>
-      <input id="email" class="in" type="email" placeholder="メールアドレス" />
-      <div style="height:10px"></div>
-      <input id="pass" class="in" type="password" placeholder="パスワード" />
-      <div style="height:12px"></div>
-      <div class="row">
-        <button id="btnLogin" class="btn btnA">ログイン</button>
-        <button id="btnSignup" class="btn btnB">新規登録</button>
-      </div>
-      <div style="height:10px"></div>
-      <div id="msg" class="muted"></div>
-    </div>
-
-    <div class="card">
-      <div class="muted">ログイン状況</div>
-      <div style="height:8px"></div>
-      <div id="who">未ログイン</div>
-      <div style="height:12px"></div>
-      <button id="btnLogout" class="btn btnB">ログアウト</button>
-    </div>
-
-    <div class="card">
-      <div class="muted">管理（誰がログインしたか記録されます）</div>
-      <div style="height:8px"></div>
-      <div class="muted">Firestoreに <b>users/{uid}</b> を自動作成・更新します。</div>
+<div class="wrap">
+  <div class="brand">
+    <div class="logo">OFA</div>
+    <div class="title">
+      <h1>OFA 点呼 / 日報（Firebase版）</h1>
+      <p id="ver">v2026.01.06 / Scriptなし / Auth + Firestore</p>
     </div>
   </div>
 
-  <!-- Firebase (CDN) -->
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
-    import {
-      getAuth,
-      onAuthStateChanged,
-      createUserWithEmailAndPassword,
-      signInWithEmailAndPassword,
-      signOut
-    } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
-    import {
-      getFirestore,
-      doc,
-      setDoc,
-      serverTimestamp
-    } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
+  <div class="card rule">
+    <h2>点呼の重要ルール（必読）</h2>
+    <ul>
+      <li>点呼は「業務開始前（出発）」と「業務終了後（帰着）」の2回</li>
+      <li>アルコールチェックは必須（数値 + 酒気帯び判定）</li>
+      <li>免許証番号は必須（写真は任意）</li>
+      <li>日常点検（車両点検）は必須（NG時は異常内容を記載）</li>
+      <li>ログインした人が分かるように「オンライン記録」を残します</li>
+    </ul>
+  </div>
 
-    // ✅ あなたの firebaseConfig
-    const firebaseConfig = {
-      apiKey: "AIzaSyBe8GHuQepazPDF-dc9XvGlqVNMsdV913E",
-      authDomain: "ofatenkoapp.firebaseapp.com",
-      projectId: "ofatenkoapp",
-      storageBucket: "ofatenkoapp.firebasestorage.app",
-      messagingSenderId: "6840450594",
-      appId: "1:6840450594:web:441bbb4e2e4be061a6547b"
-    };
+  <!-- AUTH CARD -->
+  <div class="card" id="authCard">
+    <div class="row">
+      <span class="badge"><span class="dot ng" id="authDot"></span><span id="authState">未ログイン</span></span>
+      <span class="badge"><span class="k">role</span>&nbsp;<span class="v" id="roleLabel">-</span></span>
+      <button class="btnSmall" id="logoutBtn" style="display:none;">ログアウト</button>
+    </div>
 
-    const app = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
-    const db = getFirestore(app);
+    <div class="spacer"></div>
 
-    const $ = (id) => document.getElementById(id);
-    const msg = (text, ok=true) => {
-      $("msg").innerHTML = ok ? `<span class="ok">${text}</span>` : `<span class="ng">${text}</span>`;
-    };
+    <div class="err" id="errBox"></div>
+    <div class="okmsg" id="okBox"></div>
 
-    async function upsertUserProfile(user){
-      // users/{uid} に「誰がログインしたか」を残す
-      const ref = doc(db, "users", user.uid);
-      await setDoc(ref, {
-        uid: user.uid,
-        email: user.email || "",
-        role: "driver",              // まずは全員driverでOK（後で管理者だけ admin に変更できる）
-        createdAt: serverTimestamp(), // 初回作成時も入る（上書きされるのが嫌なら後で調整）
-        lastLoginAt: serverTimestamp(),
-        lastLoginAgent: navigator.userAgent
-      }, { merge: true });
+    <div id="authForm">
+      <label>メールアドレス</label>
+      <input id="email" type="email" placeholder="example@ofa.jp" autocomplete="email" />
+
+      <label>パスワード</label>
+      <input id="pass" type="password" placeholder="8文字以上推奨" autocomplete="current-password" />
+
+      <div class="spacer"></div>
+      <div class="grid2">
+        <button class="btn2" id="loginBtn">ログイン</button>
+        <button class="btn2" id="signupBtn">新規登録（誰でもOK）</button>
+      </div>
+
+      <div class="spacer"></div>
+      <button class="btn" id="anonBtn">匿名でログイン（メールなし）</button>
+
+      <p class="muted" style="margin:10px 2px 0;">
+        ※登録後すぐ使えます（入場制限なし）<br>
+        ※管理したいのは「誰がログインしているか／最終アクセス」だけです
+      </p>
+    </div>
+  </div>
+
+  <!-- APP CARD -->
+  <div class="card hidden" id="appCard">
+    <div class="row">
+      <span class="badge"><span class="k">ログイン</span>&nbsp;<span class="v" id="who">-</span></span>
+      <span class="badge"><span class="k">uid</span>&nbsp;<span class="v" id="uid">-</span></span>
+    </div>
+
+    <div class="hr"></div>
+
+    <div class="row">
+      <button class="btnSmall" id="openDriverBtn">ドライバー：点呼入力</button>
+      <button class="btnSmall" id="openAdminBtn">管理者：ログイン状況</button>
+    </div>
+
+    <div class="hr"></div>
+
+    <!-- DRIVER -->
+    <div id="driverPanel">
+      <h3 style="margin:0 0 8px;font-size:14px;">点呼（サンプル）</h3>
+
+      <label>点呼区分</label>
+      <select id="tenkoType">
+        <option value="start">出発点呼</option>
+        <option value="end">帰着点呼</option>
+      </select>
+
+      <div class="grid2">
+        <div>
+          <label>アルコール数値</label>
+          <input id="alc" type="number" step="0.01" placeholder="例: 0.00" />
+        </div>
+        <div>
+          <label>酒気帯び判定</label>
+          <select id="alcJudge">
+            <option value="OK">OK</option>
+            <option value="NG">NG</option>
+          </select>
+        </div>
+      </div>
+
+      <label>免許証番号（必須）</label>
+      <input id="licenseNo" type="text" placeholder="例: 第1234567890号" />
+
+      <label>車両点検（簡易）</label>
+      <select id="vehicleCheck">
+        <option value="OK">OK</option>
+        <option value="NG">NG</option>
+      </select>
+
+      <label>点検メモ（NGは必ず詳細）</label>
+      <textarea id="memo" placeholder="NGの場合は必ず詳細を書いてください"></textarea>
+
+      <div class="spacer"></div>
+      <button class="btn" id="submitTenko">送信（保存）</button>
+
+      <p class="muted" style="margin:10px 2px 0;">
+        ※ここはまず「保存まで確実に動く」土台です。日報PDF/CSV・写真・月報は次で追加します。
+      </p>
+    </div>
+
+    <!-- ADMIN -->
+    <div id="adminPanel" class="hidden">
+      <h3 style="margin:0 0 8px;font-size:14px;">ログイン状況（オンライン／最終アクセス）</h3>
+      <p class="muted" style="margin:0 0 10px;">
+        表示されない場合は、あなたのアカウントの role を admin にします（下に手順あり）
+      </p>
+      <div class="list" id="sessionsList">
+        <div class="item"><span class="k">読み込み中…</span></div>
+      </div>
+      <div class="spacer"></div>
+      <button class="btn2" id="refreshSessions">更新</button>
+
+      <div class="hr"></div>
+      <div class="muted">
+        <div>管理者にするには：</div>
+        <div>Firestore → <b>users</b> コレクション → 自分の uid のドキュメント → <b>role</b> を <b>admin</b> に変更</div>
+      </div>
+    </div>
+
+  </div>
+
+  <p class="muted" style="text-align:center;margin:12px 0 0;">© OFA GROUP</p>
+</div>
+
+<!-- Firebase (CDN / Script不要) -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
+  import {
+    getAuth,
+    onAuthStateChanged,
+    signInWithEmailAndPassword,
+    createUserWithEmailAndPassword,
+    signInAnonymously,
+    signOut
+  } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
+  import {
+    getFirestore,
+    doc,
+    setDoc,
+    getDoc,
+    serverTimestamp,
+    collection,
+    query,
+    orderBy,
+    limit,
+    getDocs
+  } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
+
+  // ★あなたのFirebase設定（すでにOK）
+  const firebaseConfig = {
+    apiKey: "AIzaSyBe8GHuQepazPDF-dc9XvGlqVNMsdV913E",
+    authDomain: "ofatenkoapp.firebaseapp.com",
+    projectId: "ofatenkoapp",
+    storageBucket: "ofatenkoapp.firebasestorage.app",
+    messagingSenderId: "6840450594",
+    appId: "1:6840450594:web:441bbb4e2e4be061a6547b"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db = getFirestore(app);
+
+  // UI refs
+  const authDot = document.getElementById("authDot");
+  const authState = document.getElementById("authState");
+  const roleLabel = document.getElementById("roleLabel");
+  const logoutBtn = document.getElementById("logoutBtn");
+  const authForm = document.getElementById("authForm");
+  const authCard = document.getElementById("authCard");
+  const appCard = document.getElementById("appCard");
+
+  const emailEl = document.getElementById("email");
+  const passEl = document.getElementById("pass");
+  const errBox = document.getElementById("errBox");
+  const okBox = document.getElementById("okBox");
+
+  const who = document.getElementById("who");
+  const uidEl = document.getElementById("uid");
+
+  const openDriverBtn = document.getElementById("openDriverBtn");
+  const openAdminBtn = document.getElementById("openAdminBtn");
+  const driverPanel = document.getElementById("driverPanel");
+  const adminPanel = document.getElementById("adminPanel");
+
+  const sessionsList = document.getElementById("sessionsList");
+  const refreshSessions = document.getElementById("refreshSessions");
+
+  // driver form
+  const tenkoType = document.getElementById("tenkoType");
+  const alc = document.getElementById("alc");
+  const alcJudge = document.getElementById("alcJudge");
+  const licenseNo = document.getElementById("licenseNo");
+  const vehicleCheck = document.getElementById("vehicleCheck");
+  const memo = document.getElementById("memo");
+  const submitTenko = document.getElementById("submitTenko");
+
+  function showErr(msg){
+    errBox.style.display = "block";
+    okBox.style.display = "none";
+    errBox.textContent = msg;
+  }
+  function showOk(msg){
+    okBox.style.display = "block";
+    errBox.style.display = "none";
+    okBox.textContent = msg;
+    setTimeout(()=>{ okBox.style.display="none"; }, 2500);
+  }
+
+  async function ensureUserDoc(user){
+    const uref = doc(db, "users", user.uid);
+    const snap = await getDoc(uref);
+
+    // 初回だけ作る（入場制限しない）
+    if (!snap.exists()){
+      const role = (user.email && user.email.toLowerCase() === "ofa.group2020@gmail.com") ? "admin" : "driver";
+      await setDoc(uref, {
+        email: user.email || null,
+        role,
+        createdAt: serverTimestamp()
+      }, { merge:true });
+    } else {
+      // emailを持ってるのにusers側がnullなら埋める
+      const data = snap.data() || {};
+      if (user.email && !data.email){
+        await setDoc(uref, { email: user.email }, { merge:true });
+      }
     }
+  }
 
-    $("btnSignup").addEventListener("click", async () => {
-      const email = $("email").value.trim();
-      const pass = $("pass").value.trim();
-      if(!email || !pass) return msg("メールとパスワードを入力してください", false);
+  // 「誰がログイン中か」＝ sessions/{uid} を更新（最終アクセス）
+  let heartbeatTimer = null;
+  async function startHeartbeat(user, role){
+    const sref = doc(db, "sessions", user.uid);
+    await setDoc(sref, {
+      uid: user.uid,
+      email: user.email || null,
+      role: role || "driver",
+      userAgent: navigator.userAgent,
+      updatedAt: serverTimestamp()
+    }, { merge:true });
 
+    clearInterval(heartbeatTimer);
+    heartbeatTimer = setInterval(async ()=>{
       try{
-        const cred = await createUserWithEmailAndPassword(auth, email, pass);
-        await upsertUserProfile(cred.user);
-        msg("新規登録OK。ログインしました。");
-      }catch(e){
-        msg(e.message, false);
-      }
-    });
+        await setDoc(sref, { updatedAt: serverTimestamp() }, { merge:true });
+      }catch(e){}
+    }, 60 * 1000); // 1分ごと
+  }
 
-    $("btnLogin").addEventListener("click", async () => {
-      const email = $("email").value.trim();
-      const pass = $("pass").value.trim();
-      if(!email || !pass) return msg("メールとパスワードを入力してください", false);
+  async function stopHeartbeat(user){
+    clearInterval(heartbeatTimer);
+    heartbeatTimer = null;
+    // 消さずに「最終アクセス」として残す（管理目的）
+    const sref = doc(db, "sessions", user.uid);
+    try{
+      await setDoc(sref, { updatedAt: serverTimestamp() }, { merge:true });
+    }catch(e){}
+  }
 
-      try{
-        const cred = await signInWithEmailAndPassword(auth, email, pass);
-        await upsertUserProfile(cred.user);
-        msg("ログインOK。");
-      }catch(e){
-        msg(e.message, false);
-      }
-    });
+  async function getRole(user){
+    const uref = doc(db, "users", user.uid);
+    const snap = await getDoc(uref);
+    return snap.exists() ? (snap.data().role || "driver") : "driver";
+  }
 
-    $("btnLogout").addEventListener("click", async () => {
+  function setLoggedOutUI(){
+    authDot.classList.remove("ok"); authDot.classList.add("ng");
+    authState.textContent = "未ログイン";
+    roleLabel.textContent = "-";
+    logoutBtn.style.display = "none";
+    authForm.classList.remove("hidden");
+    appCard.classList.add("hidden");
+  }
+
+  function setLoggedInUI(user, role){
+    authDot.classList.remove("ng"); authDot.classList.add("ok");
+    authState.textContent = "ログイン中";
+    roleLabel.textContent = role || "-";
+    logoutBtn.style.display = "inline-block";
+    authForm.classList.add("hidden");
+    appCard.classList.remove("hidden");
+    who.textContent = user.email ? user.email : "(匿名)";
+    uidEl.textContent = user.uid;
+  }
+
+  document.getElementById("loginBtn").addEventListener("click", async ()=>{
+    try{
+      const email = (emailEl.value||"").trim();
+      const pass = (passEl.value||"").trim();
+      if(!email || !pass) return showErr("メールとパスワードを入力してください。");
+      await signInWithEmailAndPassword(auth, email, pass);
+      showOk("ログインしました。");
+    }catch(e){
+      showErr(e.message || "ログインに失敗しました。");
+    }
+  });
+
+  document.getElementById("signupBtn").addEventListener("click", async ()=>{
+    try{
+      const email = (emailEl.value||"").trim();
+      const pass = (passEl.value||"").trim();
+      if(!email || !pass) return showErr("メールとパスワードを入力してください。");
+      await createUserWithEmailAndPassword(auth, email, pass);
+      showOk("登録しました。すぐ使えます。");
+    }catch(e){
+      showErr(e.message || "登録に失敗しました。");
+    }
+  });
+
+  document.getElementById("anonBtn").addEventListener("click", async ()=>{
+    try{
+      await signInAnonymously(auth);
+      showOk("匿名ログインしました。");
+    }catch(e){
+      showErr(e.message || "匿名ログインに失敗しました。");
+    }
+  });
+
+  logoutBtn.addEventListener("click", async ()=>{
+    const user = auth.currentUser;
+    try{
+      if(user) await stopHeartbeat(user);
       await signOut(auth);
-      msg("ログアウトしました。");
-    });
+      showOk("ログアウトしました。");
+    }catch(e){
+      showErr(e.message || "ログアウトに失敗しました。");
+    }
+  });
 
-    onAuthStateChanged(auth, (user) => {
-      if(user){
-        $("who").textContent = `ログイン中：${user.email}（uid: ${user.uid.slice(0,8)}…）`;
-      }else{
-        $("who").textContent = "未ログイン";
+  // panel switch
+  openDriverBtn.addEventListener("click", ()=>{
+    driverPanel.classList.remove("hidden");
+    adminPanel.classList.add("hidden");
+  });
+  openAdminBtn.addEventListener("click", async ()=>{
+    driverPanel.classList.add("hidden");
+    adminPanel.classList.remove("hidden");
+    await loadSessions();
+  });
+
+  async function loadSessions(){
+    sessionsList.innerHTML = `<div class="item"><span class="k">読み込み中…</span></div>`;
+    try{
+      // roleチェック（admin以外は見せない）
+      const user = auth.currentUser;
+      const role = await getRole(user);
+      if(role !== "admin"){
+        sessionsList.innerHTML = `<div class="item"><span class="k">管理者のみ表示（あなたの role が admin ではありません）</span></div>`;
+        return;
       }
-    });
-  </script>
+      const q = query(collection(db, "sessions"), orderBy("updatedAt", "desc"), limit(50));
+      const snap = await getDocs(q);
+      if(snap.empty){
+        sessionsList.innerHTML = `<div class="item"><span class="k">まだセッションがありません</span></div>`;
+        return;
+      }
+      const rows = [];
+      snap.forEach(d=>{
+        const s = d.data() || {};
+        rows.push(`
+          <div class="item">
+            <div>
+              <div class="v">${(s.email || "(匿名)")}</div>
+              <div class="k">uid: ${s.uid || d.id}</div>
+            </div>
+            <div class="right">
+              <div class="v">${s.role || "-"}</div>
+              <div class="k">updatedAt: ${(s.updatedAt?.toDate ? s.updatedAt.toDate().toLocaleString() : "-")}</div>
+            </div>
+          </div>
+        `);
+      });
+      sessionsList.innerHTML = rows.join("");
+    }catch(e){
+      sessionsList.innerHTML = `<div class="item"><span class="k">読み込み失敗: ${e.message || e}</span></div>`;
+    }
+  }
+
+  refreshSessions.addEventListener("click", loadSessions);
+
+  // save tenko (sample)
+  submitTenko.addEventListener("click", async ()=>{
+    try{
+      const user = auth.currentUser;
+      if(!user) return showErr("ログインしてください。");
+
+      const lic = (licenseNo.value||"").trim();
+      if(!lic) return showErr("免許証番号は必須です。");
+
+      // まず「保存できる」ことを最優先（idは時刻+uid）
+      const id = `${Date.now()}_${user.uid}`;
+      const tref = doc(db, "tenko", id);
+
+      await setDoc(tref, {
+        uid: user.uid,
+        email: user.email || null,
+        type: tenkoType.value,         // start / end
+        alcohol: Number(alc.value || 0),
+        alcoholJudge: alcJudge.value,  // OK / NG
+        licenseNo: lic,
+        vehicleCheck: vehicleCheck.value, // OK / NG
+        memo: (memo.value||"").trim(),
+        createdAt: serverTimestamp()
+      }, { merge:true });
+
+      showOk("保存しました。");
+      // 軽くリセット
+      alc.value = "";
+      alcJudge.value = "OK";
+      vehicleCheck.value = "OK";
+      memo.value = "";
+    }catch(e){
+      showErr(e.message || "保存に失敗しました。");
+    }
+  });
+
+  // auth state
+  onAuthStateChanged(auth, async (user)=>{
+    errBox.style.display="none";
+    okBox.style.display="none";
+
+    if(!user){
+      setLoggedOutUI();
+      return;
+    }
+    await ensureUserDoc(user);
+    const role = await getRole(user);
+
+    setLoggedInUI(user, role);
+    await startHeartbeat(user, role);
+  });
+
+</script>
 </body>
 </html>
