@@ -3,52 +3,68 @@
 <head>
 <meta charset="utf-8">
 <title>OFA 点呼 / 日報</title>
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<script type="module" src="./js/driver.js"></script>
-<script type="module" src="./js/auth.js"></script>
-<script type="module" src="./js/pdf.js"></script>
+<link rel="stylesheet" href="style.css">
 </head>
-
 <body>
-<h2>OFA 点呼 / 日報（ドライバー）</h2>
 
-<input id="email" placeholder="メール">
-<input id="password" type="password" placeholder="パスワード">
-<button id="loginBtn">ログイン</button>
-<button id="signupBtn">新規登録</button>
+<h1>OFA 点呼 / 日報</h1>
 
-<hr>
+<section id="login">
+  <input id="email" placeholder="メール">
+  <input id="password" type="password" placeholder="パスワード">
+  <button id="loginBtn">ログイン</button>
+  <button id="signupBtn">新規登録</button>
+</section>
 
-<h3>点呼（出発 / 帰着）</h3>
+<section id="app" hidden>
+  ログイン中：<span id="userEmail"></span>
+  <button id="logoutBtn">ログアウト</button>
 
-<select id="type">
-  <option value="start">出発</option>
-  <option value="end">帰着</option>
-</select>
+  <h2>点呼</h2>
+  <select id="type">
+    <option>出発</option>
+    <option>帰着</option>
+  </select>
 
-<input id="name" placeholder="氏名（本名）">
-<input id="base" placeholder="事業者/拠点">
-<input id="vehicle" placeholder="車両番号">
-<input id="license" placeholder="運転免許証番号">
+  <input id="name" placeholder="氏名">
+  <input id="license" placeholder="運転免許証番号">
+  <input id="vehicle" placeholder="車両番号">
 
-<h4>健康状態</h4>
-<input id="sleep" placeholder="睡眠時間(h)">
-<input id="temp" placeholder="体温">
-<select id="condition">
-  <option>良好</option><option>注意</option><option>不良</option>
-</select>
+  <h3>日常点検</h3>
+  <label><input type="checkbox"> ブレーキ</label>
+  <label><input type="checkbox"> タイヤ</label>
+  <label><input type="checkbox"> ライト</label>
 
-<h4>日常点検</h4>
-<label><input type="checkbox" id="tire">タイヤ</label>
-<label><input type="checkbox" id="brake">ブレーキ</label>
-<label><input type="checkbox" id="light">ライト</label>
-<textarea id="inspectionMemo" placeholder="NG時詳細"></textarea>
+  <h3>写真</h3>
+  <input type="file" id="photos" multiple>
 
-<h4>案件（複数可）</h4>
-<input id="jobs" placeholder="Amazon, ヤマト, 企業…（カンマ区切り）">
+  <button id="saveBtn">保存</button>
+  <button id="pdfBtn">PDF作成</button>
+</section>
 
-<button id="saveBtn">保存</button>
-<button id="pdfBtn">PDF出力</button>
+<script type="module">
+import { initAuth } from "./js/auth.js";
+import { saveTenko } from "./js/driver.js";
+import { createDailyPDF } from "./js/pdf.js";
+
+initAuth();
+
+saveBtn.onclick = async () => {
+  await saveTenko({
+    type: type.value,
+    name: name.value,
+    license: license.value,
+    vehicle: vehicle.value
+  }, photos.files);
+};
+
+pdfBtn.onclick = () => {
+  createDailyPDF({
+    氏名: name.value,
+    車両: vehicle.value
+  });
+};
+</script>
 
 </body>
 </html>
