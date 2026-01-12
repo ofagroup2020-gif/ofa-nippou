@@ -1,70 +1,463 @@
 <!doctype html>
 <html lang="ja">
 <head>
-<meta charset="utf-8">
-<title>OFA 点呼 / 日報</title>
-<link rel="stylesheet" href="style.css">
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <title>OFA 点呼 / 日報 / 月報（端末完結）</title>
+  <link rel="stylesheet" href="./style.css" />
+  <!-- jsPDF (CDN) -->
+  <script defer src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+  <script defer src="./js/pdf.js"></script>
+  <script defer src="./js/app.js"></script>
 </head>
 <body>
+  <header class="top">
+    <div class="brand">
+      <div class="logo">OFA</div>
+      <div>
+        <div class="title">OFA 点呼 / 日報 / 月報（端末完結）</div>
+        <div class="sub">Firebase/GASなし｜保存=端末内｜写真=PDFに埋め込み（アップロードなし）</div>
+      </div>
+    </div>
+  </header>
 
-<h1>OFA 点呼 / 日報</h1>
+  <main class="wrap">
+    <section class="card rule">
+      <h2>重要ルール（必読）</h2>
+      <ul>
+        <li>点呼は「業務開始前（出発）」と「業務終了後（帰着）」の2回</li>
+        <li>アルコールチェック必須（数値＋酒気帯び判定）</li>
+        <li>日常点検（車両点検）はフル必須（NG時は詳細＋写真推奨）</li>
+        <li>日報は毎日PDFで提出（写真はPDFに埋め込むだけ／アップロードしない）</li>
+        <li>月報は端末内の保存データから期間検索で出力（本人のみ）</li>
+      </ul>
+    </section>
 
-<section id="login">
-  <input id="email" placeholder="メール">
-  <input id="password" type="password" placeholder="パスワード">
-  <button id="loginBtn">ログイン</button>
-  <button id="signupBtn">新規登録</button>
-</section>
+    <section class="card">
+      <div class="row between">
+        <div class="pill" id="pillStatus">🟢 端末内で記録します</div>
+        <div class="row gap">
+          <button class="btn ghost" id="btnBackupExport">バックアップ書き出し(JSON)</button>
+          <button class="btn ghost" id="btnBackupImport">バックアップ取込み(JSON)</button>
+          <input type="file" id="fileBackup" accept="application/json" hidden />
+        </div>
+      </div>
+      <div class="grid2">
+        <div>
+          <label class="lbl">氏名（本名）<span class="req">*</span></label>
+          <input class="in" id="profileName" placeholder="例：森下 洸" />
+        </div>
+        <div>
+          <label class="lbl">事業者/拠点<span class="req">*</span></label>
+          <select class="in" id="profileBase">
+            <option value="">選択</option>
+            <option>鹿児島</option>
+            <option>熊本</option>
+            <option>福岡</option>
+            <option>宮崎</option>
+            <option>その他</option>
+          </select>
+        </div>
+        <div>
+          <label class="lbl">車両番号（ナンバー）<span class="req">*</span></label>
+          <input class="in" id="profileCarNo" placeholder="例：鹿児島 480 れ 12-34" />
+        </div>
+        <div>
+          <label class="lbl">運転免許証番号<span class="req">*</span></label>
+          <input class="in" id="profileLicenseNo" placeholder="例：第123456789012" />
+        </div>
+        <div class="colspan2">
+          <label class="lbl">運転免許証写真（PDFに埋め込み）</label>
+          <input class="in" type="file" id="profileLicensePhoto" accept="image/*" />
+          <div class="help">※アップロードしません。PDFに埋め込むため端末内で処理します。</div>
+        </div>
+      </div>
 
-<section id="app" hidden>
-  ログイン中：<span id="userEmail"></span>
-  <button id="logoutBtn">ログアウト</button>
+      <div class="tabs">
+        <button class="tab active" data-tab="tenko">点呼（出発/帰着）</button>
+        <button class="tab" data-tab="daily">日報</button>
+        <button class="tab" data-tab="history">履歴 / 月報</button>
+      </div>
 
-  <h2>点呼</h2>
-  <select id="type">
-    <option>出発</option>
-    <option>帰着</option>
-  </select>
+      <!-- ================= 点呼 ================= -->
+      <section class="tabpane active" id="tab-tenko">
+        <h3 class="sec">点呼（出発 / 帰着）</h3>
 
-  <input id="name" placeholder="氏名">
-  <input id="license" placeholder="運転免許証番号">
-  <input id="vehicle" placeholder="車両番号">
+        <div class="grid2">
+          <div>
+            <label class="lbl">点呼区分<span class="req">*</span></label>
+            <select class="in" id="tenkoType">
+              <option value="departure">出発</option>
+              <option value="arrival">帰着</option>
+            </select>
+          </div>
+          <div>
+            <label class="lbl">点呼日時（自動）</label>
+            <input class="in" id="tenkoAt" readonly />
+          </div>
 
-  <h3>日常点検</h3>
-  <label><input type="checkbox"> ブレーキ</label>
-  <label><input type="checkbox"> タイヤ</label>
-  <label><input type="checkbox"> ライト</label>
+          <div>
+            <label class="lbl">点呼実施方法<span class="req">*</span></label>
+            <select class="in" id="tenkoMethod">
+              <option value="">選択</option>
+              <option>対面</option>
+              <option>電話</option>
+              <option>アプリ</option>
+              <option>その他</option>
+            </select>
+          </div>
 
-  <h3>写真</h3>
-  <input type="file" id="photos" multiple>
+          <div>
+            <label class="lbl">睡眠時間（h）<span class="req">*</span></label>
+            <input class="in" id="sleepHours" type="number" min="0" step="0.1" placeholder="例：6.5" />
+          </div>
 
-  <button id="saveBtn">保存</button>
-  <button id="pdfBtn">PDF作成</button>
-</section>
+          <div>
+            <label class="lbl">体温（℃）<span class="req">*</span></label>
+            <input class="in" id="bodyTemp" type="number" step="0.1" placeholder="例：36.5" />
+          </div>
 
-<script type="module">
-import { initAuth } from "./js/auth.js";
-import { saveTenko } from "./js/driver.js";
-import { createDailyPDF } from "./js/pdf.js";
+          <div>
+            <label class="lbl">体調<span class="req">*</span></label>
+            <select class="in" id="condition">
+              <option value="">選択</option>
+              <option>良好</option>
+              <option>注意</option>
+              <option>不良</option>
+            </select>
+          </div>
 
-initAuth();
+          <div>
+            <label class="lbl">疲労<span class="req">*</span></label>
+            <select class="in" id="fatigue">
+              <option value="">選択</option>
+              <option>なし</option>
+              <option>少し</option>
+              <option>強い</option>
+            </select>
+          </div>
 
-saveBtn.onclick = async () => {
-  await saveTenko({
-    type: type.value,
-    name: name.value,
-    license: license.value,
-    vehicle: vehicle.value
-  }, photos.files);
-};
+          <div>
+            <label class="lbl">服薬・体調影響<span class="req">*</span></label>
+            <select class="in" id="medication">
+              <option value="">選択</option>
+              <option value="なし">なし</option>
+              <option value="あり">あり</option>
+            </select>
+          </div>
 
-pdfBtn.onclick = () => {
-  createDailyPDF({
-    氏名: name.value,
-    車両: vehicle.value
-  });
-};
-</script>
+          <div class="colspan2" id="medicationDetailWrap" style="display:none;">
+            <label class="lbl">服薬内容（ありの場合必須）<span class="req">*</span></label>
+            <input class="in" id="medicationDetail" placeholder="例：風邪薬、頭痛薬 など" />
+          </div>
 
+          <div>
+            <label class="lbl">飲酒の有無<span class="req">*</span></label>
+            <select class="in" id="drank">
+              <option value="">選択</option>
+              <option>なし</option>
+              <option>あり</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="lbl">酒気帯び有無<span class="req">*</span></label>
+            <select class="in" id="alcoholJudge">
+              <option value="">選択</option>
+              <option>なし</option>
+              <option>疑い</option>
+              <option>あり</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="lbl">アルコール数値<span class="req">*</span></label>
+            <input class="in" id="alcoholValue" type="number" min="0" step="0.001" placeholder="例：0.000" />
+          </div>
+
+          <div>
+            <label class="lbl">アルコール測定写真（推奨）</label>
+            <input class="in" id="alcoholPhoto" type="file" accept="image/*" />
+          </div>
+        </div>
+
+        <!-- 案件（複数） -->
+        <div class="secbox">
+          <div class="row between">
+            <h4>稼働案件（複数対応）<span class="req">*</span></h4>
+            <button class="btn small" id="btnAddJob">＋案件を追加</button>
+          </div>
+          <div id="jobsWrap"></div>
+          <div class="help">※最低1件必要（Amazon/ヤマト/スポット/企業など）。危険物・高額品の有無も案件ごとに記録。</div>
+        </div>
+
+        <!-- 異常申告 -->
+        <div class="secbox">
+          <h4>異常申告<span class="req">*</span></h4>
+          <div class="grid2">
+            <div>
+              <label class="lbl">異常の有無<span class="req">*</span></label>
+              <select class="in" id="abnormal">
+                <option value="">選択</option>
+                <option value="なし">なし</option>
+                <option value="あり">あり</option>
+              </select>
+            </div>
+            <div>
+              <label class="lbl">写真（推奨）</label>
+              <input class="in" id="abnormalPhoto" type="file" accept="image/*" />
+            </div>
+            <div class="colspan2" id="abnormalDetailWrap" style="display:none;">
+              <label class="lbl">異常内容（ありの場合必須）<span class="req">*</span></label>
+              <textarea class="in" id="abnormalDetail" rows="3" placeholder="例：タイヤ釘刺さり、ライト不点灯 など"></textarea>
+            </div>
+          </div>
+        </div>
+
+        <!-- 日常点検（フル） -->
+        <div class="secbox">
+          <h4>日常点検（車両点検）フル必須</h4>
+
+          <div class="inspect">
+            <div class="inspectCol">
+              <div class="inspectTitle">A. 安全走行に直結（必須）</div>
+              <div class="checklist" id="inspectA"></div>
+            </div>
+            <div class="inspectCol">
+              <div class="inspectTitle">B. 車両状態（必須）</div>
+              <div class="checklist" id="inspectB"></div>
+            </div>
+            <div class="inspectCol">
+              <div class="inspectTitle">C. 装備（必須）</div>
+              <div class="checklist" id="inspectC"></div>
+            </div>
+          </div>
+
+          <div class="grid2">
+            <div>
+              <label class="lbl">NG項目（複数選択）</label>
+              <div class="help">※上のチェックで「NG」にしたものが自動でここに入ります</div>
+              <textarea class="in" id="ngItems" rows="2" readonly></textarea>
+            </div>
+            <div>
+              <label class="lbl">NG写真（推奨）</label>
+              <input class="in" id="ngPhoto" type="file" accept="image/*" />
+            </div>
+            <div class="colspan2">
+              <label class="lbl">NG詳細メモ（NGが1つでもある場合は必須）</label>
+              <textarea class="in" id="ngMemo" rows="3" placeholder="例：右前タイヤ空気圧低下。補充して再点検予定。"></textarea>
+            </div>
+          </div>
+        </div>
+
+        <div class="row gap">
+          <button class="btn" id="btnSaveTenko">点呼を保存</button>
+          <button class="btn ghost" id="btnTenkoPDF">点呼PDF作成</button>
+          <button class="btn ghost" id="btnTenkoCSV">点呼CSV書き出し</button>
+        </div>
+        <div class="help">※保存は端末内。PDF/CSVはLINE・メールで提出用。</div>
+      </section>
+
+      <!-- ================= 日報 ================= -->
+      <section class="tabpane" id="tab-daily">
+        <h3 class="sec">日報（業務実績）</h3>
+
+        <div class="grid2">
+          <div>
+            <label class="lbl">稼働日<span class="req">*</span></label>
+            <input class="in" id="workDate" type="date" />
+          </div>
+          <div>
+            <label class="lbl">案件（代表）<span class="req">*</span></label>
+            <input class="in" id="workCase" placeholder="例：Amazon" />
+          </div>
+
+          <div>
+            <label class="lbl">稼働時間：開始<span class="req">*</span></label>
+            <input class="in" id="workStart" type="time" />
+          </div>
+          <div>
+            <label class="lbl">稼働時間：終了<span class="req">*</span></label>
+            <input class="in" id="workEnd" type="time" />
+          </div>
+
+          <div>
+            <label class="lbl">休憩時間（分）<span class="req">*</span></label>
+            <input class="in" id="breakMin" type="number" min="0" step="1" placeholder="例：60" />
+          </div>
+          <div>
+            <label class="lbl">走行距離（km）</label>
+            <input class="in" id="distanceKm" type="number" min="0" step="0.1" placeholder="点呼のODO差分でもOK" />
+          </div>
+
+          <div>
+            <label class="lbl">配達個数<span class="req">*</span></label>
+            <input class="in" id="delivered" type="number" min="0" step="1" />
+          </div>
+          <div>
+            <label class="lbl">不在数</label>
+            <input class="in" id="absent" type="number" min="0" step="1" />
+          </div>
+
+          <div>
+            <label class="lbl">再配達数</label>
+            <input class="in" id="redelivery" type="number" min="0" step="1" />
+          </div>
+          <div>
+            <label class="lbl">返品/持戻り数</label>
+            <input class="in" id="returned" type="number" min="0" step="1" />
+          </div>
+
+          <div>
+            <label class="lbl">クレーム<span class="req">*</span></label>
+            <select class="in" id="claimFlag">
+              <option value="">選択</option>
+              <option value="なし">なし</option>
+              <option value="あり">あり</option>
+            </select>
+          </div>
+          <div id="claimDetailWrap" style="display:none;">
+            <label class="lbl">クレーム内容（ありの場合必須）<span class="req">*</span></label>
+            <input class="in" id="claimDetail" placeholder="例：誤配。回収して再配達済み。" />
+          </div>
+
+          <div>
+            <label class="lbl">日当（固定報酬）<span class="req">*</span></label>
+            <input class="in" id="payDaily" type="number" min="0" step="1" />
+          </div>
+          <div>
+            <label class="lbl">インセンティブ</label>
+            <input class="in" id="payIncentive" type="number" min="0" step="1" />
+          </div>
+
+          <div>
+            <label class="lbl">経費：高速</label>
+            <input class="in" id="expToll" type="number" min="0" step="1" />
+          </div>
+          <div>
+            <label class="lbl">経費：駐車</label>
+            <input class="in" id="expParking" type="number" min="0" step="1" />
+          </div>
+
+          <div>
+            <label class="lbl">経費：燃料</label>
+            <input class="in" id="expFuel" type="number" min="0" step="1" />
+          </div>
+          <div>
+            <label class="lbl">経費：その他</label>
+            <input class="in" id="expOther" type="number" min="0" step="1" />
+          </div>
+
+          <div class="colspan2">
+            <label class="lbl">差引（概算利益）自動</label>
+            <input class="in" id="profit" readonly />
+          </div>
+
+          <div>
+            <label class="lbl">事故/物損<span class="req">*</span></label>
+            <select class="in" id="accidentFlag">
+              <option value="">選択</option>
+              <option value="なし">なし</option>
+              <option value="あり">あり</option>
+            </select>
+          </div>
+          <div id="accidentDetailWrap" style="display:none;">
+            <label class="lbl">事故/物損内容（ありの場合必須）<span class="req">*</span></label>
+            <input class="in" id="accidentDetail" placeholder="例：縁石接触。写真添付。報告済み。" />
+          </div>
+
+          <div>
+            <label class="lbl">遅延理由<span class="req">*</span></label>
+            <select class="in" id="delayReason">
+              <option value="">選択</option>
+              <option>なし</option>
+              <option>渋滞</option>
+              <option>積込遅れ</option>
+              <option>体調</option>
+              <option>その他</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="lbl">明日の稼働予定<span class="req">*</span></label>
+            <select class="in" id="tomorrowPlan">
+              <option value="">選択</option>
+              <option>あり</option>
+              <option>なし</option>
+            </select>
+          </div>
+
+          <div class="colspan2">
+            <label class="lbl">日報写真（必要ならPDFに埋め込み）</label>
+            <input class="in" id="dailyPhoto" type="file" accept="image/*" />
+          </div>
+        </div>
+
+        <div class="row gap">
+          <button class="btn" id="btnSaveDaily">日報を保存</button>
+          <button class="btn ghost" id="btnDailyPDF">日報PDF作成</button>
+          <button class="btn ghost" id="btnDailyCSV">日報CSV書き出し</button>
+        </div>
+      </section>
+
+      <!-- ================= 履歴 / 月報 ================= -->
+      <section class="tabpane" id="tab-history">
+        <h3 class="sec">履歴 / 月報（本人のみ）</h3>
+
+        <div class="secbox">
+          <h4>期間検索（月報）</h4>
+          <div class="grid2">
+            <div>
+              <label class="lbl">開始日</label>
+              <input class="in" id="monthFrom" type="date" />
+            </div>
+            <div>
+              <label class="lbl">終了日</label>
+              <input class="in" id="monthTo" type="date" />
+            </div>
+          </div>
+          <div class="row gap">
+            <button class="btn" id="btnMakeMonthly">月報を計算</button>
+            <button class="btn ghost" id="btnMonthlyPDF" disabled>月報PDF出力</button>
+            <button class="btn ghost" id="btnMonthlyCSV" disabled>月報CSV出力</button>
+          </div>
+          <div class="help">※この端末の保存データから集計します（会社に自動送信はしません）。</div>
+
+          <div class="monthlyBox" id="monthlyBox" style="display:none;">
+            <h4>月報プレビュー</h4>
+            <div class="grid2">
+              <div class="kv"><div>稼働日数</div><b id="m_days">0</b></div>
+              <div class="kv"><div>総稼働時間</div><b id="m_work">0</b></div>
+              <div class="kv"><div>総休憩</div><b id="m_break">0</b></div>
+              <div class="kv"><div>総走行距離</div><b id="m_dist">0</b></div>
+
+              <div class="kv"><div>総配達個数</div><b id="m_deliv">0</b></div>
+              <div class="kv"><div>1日平均</div><b id="m_avg">0</b></div>
+              <div class="kv"><div>不在率</div><b id="m_absRate">0%</b></div>
+              <div class="kv"><div>再配達率</div><b id="m_redRate">0%</b></div>
+
+              <div class="kv"><div>クレーム件数</div><b id="m_claim">0</b></div>
+              <div class="kv"><div>事故件数</div><b id="m_acc">0</b></div>
+              <div class="kv"><div>売上合計</div><b id="m_sales">0</b></div>
+              <div class="kv"><div>経費合計</div><b id="m_exp">0</b></div>
+
+              <div class="kv colspan2"><div>概算利益</div><b id="m_profit">0</b></div>
+              <div class="kv colspan2"><div>点呼未実施日（出発/帰着どっちが抜けたか）</div><b id="m_miss">-</b></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="secbox">
+          <h4>端末内の保存履歴</h4>
+          <div class="row gap">
+            <button class="btn danger ghost" id="btnWipe">この端末の全データ削除（注意）</button>
+          </div>
+          <div id="historyList" class="list"></div>
+        </div>
+      </section>
+    </section>
+
+    <footer class="foot">© OFA GROUP</footer>
+  </main>
 </body>
 </html>
