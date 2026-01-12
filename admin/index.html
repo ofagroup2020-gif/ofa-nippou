@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <title>OFA 管理者 集計（CSV取込み）</title>
+  <link rel="stylesheet" href="../style.css" />
+  <script defer src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+  <script defer src="../js/pdf.js"></script>
+  <script defer src="../js/admin.js"></script>
+</head>
+<body>
+  <header class="top">
+    <div class="brand">
+      <div class="logo">OFA</div>
+      <div>
+        <div class="title">管理者 集計（受領CSV取込み）</div>
+        <div class="sub">サーバー無し｜受け取ったCSVを読み込んで月報PDF/CSVを出す</div>
+      </div>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <section class="card">
+      <h2>使い方</h2>
+      <ol>
+        <li>ドライバーが「日報CSV」または「点呼CSV」を出力 → LINE/メールで管理者へ送付</li>
+        <li>管理者はこの画面でCSVを複数選択して読み込み</li>
+        <li>期間・拠点・氏名で絞り込み → 集計 → 月報PDF/CSV出力</li>
+      </ol>
+    </section>
+
+    <section class="card">
+      <h3 class="sec">CSV取込み</h3>
+      <input class="in" type="file" id="adminCsvFiles" accept=".csv,text/csv" multiple />
+      <div class="help">※複数ファイルOK（ドライバー別でもOK）</div>
+
+      <div class="secbox">
+        <h4>検索</h4>
+        <div class="grid2">
+          <div>
+            <label class="lbl">開始日</label>
+            <input class="in" id="aFrom" type="date" />
+          </div>
+          <div>
+            <label class="lbl">終了日</label>
+            <input class="in" id="aTo" type="date" />
+          </div>
+          <div>
+            <label class="lbl">拠点</label>
+            <input class="in" id="aBase" placeholder="例：鹿児島（空欄=全件）" />
+          </div>
+          <div>
+            <label class="lbl">氏名</label>
+            <input class="in" id="aName" placeholder="例：森下（部分一致OK）" />
+          </div>
+        </div>
+        <div class="row gap">
+          <button class="btn" id="btnAdminCalc" disabled>集計する</button>
+          <button class="btn ghost" id="btnAdminPDF" disabled>月報PDF出力</button>
+          <button class="btn ghost" id="btnAdminCSV" disabled>集計CSV出力</button>
+        </div>
+      </div>
+
+      <div class="monthlyBox" id="adminMonthlyBox" style="display:none;">
+        <h4>集計プレビュー</h4>
+        <div class="grid2">
+          <div class="kv"><div>稼働日数</div><b id="am_days">0</b></div>
+          <div class="kv"><div>総稼働時間</div><b id="am_work">0</b></div>
+          <div class="kv"><div>総休憩</div><b id="am_break">0</b></div>
+          <div class="kv"><div>総走行距離</div><b id="am_dist">0</b></div>
+
+          <div class="kv"><div>総配達個数</div><b id="am_deliv">0</b></div>
+          <div class="kv"><div>1日平均</div><b id="am_avg">0</b></div>
+          <div class="kv"><div>不在率</div><b id="am_absRate">0%</b></div>
+          <div class="kv"><div>再配達率</div><b id="am_redRate">0%</b></div>
+
+          <div class="kv"><div>クレーム件数</div><b id="am_claim">0</b></div>
+          <div class="kv"><div>事故件数</div><b id="am_acc">0</b></div>
+          <div class="kv"><div>売上合計</div><b id="am_sales">0</b></div>
+          <div class="kv"><div>経費合計</div><b id="am_exp">0</b></div>
+
+          <div class="kv colspan2"><div>概算利益</div><b id="am_profit">0</b></div>
+        </div>
+      </div>
+    </section>
+
+    <footer class="foot">© OFA GROUP</footer>
+  </main>
+</body>
+</html>
