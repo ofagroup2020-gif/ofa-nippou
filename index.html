@@ -2,237 +2,138 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<title>OFA 点呼 / 日報 / 月報</title>
+<title>OFA 点呼・日報</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <style>
-body{
-  font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue",sans-serif;
-  background:#ffffff;
-  color:#222;
-  margin:0;
-}
-header{
-  text-align:center;
-  padding:16px;
-  border-bottom:1px solid #eee;
-}
-header img{
-  width:120px;
-}
-section{
-  padding:16px;
-}
-h2{
-  margin-top:32px;
-  border-left:6px solid #1ecad3;
-  padding-left:10px;
-}
-label{
-  display:block;
-  font-weight:bold;
-  margin-top:14px;
-}
-input,select,textarea{
-  width:100%;
-  padding:10px;
-  margin-top:6px;
-  border:1px solid #ccc;
-  border-radius:8px;
-  font-size:16px;
-}
+body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#222;margin:0}
+header{text-align:center;padding:16px;border-bottom:1px solid #eee}
+header img{width:120px}
+section{padding:16px}
+h2{margin-top:28px;border-left:6px solid #1ecad3;padding-left:10px}
+label{display:block;font-weight:bold;margin-top:14px}
+input,select,textarea{width:100%;padding:10px;margin-top:6px;border:1px solid #ccc;border-radius:8px;font-size:16px}
 textarea{min-height:80px}
-button{
-  margin-top:16px;
-  padding:14px;
-  width:100%;
-  font-size:16px;
-  border:none;
-  border-radius:10px;
-  color:#fff;
-  background:linear-gradient(90deg,#1ecad3,#8a5cff);
-}
-.small{
-  font-size:13px;
-  color:#555;
-}
-hr{margin:32px 0}
-.checklist{
-  max-height:220px;
-  overflow-y:auto;
-  border:1px solid #ddd;
-  padding:10px;
-  border-radius:8px;
-}
-.checklist label{
-  font-weight:normal;
-}
-.footer-btn{
-  background:#eee;
-  color:#000;
-}
+button{margin-top:16px;padding:14px;width:100%;font-size:16px;border:none;border-radius:10px;color:#fff;
+background:linear-gradient(90deg,#1ecad3,#8a5cff)}
+.small{font-size:13px;color:#555}
+.checklist{max-height:240px;overflow-y:auto;border:1px solid #ddd;padding:10px;border-radius:8px}
+.list{border:1px solid #ddd;border-radius:8px;margin-top:10px}
+.item{padding:10px;border-top:1px solid #eee;font-size:14px}
+.item:first-child{border-top:none}
+.gray{background:#f7f7f7;color:#000}
 </style>
 </head>
 
 <body>
 
 <header>
-  <!-- OFAロゴ：実際のロゴURLに差し替えてOK -->
-  <img src="https://ofagroup2020-gif.github.io/logo.png" alt="OFA">
+<img src="https://ofagroup2020-gif.github.io/logo.png">
 </header>
 
 <section>
 
-<h2>① 基本情報（必須）</h2>
+<h2>① 基本情報（初回のみ）</h2>
 
-<label>氏名（本名）*</label>
-<input id="name">
+<label>氏名*</label><input id="name">
+<label>拠点*</label><input id="base">
+<label>車両番号*</label><input id="car">
+<label>免許証番号*</label><input id="license">
+<label>電話番号*</label><input id="phone">
+<label>メール*</label><input id="email">
 
-<label>拠点（47都道府県 or 自由記入）*</label>
-<input id="base" placeholder="例：鹿児島 / 東京都">
-
-<label>車両番号</label>
-<input id="carNo">
-
-<label>運転免許証番号*</label>
-<input id="licenseNo">
-
-<label>電話番号*</label>
-<input id="phone">
-
-<label>メールアドレス*</label>
-<input id="email">
-
-<label>運転免許証写真（PDFに埋め込み）</label>
-<input type="file" id="licenseImg" accept="image/*">
-<p class="small">※ 端末保存しません。PDF生成時のみ使用</p>
-
-<button onclick="saveProfile()">基本情報を保存</button>
+<button onclick="saveProfile()">保存</button>
 
 <hr>
 
-<h2>② 点呼（出発 / 帰着）</h2>
+<h2>② 点呼</h2>
 
 <label>点呼区分*</label>
-<select id="tenkoType">
-  <option value="">選択</option>
-  <option value="出発">出発（業務開始前）</option>
-  <option value="帰着">帰着（業務終了後）</option>
+<select id="type">
+<option value="">選択</option>
+<option>出発</option>
+<option>帰着</option>
 </select>
 
-<label>点呼日時（必須・手入力）*</label>
-<input type="datetime-local" id="tenkoAt">
+<label>点呼日時*</label>
+<input type="datetime-local" id="dt">
 
-<label>点呼方法*</label>
-<select id="method">
-  <option value="">選択</option>
-  <option>対面</option>
-  <option>電話</option>
-  <option>その他</option>
-</select>
+<label>睡眠時間 / 休憩時間*</label>
+<input id="rest">
 
-<label>睡眠時間（h）*</label>
-<input id="sleep">
-
-<label>体温（℃）*</label>
-<input id="temp">
-
+<label>体温*</label><input id="temp">
 <label>体調*</label>
-<select id="condition">
-  <option value="">選択</option>
-  <option>良好</option>
-  <option>注意</option>
-  <option>不良</option>
-</select>
+<select id="cond"><option></option><option>良好</option><option>注意</option><option>不良</option></select>
 
-<label>疲労*</label>
-<select id="fatigue">
-  <option value="">選択</option>
-  <option>なし</option>
-  <option>あり</option>
-</select>
-
-<label>出発ODO</label>
-<input id="odoStart">
-
-<label>帰着ODO</label>
-<input id="odoEnd">
+<label>出発ODO</label><input id="odoS">
+<label>帰着ODO</label><input id="odoE">
 
 <hr>
 
-<h2>③ 日常点検（スクロール入力）</h2>
-
-<div class="checklist" id="dailyCheck">
-  <label><input type="checkbox"> タイヤ空気圧</label><br>
-  <label><input type="checkbox"> ブレーキ</label><br>
-  <label><input type="checkbox"> ライト</label><br>
-  <label><input type="checkbox"> ワイパー</label><br>
-  <label><input type="checkbox"> ミラー</label><br>
-  <label><input type="checkbox"> エンジン音</label><br>
-  <label><input type="checkbox"> オイル漏れ</label><br>
-  <label><input type="checkbox"> その他異常なし</label>
+<h2>③ 日常点検</h2>
+<div class="checklist">
+<label><input type="checkbox"> タイヤ</label><br>
+<label><input type="checkbox"> ブレーキ</label><br>
+<label><input type="checkbox"> ライト</label><br>
+<label><input type="checkbox"> ワイパー</label><br>
+<label><input type="checkbox"> ミラー</label><br>
+<label><input type="checkbox"> エンジン</label><br>
+<label><input type="checkbox"> オイル</label><br>
+<label><input type="checkbox"> 異常なし</label>
 </div>
 
-<label>特記事項</label>
-<textarea id="memo"></textarea>
+<label>特記事項</label><textarea id="memo"></textarea>
 
-<button onclick="generatePDF()">今日のPDF（点呼＋日報）</button>
+<button onclick="saveDaily()">履歴に保存</button>
+<button onclick="makePDF()">PDF出力</button>
 
 <hr>
 
-<a href="https://lin.ee/7sO7SCQ">
-<button class="footer-btn">OFAメンバー専用LINEへ問い合わせ</button>
-</a>
+<h2>④ 履歴</h2>
+<div id="history" class="list"></div>
 
 </section>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script>
 function saveProfile(){
-  const required=["name","base","licenseNo","phone","email"];
-  for(const id of required){
-    if(!document.getElementById(id).value){
-      alert("必須項目が未入力です");
-      return;
-    }
-  }
-  const profile={
-    name:name.value,base:base.value,carNo:carNo.value,
-    licenseNo:licenseNo.value,phone:phone.value,email:email.value
-  };
-  localStorage.setItem("ofa_profile",JSON.stringify(profile));
+  const p={name:name.value,base:base.value,car:car.value,license:license.value,phone:phone.value,email:email.value};
+  for(let k in p){ if(!p[k]) return alert("未入力あり"); }
+  localStorage.setItem("ofa_profile",JSON.stringify(p));
   alert("保存しました");
 }
 
-async function generatePDF(){
-  if(!tenkoAt.value){alert("点呼日時は必須です");return;}
+function saveDaily(){
+  const data={
+    ...JSON.parse(localStorage.getItem("ofa_profile")||"{}"),
+    type:type.value,dt:dt.value,rest:rest.value,temp:temp.value,cond:cond.value,
+    odoS:odoS.value,odoE:odoE.value,memo:memo.value
+  };
+  if(!data.type||!data.dt) return alert("必須未入力");
+  const list=JSON.parse(localStorage.getItem("ofa_daily")||"[]");
+  list.push(data);
+  localStorage.setItem("ofa_daily",JSON.stringify(list));
+  loadHistory();
+}
+
+function loadHistory(){
+  const box=document.getElementById("history");
+  box.innerHTML="";
+  const list=JSON.parse(localStorage.getItem("ofa_daily")||"[]");
+  list.forEach(d=>{
+    box.innerHTML+=`<div class="item">${d.dt} / ${d.type}</div>`;
+  });
+}
+loadHistory();
+
+function makePDF(){
   const {jsPDF}=window.jspdf;
   const pdf=new jsPDF();
-  pdf.setFont("Helvetica");
-  pdf.setFontSize(14);
   pdf.text("OFA 点呼・日報",10,15);
-
-  let y=30;
-  const profile=JSON.parse(localStorage.getItem("ofa_profile")||"{}");
-  for(const k in profile){
-    pdf.text(`${k} : ${profile[k]}`,10,y); y+=8;
-  }
-
-  pdf.text(`点呼区分 : ${tenkoType.value}`,10,y+=8);
-  pdf.text(`点呼日時 : ${tenkoAt.value}`,10,y+=8);
-  pdf.text(`方法 : ${method.value}`,10,y+=8);
-  pdf.text(`睡眠 : ${sleep.value}h`,10,y+=8);
-  pdf.text(`体温 : ${temp.value}℃`,10,y+=8);
-  pdf.text(`体調 : ${condition.value}`,10,y+=8);
-  pdf.text(`疲労 : ${fatigue.value}`,10,y+=8);
-
-  if(odoStart.value && odoEnd.value){
-    const diff=odoEnd.value-odoStart.value;
-    pdf.text(`走行距離 : ${diff} km`,10,y+=8);
-  }
-
-  pdf.save(`OFA_${tenkoType.value}_${tenkoAt.value}.pdf`);
+  pdf.text(`氏名:${name.value}`,10,30);
+  pdf.text(`点呼:${type.value}`,10,38);
+  pdf.text(`日時:${dt.value}`,10,46);
+  pdf.save("ofa.pdf");
 }
 </script>
-
 </body>
 </html>
