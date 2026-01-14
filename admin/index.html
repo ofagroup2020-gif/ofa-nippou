@@ -1,40 +1,402 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="ja">
 <head>
-<meta charset="UTF-8">
-<title>OFA 管理者 月報</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<style>
-body{font-family:sans-serif;background:#fff;padding:16px}
-label{font-weight:bold;display:block;margin-top:12px}
-input,button{width:100%;padding:10px;margin-top:6px}
-table{width:100%;border-collapse:collapse;margin-top:16px}
-th,td{border:1px solid #ccc;padding:8px;font-size:14px}
-th{background:#eee}
-</style>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
+  <title>OFA 管理者（月報・検索・CSV）</title>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+
+  <style>
+    :root{--ofa1:#1ecad3;--ofa2:#8a5cff;--line:#e5e7eb;--muted:#6b7280;--shadow:0 12px 30px rgba(17,24,39,.08)}
+    body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Noto Sans JP",system-ui;color:#111827;background:#fff}
+    header{padding:14px;border-bottom:1px solid var(--line);position:sticky;top:0;background:#fff;z-index:10}
+    h1{margin:0;font-size:16px}
+    p{margin:6px 0 0;color:var(--muted);font-size:12px}
+    main{max-width:900px;margin:0 auto;padding:14px 12px 80px}
+    .card{border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);padding:14px;margin:12px 0}
+    label{display:block;font-weight:900;margin:12px 0 6px;font-size:13px}
+    input,select{width:100%;padding:12px;border-radius:12px;border:1px solid #cfd6df;font-size:16px}
+    .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    .grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+    @media(max-width:700px){.grid2,.grid3{grid-template-columns:1fr}}
+    .btnRow{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px}
+    button{border:none;border-radius:14px;padding:13px 14px;font-weight:900;cursor:pointer;flex:1;min-width:190px}
+    .btn{background:linear-gradient(90deg,var(--ofa1),var(--ofa2));color:#fff}
+    .gray{background:#f3f4f6;color:#111827;border:1px solid var(--line)}
+    table{width:100%;border-collapse:collapse;margin-top:10px}
+    th,td{border:1px solid var(--line);padding:8px;font-size:13px;vertical-align:top}
+    th{background:#f9fafb}
+    .hide{display:none}
+    .pill{display:inline-block;border:1px solid var(--line);border-radius:999px;padding:6px 10px;font-size:12px;color:var(--muted);background:#fafafa}
+  </style>
 </head>
 <body>
 
-<h2>月報検索</h2>
+<header>
+  <h1>OFA 管理者（月報・検索・CSV）</h1>
+  <p>フロントのみの管理者パス / IndexedDBから集計（この端末にある履歴が対象）</p>
+</header>
 
-<label>開始日</label><input type="date" id="from">
-<label>終了日</label><input type="date" id="to">
-<button onclick="search()">検索</button>
+<main>
 
-<table id="tbl">
-<tr><th>氏名</th><th>日付</th><th>点呼</th></tr>
-</table>
+  <!-- 管理者ログイン -->
+  <section class="card" id="loginCard">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">
+      <div>
+        <div style="font-weight:900">管理者ログイン</div>
+        <div class="pill">パスが合わないと閲覧不可</div>
+      </div>
+      <button class="gray" id="btnLogout" type="button" style="max-width:220px">ログアウト</button>
+    </div>
+
+    <label>管理者パスワード</label>
+    <input id="adminPass" type="password" placeholder="管理者のみ">
+    <div class="btnRow">
+      <button class="btn" id="btnLogin" type="button">ログイン</button>
+    </div>
+    <p style="color:#ef4444;font-weight:900;display:none" id="loginErr">パスワードが違います</p>
+  </section>
+
+  <!-- 検索 -->
+  <section class="card hide" id="searchCard">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">
+      <div style="font-weight:900">期間検索</div>
+      <span class="pill" id="countPill">0件</span>
+    </div>
+
+    <div class="grid2">
+      <div>
+        <label>開始日（from）</label>
+        <input id="from" type="date">
+      </div>
+      <div>
+        <label>終了日（to）</label>
+        <input id="to" type="date">
+      </div>
+    </div>
+
+    <div class="grid3">
+      <div>
+        <label>拠点（部分一致）</label>
+        <input id="qBase" placeholder="例：鹿児島">
+      </div>
+      <div>
+        <label>氏名（部分一致）</label>
+        <input id="qName" placeholder="例：森下">
+      </div>
+      <div>
+        <label>案件（部分一致）</label>
+        <input id="qJob" placeholder="例：Amazon">
+      </div>
+    </div>
+
+    <div class="btnRow">
+      <button class="gray" id="btnSearch" type="button">検索</button>
+      <button class="gray" id="btnCSV" type="button">CSV出力（検索結果）</button>
+      <button class="btn" id="btnMonthlyPDF" type="button">月報PDF（集計）</button>
+    </div>
+
+    <div style="margin-top:12px;overflow:auto">
+      <table id="tbl">
+        <thead>
+          <tr>
+            <th>日付</th>
+            <th>氏名/拠点</th>
+            <th>点呼</th>
+            <th>日報</th>
+            <th>売上/利益</th>
+          </tr>
+        </thead>
+        <tbody id="tbody">
+          <tr><td colspan="5" style="color:#6b7280">検索してください</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+</main>
 
 <script>
-function search(){
-  const list=JSON.parse(localStorage.getItem("ofa_daily")||"[]");
-  const t=document.getElementById("tbl");
-  t.innerHTML="<tr><th>氏名</th><th>日付</th><th>点呼</th></tr>";
-  list.forEach(d=>{
-    t.innerHTML+=`<tr><td>${d.name}</td><td>${d.dt}</td><td>${d.type}</td></tr>`;
+/* ========= 設定 ========= */
+const ADMIN_PASSWORD = "ofa-2026"; // ★ここを変えればOK
+
+/* ========= IndexedDB 同一仕様 ========= */
+const DB_NAME = "ofaTenkoDB";
+const DB_VER = 1;
+let db = null;
+
+function openDB(){
+  return new Promise((resolve,reject)=>{
+    const req = indexedDB.open(DB_NAME, DB_VER);
+    req.onupgradeneeded = (e)=>{
+      const db = e.target.result;
+      if(!db.objectStoreNames.contains("profile")) db.createObjectStore("profile",{keyPath:"id"});
+      if(!db.objectStoreNames.contains("records")){
+        const st = db.createObjectStore("records",{keyPath:"id"});
+        st.createIndex("by_date","date");
+        st.createIndex("by_name","profile.name");
+        st.createIndex("by_base","profile.base");
+        st.createIndex("by_job","daily.mainJob");
+        st.createIndex("by_type","tenko.type");
+      }
+    };
+    req.onsuccess = ()=>{ db=req.result; resolve(db); };
+    req.onerror = ()=>reject(req.error);
   });
 }
-</script>
+async function idbGetAll(store){
+  await openDB();
+  return new Promise((resolve,reject)=>{
+    const tx = db.transaction(store,"readonly");
+    const req = tx.objectStore(store).getAll();
+    req.onsuccess=()=>resolve(req.result||[]);
+    req.onerror=()=>reject(req.error);
+  });
+}
 
+/* ========= ログイン ========= */
+function setAuthed(on){
+  sessionStorage.setItem("ofa_admin_authed", on?"1":"0");
+}
+function isAuthed(){
+  return sessionStorage.getItem("ofa_admin_authed")==="1";
+}
+function showAuthedUI(){
+  document.getElementById("searchCard").classList.toggle("hide", !isAuthed());
+}
+document.getElementById("btnLogin").addEventListener("click", ()=>{
+  const p = (document.getElementById("adminPass").value||"").trim();
+  if(p!==ADMIN_PASSWORD){
+    document.getElementById("loginErr").style.display="block";
+    setAuthed(false);
+    showAuthedUI();
+    return;
+  }
+  document.getElementById("loginErr").style.display="none";
+  setAuthed(true);
+  showAuthedUI();
+});
+document.getElementById("btnLogout").addEventListener("click", ()=>{
+  setAuthed(false);
+  showAuthedUI();
+});
+showAuthedUI();
+
+/* ========= 検索 ========= */
+function between(dateStr, from, to){
+  if(from && dateStr < from) return false;
+  if(to && dateStr > to) return false;
+  return true;
+}
+
+let lastResult = [];
+
+async function search(){
+  if(!isAuthed()) return;
+
+  const list = await idbGetAll("records");
+  list.sort((a,b)=>(a.date||"").localeCompare(b.date||""));
+
+  const from = (document.getElementById("from").value||"").trim();
+  const to = (document.getElementById("to").value||"").trim();
+  const qBase = (document.getElementById("qBase").value||"").trim().toLowerCase();
+  const qName = (document.getElementById("qName").value||"").trim().toLowerCase();
+  const qJob  = (document.getElementById("qJob").value||"").trim().toLowerCase();
+
+  lastResult = list.filter(r=>{
+    if(!between(r.date, from, to)) return false;
+    if(qBase && !(r.profile?.base||"").toLowerCase().includes(qBase)) return false;
+    if(qName && !(r.profile?.name||"").toLowerCase().includes(qName)) return false;
+    if(qJob){
+      const mj = (r.daily?.mainJob||"").toLowerCase();
+      const jobs = (r.daily?.jobs||[]).map(x=>`${x.name||""} ${x.area||""}`.toLowerCase()).join(" ");
+      if(!mj.includes(qJob) && !jobs.includes(qJob)) return false;
+    }
+    return true;
+  });
+
+  document.getElementById("countPill").textContent = `${lastResult.length}件`;
+
+  const tb = document.getElementById("tbody");
+  if(lastResult.length===0){
+    tb.innerHTML = `<tr><td colspan="5" style="color:#6b7280">該当なし</td></tr>`;
+    return;
+  }
+
+  tb.innerHTML = lastResult.slice(0,300).map(r=>{
+    const tenko = `${r.tenko?.type||"-"} / ${r.tenko?.datetime||"-"} / 走行:${r.tenko?.odoDiff||0}km`;
+    const daily = `${r.daily?.mainJob||"-"} / 配達:${r.daily?.count||0} / 休憩:${r.daily?.breakMin||0}分`;
+    const money = `売上:${r.daily?.total||0} / 利益:${r.daily?.profit||0}`;
+    return `
+      <tr>
+        <td>${r.date}</td>
+        <td>${r.profile?.name||"-"}<br><span style="color:#6b7280">${r.profile?.base||"-"}</span></td>
+        <td>${tenko}</td>
+        <td>${daily}</td>
+        <td>${money}</td>
+      </tr>
+    `;
+  }).join("");
+}
+
+document.getElementById("btnSearch").addEventListener("click", search);
+
+/* ========= CSV ========= */
+function toCSVRow(arr){
+  return arr.map(v=>{
+    const s = (v===null||v===undefined) ? "" : String(v);
+    return `"${s.replaceAll('"','""')}"`;
+  }).join(",");
+}
+function downloadText(filename, text){
+  const blob = new Blob([text], {type:"text/csv;charset=utf-8;"});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+
+document.getElementById("btnCSV").addEventListener("click", ()=>{
+  if(!isAuthed()) return;
+  if(lastResult.length===0){ alert("検索結果がありません"); return; }
+
+  const header = ["日付","氏名","拠点","点呼区分","点呼日時","案件","配達個数","売上合計","概算利益","走行距離","点検総合","NG項目","日報メモ"];
+  const rows = [toCSVRow(header)];
+
+  for(const r of lastResult){
+    rows.push(toCSVRow([
+      r.date,
+      r.profile?.name,
+      r.profile?.base,
+      r.tenko?.type,
+      r.tenko?.datetime,
+      r.daily?.mainJob,
+      r.daily?.count,
+      r.daily?.total,
+      r.daily?.profit,
+      r.tenko?.odoDiff,
+      r.check?.overall,
+      (r.check?.ngKeys||[]).join("|"),
+      r.daily?.note
+    ]));
+  }
+
+  const csv = "\ufeff" + rows.join("\n");
+  downloadText("OFA_admin_export.csv", csv);
+});
+
+/* ========= 月報PDF ========= */
+async function drawHeader(pdf, title){
+  pdf.setFillColor(30,202,211); pdf.rect(0,0,210,18,"F");
+  pdf.setFillColor(138,92,255); pdf.rect(0,18,210,6,"F");
+  pdf.setTextColor(255,255,255);
+  pdf.setFontSize(14); pdf.text("OFA GROUP", 12, 12);
+  pdf.setFontSize(12); pdf.text(title, 12, 22);
+  pdf.setTextColor(17,24,39);
+}
+
+document.getElementById("btnMonthlyPDF").addEventListener("click", async ()=>{
+  if(!isAuthed()) return;
+  if(lastResult.length===0){ alert("検索結果がありません"); return; }
+
+  const { jsPDF } = window.jspdf;
+  const pdf = new jsPDF({unit:"mm", format:"a4"});
+  await drawHeader(pdf, "月報（集計）");
+
+  // 集計
+  const sum = {
+    days: new Set(),
+    totalCount:0,
+    totalDrive:0,
+    totalPay:0,
+    totalExp:0,
+    totalProfit:0,
+    totalBreak:0,
+    claim:0,
+    accident:0,
+    tenkoMissingStart:0,
+    tenkoMissingEnd:0,
+  };
+
+  // 日付ごとの出発/帰着チェック
+  const byDateName = new Map(); // key: date|name -> {start:boolean,end:boolean}
+  for(const r of lastResult){
+    sum.days.add(r.date);
+    sum.totalCount += (r.daily?.count||0);
+    sum.totalDrive += (r.tenko?.odoDiff||0);
+    sum.totalPay += (r.daily?.total||0);
+    const exp = (r.daily?.fuel||0)+(r.daily?.highway||0)+(r.daily?.parking||0)+(r.daily?.other||0);
+    sum.totalExp += exp;
+    sum.totalProfit += (r.daily?.profit||0);
+    sum.totalBreak += (r.daily?.breakMin||0);
+    if((r.daily?.claim||"")==="あり") sum.claim++;
+    if((r.daily?.accident||"")==="あり") sum.accident++;
+
+    const k = `${r.date}|${r.profile?.name||""}`;
+    const obj = byDateName.get(k) || {start:false,end:false};
+    if(r.tenko?.type==="出発") obj.start=true;
+    if(r.tenko?.type==="帰着") obj.end=true;
+    byDateName.set(k,obj);
+  }
+  // 未実施
+  for(const [k,v] of byDateName.entries()){
+    if(!v.start) sum.tenkoMissingStart++;
+    if(!v.end) sum.tenkoMissingEnd++;
+  }
+
+  // サマリー表
+  const daysCount = sum.days.size;
+  const avgCount = daysCount ? (sum.totalCount/daysCount).toFixed(1) : "0";
+  pdf.autoTable({
+    startY: 30,
+    theme:"grid",
+    head:[["稼働日数","総休憩(分)","総走行距離(km)","総配達個数","1日平均","クレーム","事故"]],
+    body:[[ String(daysCount), String(sum.totalBreak), String(sum.totalDrive), String(sum.totalCount), String(avgCount), String(sum.claim), String(sum.accident) ]],
+    headStyles:{fillColor:[30,202,211], textColor:255, fontStyle:"bold"},
+    styles:{fontSize:10, cellPadding:2}
+  });
+
+  let y = pdf.lastAutoTable.finalY + 8;
+
+  pdf.autoTable({
+    startY: y,
+    theme:"grid",
+    head:[["売上合計","経費合計","概算利益","点呼未実施（出発）","点呼未実施（帰着）"]],
+    body:[[ String(sum.totalPay), String(sum.totalExp), String(sum.totalProfit), String(sum.tenkoMissingStart), String(sum.tenkoMissingEnd) ]],
+    headStyles:{fillColor:[138,92,255], textColor:255, fontStyle:"bold"},
+    styles:{fontSize:10, cellPadding:2}
+  });
+
+  y = pdf.lastAutoTable.finalY + 10;
+
+  // 明細（上位200件）
+  pdf.autoTable({
+    startY: y,
+    theme:"grid",
+    head:[["日付","氏名","拠点","点呼","案件","配達","売上","利益"]],
+    body: lastResult.slice(0,200).map(r=>[
+      r.date,
+      r.profile?.name||"",
+      r.profile?.base||"",
+      r.tenko?.type||"",
+      r.daily?.mainJob||"",
+      String(r.daily?.count||0),
+      String(r.daily?.total||0),
+      String(r.daily?.profit||0)
+    ]),
+    headStyles:{fillColor:[17,24,39], textColor:255, fontStyle:"bold"},
+    styles:{fontSize:9, cellPadding:2}
+  });
+
+  pdf.save("OFA_monthly_report.pdf");
+});
+
+</script>
 </body>
 </html>
