@@ -2,1866 +2,800 @@
 <html lang="ja">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-  <title>OFA 点呼・日報（保存・PDF・履歴）</title>
-
-  <!-- jsPDF + AutoTable（表を綺麗に出す） -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
-
-  <style>
-    :root{
-      --ofa1:#1ecad3;
-      --ofa2:#8a5cff;
-      --ofa3:#22c55e;
-      --ink:#1f2937;
-      --muted:#6b7280;
-      --line:#e5e7eb;
-      --bg:#ffffff;
-      --card:#ffffff;
-      --shadow: 0 12px 30px rgba(17,24,39,.08);
-      --radius:16px;
-    }
-    *{box-sizing:border-box}
-    body{
-      margin:0;
-      font-family: -apple-system,BlinkMacSystemFont,"Hiragino Sans","Noto Sans JP",system-ui,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
-      color:var(--ink);
-      background: #fff;
-    }
-    header{
-      position:sticky; top:0; z-index:10;
-      background:#fff;
-      border-bottom:1px solid var(--line);
-      padding:12px 14px;
-    }
-    .headRow{display:flex; gap:12px; align-items:center; justify-content:space-between}
-    .brand{display:flex; gap:10px; align-items:center}
-    .logo{
-      width:44px;height:44px;border-radius:12px;
-      background: linear-gradient(90deg,var(--ofa1),var(--ofa2));
-      display:grid;place-items:center;color:#fff;font-weight:900;
-      overflow:hidden;
-    }
-    .logo img{width:100%;height:100%;object-fit:cover;display:none}
-    .ttl{line-height:1.2}
-    .ttl h1{font-size:16px;margin:0}
-    .ttl p{margin:4px 0 0;font-size:12px;color:var(--muted)}
-    .btnTop{
-      border:none;border-radius:12px;padding:10px 12px;font-weight:800;cursor:pointer;
-      background: linear-gradient(90deg,var(--ofa1),var(--ofa2));
-      color:#fff;
-    }
-
-    main{max-width:760px;margin:0 auto;padding:14px 12px 80px}
-
-    .card{
-      background:var(--card);
-      border:1px solid var(--line);
-      border-radius: var(--radius);
-      box-shadow: var(--shadow);
-      padding:14px;
-      margin:12px 0;
-    }
-    .cardTitle{
-      display:flex; align-items:center; justify-content:space-between;
-      gap:10px;
-      margin:0 0 10px;
-    }
-    .cardTitle h2{font-size:15px;margin:0}
-    .pill{
-      font-size:12px;color:var(--muted);
-      border:1px solid var(--line); border-radius:999px;
-      padding:6px 10px;
-      background:#fafafa;
-    }
-
-    .rule{
-      border:2px solid transparent;
-      background:
-        linear-gradient(#fff,#fff) padding-box,
-        linear-gradient(90deg,var(--ofa3),var(--ofa1),var(--ofa2)) border-box;
-    }
-    .rule ul{margin:0;padding-left:18px}
-    .rule li{margin:6px 0;font-size:13px;color:#374151}
-
-    label{display:block;font-weight:800;margin:12px 0 6px;font-size:13px}
-    .req{color:#ef4444;margin-left:6px;font-weight:900}
-    input,select,textarea{
-      width:100%;
-      padding:12px;
-      border-radius:12px;
-      border:1px solid #cfd6df;
-      font-size:16px;
-      background:#fff;
-      outline:none;
-    }
-    textarea{min-height:92px; resize:vertical}
-    input:focus,select:focus,textarea:focus{border-color: #94a3b8; box-shadow: 0 0 0 3px rgba(30,202,211,.12)}
-    .invalid{border-color:#ef4444 !important; box-shadow: 0 0 0 3px rgba(239,68,68,.14) !important;}
-    .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-    .grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
-    @media(max-width:560px){ .grid2,.grid3{grid-template-columns:1fr} }
-
-    .btnRow{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px}
-    .btn{
-      border:none;border-radius:14px;padding:13px 14px;font-weight:900;cursor:pointer;
-      background: linear-gradient(90deg,var(--ofa1),var(--ofa2));
-      color:#fff;
-      flex:1;
-      min-width: 180px;
-    }
-    .btn.gray{
-      background:#f3f4f6;color:#111827;border:1px solid var(--line);
-    }
-    .btn.black{
-      background:#111827;color:#fff;
-    }
-    .hint{font-size:12px;color:var(--muted);margin-top:8px;line-height:1.5}
-    hr{border:none;border-top:1px solid var(--line);margin:14px 0}
-
-    .checkBox{
-      max-height:260px; overflow:auto;
-      border:1px solid var(--line); border-radius:14px;
-      padding:10px; background:#fafafa;
-    }
-    .checkBox .row{display:flex;gap:10px;align-items:center;margin:8px 0}
-    .checkBox input[type="checkbox"]{width:18px;height:18px}
-
-    .sectionTabs{display:flex;gap:8px;flex-wrap:wrap}
-    .tab{
-      border:1px solid var(--line);
-      background:#fff; border-radius:999px;
-      padding:9px 12px; font-weight:900; cursor:pointer;
-      font-size:13px;
-    }
-    .tab.active{
-      color:#fff;
-      border:none;
-      background: linear-gradient(90deg,var(--ofa1),var(--ofa2));
-    }
-
-    .historyList{
-      border:1px solid var(--line); border-radius:14px; overflow:hidden;
-    }
-    .hisItem{
-      padding:10px 12px; border-top:1px solid var(--line);
-      display:flex; gap:10px; justify-content:space-between; align-items:center;
-      font-size:13px;
-    }
-    .hisItem:first-child{border-top:none}
-    .hisLeft{display:flex;flex-direction:column;gap:2px}
-    .hisTop{font-weight:900}
-    .hisSub{color:var(--muted);font-size:12px}
-    .hisBtn{
-      border:1px solid var(--line);
-      background:#fff;
-      border-radius:12px;
-      padding:9px 10px;
-      font-weight:900;
-      cursor:pointer;
-      white-space:nowrap;
-    }
-
-    .toast{
-      position: fixed; left: 50%; transform: translateX(-50%);
-      bottom: 18px; z-index: 9999;
-      background: rgba(17,24,39,.92); color:#fff;
-      padding:10px 12px;border-radius:999px;font-weight:900;
-      max-width: 92vw; display:none;
-    }
-  </style>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>OFA 点呼・日報（端末完結 / IndexedDB）</title>
+  <link rel="stylesheet" href="./style.css" />
 </head>
 <body>
 
 <header>
-  <div class="headRow">
+  <div class="header-inner">
     <div class="brand">
-      <div class="logo" id="logoBox">OFA</div>
-      <div class="ttl">
-        <h1>OFA 点呼・日報</h1>
-        <p>保存（IndexedDB） / PDF（OFAカラー） / 履歴 / CSV</p>
+      <img id="logoImg" src="https://ofagroup2020-gif.github.io/logo.png" alt="OFA" onerror="this.style.display='none'">
+      <div>
+        <div class="title">OFA 点呼・日報</div>
+        <div class="sub">保存：IndexedDB / PDF：OFAカラー / 履歴 / CSV / 写真はPDF埋込のみ</div>
       </div>
     </div>
-    <button class="btnTop" id="btnJumpHistory" type="button">履歴へ</button>
+    <a class="badge" href="./admin/index.html">管理者へ</a>
   </div>
 </header>
 
-<main>
+<div class="container">
 
-  <section class="card rule">
-    <div class="cardTitle">
-      <h2>点呼の重要ルール（必読）</h2>
-      <span class="pill">OFA</span>
+  <div class="card">
+    <div class="note">
+      <b>運用ルール</b><br>
+      ・点呼は <b>出発（業務開始前）</b> と <b>帰着（業務終了後）</b> を分けて入力します（ODOも別々）<br>
+      ・写真はアップロードしません。<b>PDFに埋め込むだけ</b>です<br>
+      ・日報（売上/経費など）は <b>任意（オプション）</b>。未入力でも保存/出力OK
     </div>
-    <ul>
-      <li>点呼は「業務開始前（出発）」と「業務終了後（帰着）」の2回</li>
-      <li>アルコールチェックは必須（数値＋判定）</li>
-      <li>免許証番号は必須（写真は任意）</li>
-      <li>日常点検は必須（NG時は詳細メモ＋写真推奨）</li>
-      <li>日報は「点呼だけ」ではなく実績・売上・経費まで必ず記録</li>
-    </ul>
-  </section>
+  </div>
+
+  <!-- タブ -->
+  <div class="card">
+    <div class="tabs">
+      <button class="tab active" id="tabProfile" onclick="switchTab('profile')">① 基本情報</button>
+      <button class="tab" id="tabTenko" onclick="switchTab('tenko')">② 点呼</button>
+      <button class="tab" id="tabDaily" onclick="switchTab('daily')">③ 日報（任意）</button>
+      <button class="tab" id="tabHistory" onclick="switchTab('history')">④ 履歴 / CSV</button>
+    </div>
+  </div>
 
   <!-- ① 基本情報 -->
-  <section class="card" id="secProfile">
-    <div class="cardTitle">
-      <h2>① 基本情報（保存）</h2>
-      <span class="pill">初回/変更時</span>
-    </div>
+  <div class="card" id="panelProfile">
+    <h2>① 基本情報（必須）</h2>
 
-    <div class="grid2">
+    <div class="row two">
       <div>
-        <label>氏名（本名）<span class="req">*</span></label>
-        <input id="p_name" placeholder="例：森下 洸">
+        <div class="label">氏名（本名）<span class="req">*</span></div>
+        <input class="input" id="p_name" placeholder="例：森下洸">
       </div>
       <div>
-        <label>拠点（47都道府県/自由記入）<span class="req">*</span></label>
-        <input id="p_base" placeholder="例：鹿児島 / 東京都 / 福岡">
-      </div>
-    </div>
-
-    <div class="grid2">
-      <div>
-        <label>車両番号（ナンバー）<span class="req">*</span></label>
-        <input id="p_vehicle" placeholder="例：鹿児島 480 あ 12-34">
-      </div>
-      <div>
-        <label>免許証番号<span class="req">*</span></label>
-        <input id="p_licenseNo" placeholder="例：第1234567890号">
+        <div class="label">拠点（47都道府県 or 自由記入）<span class="req">*</span></div>
+        <input class="input" id="p_base" list="prefList" placeholder="例：鹿児島 / 東京都 / その他">
+        <datalist id="prefList">
+          <option>北海道</option><option>青森県</option><option>岩手県</option><option>宮城県</option><option>秋田県</option><option>山形県</option><option>福島県</option>
+          <option>茨城県</option><option>栃木県</option><option>群馬県</option><option>埼玉県</option><option>千葉県</option><option>東京都</option><option>神奈川県</option>
+          <option>新潟県</option><option>富山県</option><option>石川県</option><option>福井県</option><option>山梨県</option><option>長野県</option>
+          <option>岐阜県</option><option>静岡県</option><option>愛知県</option><option>三重県</option>
+          <option>滋賀県</option><option>京都府</option><option>大阪府</option><option>兵庫県</option><option>奈良県</option><option>和歌山県</option>
+          <option>鳥取県</option><option>島根県</option><option>岡山県</option><option>広島県</option><option>山口県</option>
+          <option>徳島県</option><option>香川県</option><option>愛媛県</option><option>高知県</option>
+          <option>福岡県</option><option>佐賀県</option><option>長崎県</option><option>熊本県</option><option>大分県</option><option>宮崎県</option><option>鹿児島県</option><option>沖縄県</option>
+          <option>その他</option>
+        </datalist>
       </div>
     </div>
 
-    <div class="grid2">
+    <div class="row two">
       <div>
-        <label>電話番号<span class="req">*</span></label>
-        <input id="p_phone" inputmode="tel" placeholder="090...">
+        <div class="label">車両番号（任意）</div>
+        <input class="input" id="p_carNo" placeholder="例：鹿児島 480 あ 21-15">
       </div>
       <div>
-        <label>メールアドレス<span class="req">*</span></label>
-        <input id="p_email" inputmode="email" placeholder="example@gmail.com">
+        <div class="label">運転免許証番号<span class="req">*</span></div>
+        <input class="input" id="p_licenseNo" inputmode="numeric" placeholder="例：1234567890123456">
       </div>
     </div>
 
-    <label>免許証写真（任意：PDFに埋め込み）</label>
-    <input id="p_licensePhoto" type="file" accept="image/*">
-    <div class="hint">※写真は端末内に保存しません（PDF生成時だけ使います）。</div>
-
-    <div class="btnRow">
-      <button class="btn" id="btnSaveProfile" type="button">基本情報を保存</button>
-      <button class="btn gray" id="btnLoadProfile" type="button">保存情報を読み込み</button>
-    </div>
-  </section>
-
-  <!-- ② 点呼（出発/帰着） -->
-  <section class="card" id="secTenko">
-    <div class="cardTitle">
-      <h2>② 点呼（出発/帰着）</h2>
-      <span class="pill">必須あり</span>
-    </div>
-
-    <div class="sectionTabs">
-      <button class="tab active" id="tabStart" type="button">出発点呼</button>
-      <button class="tab" id="tabEnd" type="button">帰着点呼</button>
+    <div class="row two">
+      <div>
+        <div class="label">電話番号<span class="req">*</span></div>
+        <input class="input" id="p_phone" inputmode="tel" placeholder="例：08012345678">
+      </div>
+      <div>
+        <div class="label">メールアドレス<span class="req">*</span></div>
+        <input class="input" id="p_email" inputmode="email" placeholder="例：xxxxx@gmail.com">
+      </div>
     </div>
 
     <hr>
 
-    <div class="grid2">
+    <h3>免許証写真（PDFに埋め込み：保存しません）</h3>
+    <div class="row two">
       <div>
-        <label>点呼日時（手入力）<span class="req">*</span></label>
-        <input id="t_datetime" type="datetime-local">
-        <div class="hint">※自動入力にしません（あなたの要望通り手入力）。</div>
+        <div class="label">免許証写真（任意）</div>
+        <input class="input" type="file" id="p_licenseImg" accept="image/*">
+        <div class="small">※ 画像は端末にもDBにも保存しません。PDF生成時だけ読み込みます。</div>
       </div>
       <div>
-        <label>点呼実施方法<span class="req">*</span></label>
-        <select id="t_method">
+        <div class="label">プレビュー</div>
+        <div class="card" style="padding:10px;border-radius:14px;border:1px solid #e8eef7">
+          <img id="licensePreview" style="width:100%;max-height:220px;object-fit:contain;border-radius:12px;display:none;">
+          <div id="licensePreviewNone" class="small">未選択</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="row two">
+      <button class="btn" onclick="saveProfile()">基本情報を保存</button>
+      <button class="btn secondary" onclick="resetProfile()">基本情報をリセット</button>
+    </div>
+
+    <div style="margin-top:10px">
+      <a class="pill" href="https://lin.ee/7sO7SCQ">OFAメンバー専用LINEへ問い合わせ</a>
+    </div>
+  </div>
+
+  <!-- ② 点呼 -->
+  <div class="card" id="panelTenko" style="display:none">
+    <h2>② 点呼（出発 / 帰着）</h2>
+
+    <div class="row two">
+      <div>
+        <div class="label">点呼区分<span class="req">*</span></div>
+        <select class="input" id="t_type" onchange="syncOdoLabel()">
+          <option value="">選択</option>
+          <option value="出発">出発（業務開始前）</option>
+          <option value="帰着">帰着（業務終了後）</option>
+        </select>
+      </div>
+      <div>
+        <div class="label">点呼日時（手入力）<span class="req">*</span></div>
+        <input class="input" type="datetime-local" id="t_at">
+        <div class="small">※ 自動入力はしません。あなたの運用に合わせて入力できます。</div>
+      </div>
+    </div>
+
+    <div class="row three">
+      <div>
+        <div class="label">点呼方法<span class="req">*</span></div>
+        <select class="input" id="t_method">
           <option value="">選択</option>
           <option>対面</option>
           <option>電話</option>
-          <option>アプリ</option>
           <option>その他</option>
         </select>
       </div>
-    </div>
-
-    <div class="grid2">
       <div>
-        <label>事業者/拠点（選択 or 手入力）<span class="req">*</span></label>
-        <input id="t_base" placeholder="例：鹿児島 / 熊本 / 福岡 / 東京">
+        <div class="label">睡眠時間（h）</div>
+        <input class="input" id="t_sleep" inputmode="decimal" placeholder="例：7.5">
       </div>
       <div>
-        <label>稼働案件（メイン）<span class="req">*</span></label>
-        <select id="t_mainJob">
+        <div class="label">体温（℃）</div>
+        <input class="input" id="t_temp" inputmode="decimal" placeholder="例：36.5">
+      </div>
+    </div>
+
+    <div class="row three">
+      <div>
+        <div class="label">体調</div>
+        <select class="input" id="t_condition">
           <option value="">選択</option>
-          <option>Amazon</option>
-          <option>ヤマト</option>
-          <option>佐川</option>
-          <option>企業配</option>
-          <option>スポット</option>
-          <option>チャーター</option>
-          <option>その他</option>
+          <option>良好</option><option>注意</option><option>不良</option>
+        </select>
+      </div>
+      <div>
+        <div class="label">疲労</div>
+        <select class="input" id="t_fatigue">
+          <option value="">選択</option>
+          <option>なし</option><option>あり</option>
+        </select>
+      </div>
+      <div>
+        <div class="label">服薬</div>
+        <select class="input" id="t_med">
+          <option value="">選択</option>
+          <option>なし</option><option>あり</option>
         </select>
       </div>
     </div>
 
-    <div class="grid2">
+    <div class="row two">
       <div>
-        <label>積込拠点/エリア<span class="req">*</span></label>
-        <input id="t_loadArea" placeholder="例：姶良 / 福岡市東区 / 〇〇SC">
+        <div class="label" id="odoLabel">ODO（区分を選択）</div>
+        <input class="input" id="t_odo" inputmode="numeric" placeholder="例：123456">
+        <div class="small">出発→出発ODO、帰着→帰着ODO を入力します。</div>
       </div>
       <div>
-        <label>危険物・高額品の有無<span class="req">*</span></label>
-        <select id="t_danger">
-          <option value="">選択</option>
-          <option>なし</option>
-          <option>あり</option>
-        </select>
+        <div class="label">アルコール数値（任意・推奨）</div>
+        <input class="input" id="t_alc" inputmode="decimal" placeholder="例：0.00">
+        <div class="small">※ 運用に合わせて。未入力でもOK</div>
+      </div>
+    </div>
+
+    <div class="row two">
+      <div>
+        <div class="label">アルコール測定写真（任意・推奨：保存しない）</div>
+        <input class="input" type="file" id="t_alcImg" accept="image/*">
+        <div class="small">※ 写真は保存しません。PDFに載せるだけ。</div>
+      </div>
+      <div>
+        <div class="label">プレビュー</div>
+        <div class="card" style="padding:10px;border-radius:14px;border:1px solid #e8eef7">
+          <img id="alcPreview" style="width:100%;max-height:220px;object-fit:contain;border-radius:12px;display:none;">
+          <div id="alcPreviewNone" class="small">未選択</div>
+        </div>
       </div>
     </div>
 
     <hr>
 
-    <div class="cardTitle" style="margin-top:4px">
-      <h2 style="font-size:14px;margin:0">健康・状態（必須）</h2>
-      <span class="pill" id="pillRestLabel">出発：睡眠時間</span>
+    <h3>③ 日常点検（スクロール入力）</h3>
+    <div class="scroll-box" id="checkBox"></div>
+
+    <div class="label">特記事項（任意）</div>
+    <textarea class="input" id="t_memo" placeholder="例：タイヤ空気圧注意、ライト球切れ など"></textarea>
+
+    <div class="row two">
+      <button class="btn" onclick="saveTenko()">点呼を保存（履歴へ）</button>
+      <button class="btn secondary" onclick="makeTodayPdf()">今日のPDF（OFAフォーマット）</button>
+    </div>
+  </div>
+
+  <!-- ③ 日報（任意） -->
+  <div class="card" id="panelDaily" style="display:none">
+    <h2>③ 日報（任意）</h2>
+
+    <div class="note">
+      日報は <b>任意入力</b>です。未入力でも点呼と履歴・PDF・CSVは回ります。<br>
+      売上/経費/報酬は「入力したい人だけ」使える設計にしています。
     </div>
 
-    <div class="grid3">
+    <div class="row two" style="margin-top:10px">
       <div>
-        <label id="lblRest">睡眠時間（h）<span class="req">*</span></label>
-        <input id="t_rest" type="number" step="0.5" min="0" max="24" placeholder="例：6.0">
+        <div class="label">稼働日（手入力）</div>
+        <input class="input" type="date" id="d_date">
       </div>
       <div>
-        <label>体温（℃）<span class="req">*</span></label>
-        <input id="t_temp" type="number" step="0.1" min="30" max="45" placeholder="例：36.5">
-      </div>
-      <div>
-        <label>体調<span class="req">*</span></label>
-        <select id="t_condition">
-          <option value="">選択</option>
-          <option>良好</option>
-          <option>注意</option>
-          <option>不良</option>
-        </select>
-      </div>
-    </div>
-
-    <div class="grid3">
-      <div>
-        <label>疲労<span class="req">*</span></label>
-        <select id="t_fatigue">
-          <option value="">選択</option>
-          <option>なし</option>
-          <option>少し</option>
-          <option>強い</option>
-        </select>
-      </div>
-      <div>
-        <label>服薬・体調影響<span class="req">*</span></label>
-        <select id="t_med">
-          <option value="">選択</option>
-          <option>なし</option>
-          <option>あり</option>
-        </select>
-      </div>
-      <div>
-        <label>服薬内容（ありの場合必須）</label>
-        <input id="t_medNote" placeholder="例：風邪薬 〇〇">
+        <div class="label">案件（メイン：任意）</div>
+        <input class="input" id="d_mainJob" placeholder="例：Amazon / 佐川 / 企業配 など">
       </div>
     </div>
 
-    <div class="grid3">
-      <div>
-        <label>飲酒の有無<span class="req">*</span></label>
-        <select id="t_drink">
-          <option value="">選択</option>
-          <option>なし</option>
-          <option>あり</option>
-        </select>
-      </div>
-      <div>
-        <label>酒気帯び有無<span class="req">*</span></label>
-        <select id="t_alcJudge">
-          <option value="">選択</option>
-          <option>なし</option>
-          <option>疑い</option>
-          <option>あり</option>
-        </select>
-      </div>
-      <div>
-        <label>アルコール数値<span class="req">*</span></label>
-        <input id="t_alcValue" type="number" step="0.01" min="0" placeholder="例：0.00">
-      </div>
-    </div>
-
-    <label>アルコール測定写真（任意・推奨）</label>
-    <input id="t_alcPhoto" type="file" accept="image/*">
-    <div class="hint">※写真はPDFに載せます（保存しません）。</div>
-
-    <hr>
-
-    <div class="cardTitle" style="margin-top:4px">
-      <h2 style="font-size:14px;margin:0">走行距離</h2>
-      <span class="pill">差分自動</span>
-    </div>
-
-    <div class="grid3">
-      <div>
-        <label>出発ODO<span class="req">*</span></label>
-        <input id="t_odoStart" inputmode="numeric" placeholder="例：12345">
-      </div>
-      <div>
-        <label>帰着ODO<span class="req">*</span></label>
-        <input id="t_odoEnd" inputmode="numeric" placeholder="例：12500">
-      </div>
-      <div>
-        <label>走行距離（自動）</label>
-        <input id="t_odoDiff" readonly placeholder="自動計算">
-      </div>
+    <div class="label">複数案件（追加式：任意）</div>
+    <div id="jobsWrap"></div>
+    <div class="right">
+      <button class="btn small secondary inline" onclick="addJob()">＋案件を追加</button>
+      <button class="btn small secondary inline" onclick="clearJobs()">案件を全削除</button>
     </div>
 
     <hr>
 
-    <div class="cardTitle" style="margin-top:4px">
-      <h2 style="font-size:14px;margin:0">異常申告</h2>
-      <span class="pill">必須</span>
-    </div>
-
-    <div class="grid2">
+    <h3>売上・経費（任意）</h3>
+    <div class="row three">
       <div>
-        <label>異常の有無<span class="req">*</span></label>
-        <select id="t_abnormal">
-          <option value="">選択</option>
-          <option>なし</option>
-          <option>あり</option>
-        </select>
+        <div class="label">日当（固定）</div>
+        <input class="input" id="d_pay" inputmode="numeric" placeholder="例：16000">
       </div>
       <div>
-        <label>異常内容（ありの場合必須）</label>
-        <input id="t_abnormalNote" placeholder="例：体調不良 / 車両警告灯 / 遅延">
-      </div>
-    </div>
-
-    <label>異常写真（任意・推奨）</label>
-    <input id="t_abnormalPhoto" type="file" accept="image/*">
-
-  </section>
-
-  <!-- ③ 日常点検（フル） -->
-  <section class="card" id="secCheck">
-    <div class="cardTitle">
-      <h2>③ 日常点検（フル）</h2>
-      <span class="pill">NGルールあり</span>
-    </div>
-
-    <div class="hint">※「OK/NG」で入力。NGが1つでもあれば NG詳細メモが必須になります。</div>
-
-    <div class="checkBox" id="checkBox">
-      <!-- JSで生成 -->
-    </div>
-
-    <div class="grid2" style="margin-top:10px">
-      <div>
-        <label>点検結果（総合）<span class="req">*</span></label>
-        <select id="c_overall">
-          <option value="">選択</option>
-          <option>OK</option>
-          <option>NG</option>
-        </select>
+        <div class="label">インセンティブ</div>
+        <input class="input" id="d_incentive" inputmode="numeric" placeholder="例：2000">
       </div>
       <div>
-        <label>NG項目（自動表示）</label>
-        <input id="c_ngList" readonly placeholder="NGがあると表示">
+        <div class="label">燃料（経費）</div>
+        <input class="input" id="d_fuel" inputmode="numeric" placeholder="例：3000">
+      </div>
+    </div>
+    <div class="row three">
+      <div>
+        <div class="label">高速（経費）</div>
+        <input class="input" id="d_toll" inputmode="numeric" placeholder="例：1200">
+      </div>
+      <div>
+        <div class="label">駐車（経費）</div>
+        <input class="input" id="d_parking" inputmode="numeric" placeholder="例：500">
+      </div>
+      <div>
+        <div class="label">その他経費</div>
+        <input class="input" id="d_otherCost" inputmode="numeric" placeholder="例：800">
       </div>
     </div>
 
-    <label>NG詳細メモ（NGがある場合は必須）</label>
-    <textarea id="c_ngNote" placeholder="NGの場合は必ず詳細"></textarea>
+    <div class="label">トラブル / 申し送り（任意）</div>
+    <textarea class="input" id="d_trouble" placeholder="例：置き配トラブル、再配達、誤配 など"></textarea>
 
-    <label>NG写真（任意・強く推奨）</label>
-    <input id="c_ngPhoto" type="file" accept="image/*" multiple>
-
-    <div class="hint">※写真はPDFに載せます（保存しません）。</div>
-  </section>
-
-  <!-- ④ 日報（フル） -->
-  <section class="card" id="secDaily">
-    <div class="cardTitle">
-      <h2>④ 日報（業務実績）</h2>
-      <span class="pill">重要</span>
+    <div class="row two">
+      <button class="btn" onclick="saveDaily()">日報を保存（任意）</button>
+      <button class="btn secondary" onclick="makeTodayCsv()">今日のCSV（ワンクリック）</button>
     </div>
+  </div>
 
-    <div class="grid2">
+  <!-- ④ 履歴 / CSV -->
+  <div class="card" id="panelHistory" style="display:none">
+    <h2>④ 履歴 / CSV</h2>
+
+    <div class="row three">
       <div>
-        <label>稼働日（手入力）<span class="req">*</span></label>
-        <input id="d_date" type="date">
+        <div class="label">期間（開始）</div>
+        <input class="input" type="date" id="h_from">
       </div>
       <div>
-        <label>案件（メイン）<span class="req">*</span></label>
-        <select id="d_mainJob">
-          <option value="">選択</option>
-          <option>Amazon</option>
-          <option>ヤマト</option>
-          <option>佐川</option>
-          <option>企業配</option>
-          <option>スポット</option>
-          <option>チャーター</option>
-          <option>その他</option>
-        </select>
+        <div class="label">期間（終了）</div>
+        <input class="input" type="date" id="h_to">
+      </div>
+      <div>
+        <div class="label">拠点フィルタ（任意）</div>
+        <input class="input" id="h_base" placeholder="例：鹿児島 / 東京都">
       </div>
     </div>
 
-    <!-- 複数案件：追加式 -->
-    <div class="card" style="box-shadow:none;border:1px dashed var(--line);margin-top:12px">
-      <div class="cardTitle">
-        <h2 style="font-size:14px;margin:0">複数案件（追加式）</h2>
-        <span class="pill">必要な人だけ</span>
-      </div>
-      <div id="jobsArea"></div>
-      <div class="btnRow">
-        <button class="btn gray" id="btnAddJob" type="button">＋案件を追加</button>
-        <button class="btn gray" id="btnClearJobs" type="button">案件をリセット</button>
-      </div>
-      <div class="hint">※多くの人は1案件だけでOK。複数案件の人だけ追加してください。</div>
+    <div class="right" style="margin-top:10px">
+      <button class="btn small secondary inline" onclick="reloadHistory()">検索して表示</button>
+      <button class="btn small secondary inline" onclick="exportCsvRange()">期間CSV出力</button>
+      <button class="btn small secondary inline" onclick="backupJson()">バックアップ書き出し（JSON）</button>
+      <label class="btn small secondary inline" style="cursor:pointer">
+        バックアップ取込（JSON）
+        <input type="file" id="restoreFile" accept="application/json" style="display:none" onchange="restoreJson(event)">
+      </label>
     </div>
 
-    <div class="grid3">
-      <div>
-        <label>稼働時間：開始<span class="req">*</span></label>
-        <input id="d_start" type="time">
-      </div>
-      <div>
-        <label>稼働時間：終了<span class="req">*</span></label>
-        <input id="d_end" type="time">
-      </div>
-      <div>
-        <label>休憩時間（分）<span class="req">*</span></label>
-        <input id="d_breakMin" type="number" min="0" step="1" placeholder="例：60">
-      </div>
+    <div style="margin-top:12px" class="small">
+      ※ CSVは <b>日本語ヘッダー</b>、Excel対策で <b>BOM付きUTF-8</b> で出力します。
     </div>
 
-    <div class="grid3">
-      <div>
-        <label>配達個数<span class="req">*</span></label>
-        <input id="d_count" type="number" min="0" step="1">
-      </div>
-      <div>
-        <label>不在数</label>
-        <input id="d_absent" type="number" min="0" step="1">
-      </div>
-      <div>
-        <label>再配達数</label>
-        <input id="d_redelivery" type="number" min="0" step="1">
-      </div>
-    </div>
+    <div id="historyTableWrap" style="margin-top:12px"></div>
+  </div>
 
-    <div class="grid3">
-      <div>
-        <label>返品/持戻り数</label>
-        <input id="d_return" type="number" min="0" step="1">
-      </div>
-      <div>
-        <label>クレーム</label>
-        <select id="d_claim">
-          <option>なし</option>
-          <option>あり</option>
-        </select>
-      </div>
-      <div>
-        <label>クレーム内容（ありの場合）</label>
-        <input id="d_claimNote" placeholder="例：置き配トラブル">
-      </div>
-    </div>
+</div>
 
-    <hr>
-
-    <div class="cardTitle" style="margin-top:4px">
-      <h2 style="font-size:14px;margin:0">売上・経費（差引 自動）</h2>
-      <span class="pill">自動計算</span>
-    </div>
-
-    <div class="grid3">
-      <div>
-        <label>日当（固定）<span class="req">*</span></label>
-        <input id="m_pay" type="number" min="0" step="1" placeholder="例：16000">
-      </div>
-      <div>
-        <label>インセンティブ</label>
-        <input id="m_inc" type="number" min="0" step="1" placeholder="例：2000">
-      </div>
-      <div>
-        <label>燃料（経費）</label>
-        <input id="m_fuel" type="number" min="0" step="1">
-      </div>
-    </div>
-
-    <div class="grid3">
-      <div>
-        <label>高速（経費）</label>
-        <input id="m_highway" type="number" min="0" step="1">
-      </div>
-      <div>
-        <label>駐車（経費）</label>
-        <input id="m_parking" type="number" min="0" step="1">
-      </div>
-      <div>
-        <label>その他経費</label>
-        <input id="m_other" type="number" min="0" step="1">
-      </div>
-    </div>
-
-    <div class="grid2">
-      <div>
-        <label>差引（概算利益）</label>
-        <input id="m_profit" readonly placeholder="自動計算">
-      </div>
-      <div>
-        <label>売上合計</label>
-        <input id="m_total" readonly placeholder="自動計算">
-      </div>
-    </div>
-
-    <hr>
-
-    <div class="grid2">
-      <div>
-        <label>事故/物損</label>
-        <select id="d_accident">
-          <option>なし</option>
-          <option>あり</option>
-        </select>
-      </div>
-      <div>
-        <label>遅延理由</label>
-        <select id="d_delay">
-          <option>なし</option>
-          <option>渋滞</option>
-          <option>積込遅れ</option>
-          <option>体調</option>
-          <option>その他</option>
-        </select>
-      </div>
-    </div>
-
-    <label>日報メモ（引継ぎ/改善/報告）</label>
-    <textarea id="d_note" placeholder="例：再配達○件、注意点、引継ぎ、改善点など"></textarea>
-
-    <label>日報写真（任意：PDFに載せる）</label>
-    <input id="d_photos" type="file" accept="image/*" multiple>
-    <div class="hint">※写真はPDFに載せます。DB保存はしません（軽く壊れないため）。</div>
-  </section>
-
-  <!-- ⑤ 保存・出力 -->
-  <section class="card" id="secOutput">
-    <div class="cardTitle">
-      <h2>⑤ 保存・出力（PDF/CSV）</h2>
-      <span class="pill">ワンクリック</span>
-    </div>
-
-    <div class="btnRow">
-      <button class="btn" id="btnSaveAll" type="button">保存（点呼＋点検＋日報）</button>
-      <button class="btn black" id="btnPDF" type="button">PDF生成（OFAフォーマット）</button>
-      <button class="btn gray" id="btnCSV" type="button">CSV（自分の履歴）</button>
-    </div>
-
-    <div class="btnRow">
-      <button class="btn gray" id="btnShare" type="button">共有（LINE/メール）</button>
-      <a class="btn gray" href="https://lin.ee/7sO7SCQ" style="text-decoration:none;text-align:center;display:inline-block;flex:1;min-width:180px;padding:13px 14px;border-radius:14px;border:1px solid var(--line);background:#f3f4f6;color:#111827;font-weight:900;">OFAメンバー専用LINEへ問い合わせ</a>
-    </div>
-
-    <div class="hint">
-      ・共有は iPhone の「共有シート」を使います（対応端末のみ）<br>
-      ・CSVは文字化けしないようにUTF-8(BOM)で出します（日本語ヘッダ）
-    </div>
-  </section>
-
-  <!-- ⑥ 履歴 -->
-  <section class="card" id="secHistory">
-    <div class="cardTitle">
-      <h2>⑥ 履歴（保存・表示）</h2>
-      <span class="pill">IndexedDB</span>
-    </div>
-
-    <div class="grid2">
-      <div>
-        <label>絞り込み：日付（from）</label>
-        <input id="h_from" type="date">
-      </div>
-      <div>
-        <label>絞り込み：日付（to）</label>
-        <input id="h_to" type="date">
-      </div>
-    </div>
-
-    <div class="grid2">
-      <div>
-        <label>絞り込み：点呼区分</label>
-        <select id="h_type">
-          <option value="">指定なし</option>
-          <option>出発</option>
-          <option>帰着</option>
-        </select>
-      </div>
-      <div>
-        <label>絞り込み：案件</label>
-        <input id="h_job" placeholder="例：Amazon">
-      </div>
-    </div>
-
-    <div class="btnRow">
-      <button class="btn gray" id="btnReloadHistory" type="button">履歴を表示</button>
-      <button class="btn gray" id="btnClearDB" type="button">（注意）端末の履歴削除</button>
-    </div>
-
-    <div class="historyList" id="historyList" style="margin-top:10px">
-      <div class="hisItem"><div class="hisLeft"><div class="hisTop">まだ履歴がありません</div><div class="hisSub">保存するとここに出ます</div></div></div>
-    </div>
-  </section>
-
-</main>
-
-<div class="toast" id="toast"></div>
+<!-- PDF化：日本語文字化け回避のため、画面を画像化してPDFへ -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 
 <script>
 /* =========================
-   0) ユーティリティ
+   IndexedDB（1000件超対応）
 ========================= */
-const $ = (id)=>document.getElementById(id);
-function toast(msg){
-  const t = $("toast");
-  t.textContent = msg;
-  t.style.display = "block";
-  setTimeout(()=>t.style.display="none", 2200);
-}
-function setInvalid(el, on){
-  if(!el) return;
-  el.classList.toggle("invalid", !!on);
-}
-function need(el){
-  const v = (el.value||"").trim();
-  const ok = v.length>0;
-  setInvalid(el, !ok);
-  return ok;
-}
-function num(el){
-  const v = (el.value||"").toString().trim();
-  if(!v) return 0;
-  const n = Number(v);
-  return isNaN(n)?0:n;
-}
-function ymdFromDT(dtLocal){
-  // "2026-01-14T08:00" -> "2026-01-14"
-  if(!dtLocal) return "";
-  return dtLocal.split("T")[0];
-}
-function toIsoNow(){
-  // datetime-local に入れられる形式（ただし今回は自動入力しない方針なので使わない）
-  const d = new Date();
-  const pad = (n)=> String(n).padStart(2,"0");
-  return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
-}
-
-/* =========================
-   1) IndexedDB（1000件超OK）
-========================= */
-const DB_NAME = "ofaTenkoDB";
+const DB_NAME = "ofa_nippo_db";
 const DB_VER  = 1;
-let db = null;
+let db;
 
 function openDB(){
-  return new Promise((resolve,reject)=>{
+  return new Promise((resolve, reject)=>{
     const req = indexedDB.open(DB_NAME, DB_VER);
     req.onupgradeneeded = (e)=>{
-      const db = e.target.result;
-      // profile（1件だけ）
-      if(!db.objectStoreNames.contains("profile")){
-        db.createObjectStore("profile", { keyPath: "id" });
+      const d = e.target.result;
+      if(!d.objectStoreNames.contains("profile")){
+        d.createObjectStore("profile", { keyPath:"id" }); // id固定 "me"
       }
-      // records（点呼＋点検＋日報まとめ）
-      if(!db.objectStoreNames.contains("records")){
-        const st = db.createObjectStore("records", { keyPath: "id" });
-        st.createIndex("by_date", "date");         // YYYY-MM-DD
-        st.createIndex("by_name", "profile.name"); // 氏名
-        st.createIndex("by_base", "profile.base"); // 拠点
-        st.createIndex("by_job",  "daily.mainJob");// 案件
-        st.createIndex("by_type", "tenko.type");   // 出発/帰着
+      if(!d.objectStoreNames.contains("tenko")){
+        const s = d.createObjectStore("tenko", { keyPath:"id" });
+        s.createIndex("by_at","at",{unique:false});
+        s.createIndex("by_date","date",{unique:false});
+        s.createIndex("by_base","base",{unique:false});
+      }
+      if(!d.objectStoreNames.contains("daily")){
+        const s = d.createObjectStore("daily", { keyPath:"id" });
+        s.createIndex("by_date","date",{unique:false});
+        s.createIndex("by_base","base",{unique:false});
       }
     };
-    req.onsuccess = ()=>{ db = req.result; resolve(db); };
-    req.onerror = ()=>reject(req.error);
+    req.onsuccess=()=>{ db=req.result; resolve(db); };
+    req.onerror=()=>reject(req.error);
   });
 }
-
-async function idbPut(storeName, value){
-  await openDB();
-  return new Promise((resolve,reject)=>{
-    const tx = db.transaction(storeName, "readwrite");
-    tx.objectStore(storeName).put(value);
-    tx.oncomplete = ()=>resolve(true);
-    tx.onerror = ()=>reject(tx.error);
-  });
+function tx(store, mode="readonly"){
+  return db.transaction(store, mode).objectStore(store);
 }
-
-async function idbGet(storeName, key){
-  await openDB();
-  return new Promise((resolve,reject)=>{
-    const tx = db.transaction(storeName, "readonly");
-    const req = tx.objectStore(storeName).get(key);
-    req.onsuccess = ()=>resolve(req.result || null);
-    req.onerror = ()=>reject(req.error);
-  });
-}
-
-async function idbGetAll(storeName){
-  await openDB();
-  return new Promise((resolve,reject)=>{
-    const tx = db.transaction(storeName, "readonly");
-    const req = tx.objectStore(storeName).getAll();
-    req.onsuccess = ()=>resolve(req.result || []);
-    req.onerror = ()=>reject(req.error);
-  });
-}
-
-async function idbClear(storeName){
-  await openDB();
-  return new Promise((resolve,reject)=>{
-    const tx = db.transaction(storeName, "readwrite");
-    const req = tx.objectStore(storeName).clear();
-    req.onsuccess = ()=>resolve(true);
-    req.onerror = ()=>reject(req.error);
-  });
+function id(){
+  return crypto.randomUUID ? crypto.randomUUID() : (Date.now()+"_"+Math.random().toString(16).slice(2));
 }
 
 /* =========================
-   2) UI：出発/帰着切替
+   UI：タブ
 ========================= */
-let currentType = "出発"; // default
-
-function setTenkoType(type){
-  currentType = type;
-  $("tabStart").classList.toggle("active", type==="出発");
-  $("tabEnd").classList.toggle("active", type==="帰着");
-  // ラベル切替
-  if(type==="出発"){
-    $("lblRest").innerHTML = `睡眠時間（h）<span class="req">*</span>`;
-    $("pillRestLabel").textContent = "出発：睡眠時間";
-    $("t_rest").placeholder = "例：6.0";
-  }else{
-    $("lblRest").innerHTML = `休憩時間（分）<span class="req">*</span>`;
-    $("pillRestLabel").textContent = "帰着：休憩時間";
-    $("t_rest").placeholder = "例：60";
+function switchTab(name){
+  const map = {
+    profile:["panelProfile","tabProfile"],
+    tenko:["panelTenko","tabTenko"],
+    daily:["panelDaily","tabDaily"],
+    history:["panelHistory","tabHistory"],
+  };
+  for(const k in map){
+    document.getElementById(map[k][0]).style.display = (k===name) ? "" : "none";
+    document.getElementById(map[k][1]).classList.toggle("active", k===name);
   }
+  if(name==="history") reloadHistory();
 }
-$("tabStart").addEventListener("click", ()=>setTenkoType("出発"));
-$("tabEnd").addEventListener("click", ()=>setTenkoType("帰着"));
-setTenkoType("出発");
 
 /* =========================
-   3) 日常点検：フル項目
+   日常点検：スクロール
 ========================= */
 const CHECK_ITEMS = [
-  // A: 安全走行に直結
-  {cat:"A.安全走行", key:"tire_pressure", label:"タイヤ空気圧"},
-  {cat:"A.安全走行", key:"tire_tread", label:"タイヤ溝/ひび割れ"},
-  {cat:"A.安全走行", key:"wheel_nut", label:"ホイールナット緩み"},
-  {cat:"A.安全走行", key:"brake", label:"ブレーキ効き"},
-  {cat:"A.安全走行", key:"parking_brake", label:"パーキングブレーキ"},
-  {cat:"A.安全走行", key:"steering", label:"ハンドル操作"},
-  {cat:"A.安全走行", key:"lights", label:"灯火（前照/尾灯/ブレーキ/ウインカー/ハザード）"},
-  {cat:"A.安全走行", key:"wiper", label:"ワイパー/ウォッシャー液"},
-  {cat:"A.安全走行", key:"mirror_glass", label:"ミラー/ガラス破損"},
-
-  // B: 車両状態
-  {cat:"B.車両状態", key:"engine_oil", label:"エンジンオイル量"},
-  {cat:"B.車両状態", key:"coolant", label:"冷却水"},
-  {cat:"B.車両状態", key:"battery", label:"バッテリー（警告灯含む）"},
-  {cat:"B.車両状態", key:"noise_smell", label:"異音/異臭/異常振動"},
-  {cat:"B.車両状態", key:"leak", label:"漏れ（オイル/冷却水）"},
-  {cat:"B.車両状態", key:"body_damage", label:"外装破損"},
-  {cat:"B.車両状態", key:"loading", label:"積載状態（偏り/過積載なし）"},
-
-  // C: 装備
-  {cat:"C.装備", key:"extinguisher", label:"消火器"},
-  {cat:"C.装備", key:"triangle", label:"三角停止板"},
-  {cat:"C.装備", key:"reflect_vest", label:"反射ベスト"},
-  {cat:"C.装備", key:"tools", label:"ジャッキ/工具（任意OK）", optional:true},
+  "タイヤ空気圧","ブレーキ","ライト","ウインカー","ワイパー","ミラー",
+  "エンジン音","オイル漏れ","冷却水","ベルト","車内整理","積載状態",
+  "三角表示板/発炎筒","その他異常なし"
 ];
-
-function renderChecks(){
-  const box = $("checkBox");
+function renderChecklist(){
+  const box = document.getElementById("checkBox");
   box.innerHTML = "";
-  let currentCat = "";
-  for(const it of CHECK_ITEMS){
-    if(it.cat !== currentCat){
-      currentCat = it.cat;
-      const h = document.createElement("div");
-      h.style.fontWeight = "900";
-      h.style.margin = "6px 0 8px";
-      h.textContent = currentCat;
-      box.appendChild(h);
-    }
+  CHECK_ITEMS.forEach((t,i)=>{
     const row = document.createElement("div");
-    row.className = "row";
-    row.innerHTML = `
-      <div style="flex:1; font-size:13px;">
-        ${it.label}${it.optional ? "（任意）" : " <span style='color:#ef4444;font-weight:900'>*</span>"}
-      </div>
-      <select data-check="${it.key}" style="width:120px">
-        <option value="">選択</option>
-        <option>OK</option>
-        <option>NG</option>
-      </select>
-    `;
+    row.className = "chk";
+    row.innerHTML = `<input type="checkbox" id="chk_${i}"><label for="chk_${i}" style="flex:1">${t}</label>`;
     box.appendChild(row);
-  }
-}
-renderChecks();
-
-function getCheckValues(){
-  const selects = document.querySelectorAll("[data-check]");
-  const out = {};
-  const ngKeys = [];
-  for(const s of selects){
-    const key = s.getAttribute("data-check");
-    const val = (s.value||"").trim();
-    out[key] = val;
-    // 任意以外は必須（toolsだけ任意）
-    const meta = CHECK_ITEMS.find(x=>x.key===key);
-    if(meta && !meta.optional && !val){
-      // required missing
-    }
-    if(val==="NG") ngKeys.push(key);
-  }
-  return {out, ngKeys};
-}
-
-/* =========================
-   4) 複数案件（追加式）
-========================= */
-function makeJobRow(i){
-  const wrap = document.createElement("div");
-  wrap.className = "card";
-  wrap.style.boxShadow="none";
-  wrap.style.border="1px solid #eef2f7";
-  wrap.style.margin="10px 0 0";
-  wrap.innerHTML = `
-    <div style="display:flex;justify-content:space-between;align-items:center;gap:10px">
-      <div style="font-weight:900">案件 ${i+1}</div>
-      <button type="button" class="hisBtn" data-deljob="${i}">削除</button>
-    </div>
-    <div class="grid2" style="margin-top:8px">
-      <div>
-        <label style="margin-top:0">案件名</label>
-        <input data-job="name" placeholder="例：Amazon / 企業配">
-      </div>
-      <div>
-        <label style="margin-top:0">エリア</label>
-        <input data-job="area" placeholder="例：鹿児島市">
-      </div>
-    </div>
-    <div class="grid3">
-      <div>
-        <label>開始</label>
-        <input data-job="start" type="time">
-      </div>
-      <div>
-        <label>終了</label>
-        <input data-job="end" type="time">
-      </div>
-      <div>
-        <label>配達個数</label>
-        <input data-job="count" type="number" min="0" step="1">
-      </div>
-    </div>
-    <label>メモ</label>
-    <textarea data-job="note" placeholder="引継ぎ/注意点"></textarea>
-  `;
-  return wrap;
-}
-
-let jobRows = [];
-function addJob(){
-  const idx = jobRows.length;
-  const row = makeJobRow(idx);
-  $("jobsArea").appendChild(row);
-  jobRows.push(row);
-  // delete handler
-  row.querySelector("[data-deljob]").addEventListener("click", ()=>{
-    row.remove();
-    jobRows = jobRows.filter(x=>x!==row);
-    // 番号振り直し
-    const cards = $("jobsArea").querySelectorAll(".card");
-    cards.forEach((c,i)=>{
-      const title = c.querySelector("div[style*='font-weight:900']");
-      if(title) title.textContent = `案件 ${i+1}`;
-    });
   });
 }
-$("btnAddJob").addEventListener("click", addJob);
-$("btnClearJobs").addEventListener("click", ()=>{
-  $("jobsArea").innerHTML="";
-  jobRows = [];
-});
-addJob(); // デフォルト1件表示
-
-function readJobs(){
-  const jobs = [];
-  for(const row of jobRows){
-    const get = (k)=> row.querySelector(`[data-job="${k}"]`)?.value?.trim() || "";
-    const obj = {
-      name: get("name"),
-      area: get("area"),
-      start: get("start"),
-      end: get("end"),
-      count: Number(get("count")||0),
-      note: get("note"),
-    };
-    if(obj.name || obj.area || obj.start || obj.end || obj.count || obj.note){
-      jobs.push(obj);
-    }
-  }
-  return jobs;
+function getChecklist(){
+  const res=[];
+  CHECK_ITEMS.forEach((t,i)=>{
+    const c = document.getElementById("chk_"+i);
+    if(c && c.checked) res.push(t);
+  });
+  return res;
 }
 
 /* =========================
-   5) 自動計算（ODO差分 / 利益）
+   画像プレビュー（保存しない）
 ========================= */
-function calcOdo(){
-  const s = Number(($("t_odoStart").value||"").trim());
-  const e = Number(($("t_odoEnd").value||"").trim());
-  if(!isNaN(s) && !isNaN(e) && s>0 && e>0 && e>=s){
-    $("t_odoDiff").value = String(e - s);
-  }else{
-    $("t_odoDiff").value = "";
-  }
+async function fileToDataURL(file){
+  return new Promise((resolve,reject)=>{
+    const r=new FileReader();
+    r.onload=()=>resolve(r.result);
+    r.onerror=()=>reject(r.error);
+    r.readAsDataURL(file);
+  });
 }
-$("t_odoStart").addEventListener("input", calcOdo);
-$("t_odoEnd").addEventListener("input", calcOdo);
+let licenseDataURL = null;  // PDF用（保存しない）
+let alcDataURL = null;      // PDF用（保存しない）
 
-function calcMoney(){
-  const pay = num($("m_pay"));
-  const inc = num($("m_inc"));
-  const total = pay + inc;
-  const exp = num($("m_fuel")) + num($("m_highway")) + num($("m_parking")) + num($("m_other"));
-  const profit = total - exp;
-  $("m_total").value = total.toString();
-  $("m_profit").value = profit.toString();
-}
-["m_pay","m_inc","m_fuel","m_highway","m_parking","m_other"].forEach(id=>{
-  $(id).addEventListener("input", calcMoney);
+document.addEventListener("change", async (e)=>{
+  if(e.target.id==="p_licenseImg"){
+    const f=e.target.files?.[0];
+    licenseDataURL=null;
+    const img=document.getElementById("licensePreview");
+    const none=document.getElementById("licensePreviewNone");
+    if(!f){ img.style.display="none"; none.style.display=""; return; }
+    licenseDataURL = await fileToDataURL(f);
+    img.src = licenseDataURL;
+    img.style.display="";
+    none.style.display="none";
+  }
+  if(e.target.id==="t_alcImg"){
+    const f=e.target.files?.[0];
+    alcDataURL=null;
+    const img=document.getElementById("alcPreview");
+    const none=document.getElementById("alcPreviewNone");
+    if(!f){ img.style.display="none"; none.style.display=""; return; }
+    alcDataURL = await fileToDataURL(f);
+    img.src = alcDataURL;
+    img.style.display="";
+    none.style.display="none";
+  }
 });
-calcMoney();
 
 /* =========================
-   6) プロフィール保存/読込
+   基本情報
 ========================= */
+async function loadProfile(){
+  const s = tx("profile");
+  const req = s.get("me");
+  return new Promise((resolve)=>{
+    req.onsuccess=()=>resolve(req.result||null);
+    req.onerror=()=>resolve(null);
+  });
+}
 async function saveProfile(){
-  // required
-  const ok =
-    need($("p_name")) &
-    need($("p_base")) &
-    need($("p_vehicle")) &
-    need($("p_licenseNo")) &
-    need($("p_phone")) &
-    need($("p_email"));
+  const name = p_name.value.trim();
+  const base = p_base.value.trim();
+  const licenseNo = p_licenseNo.value.trim();
+  const phone = p_phone.value.trim();
+  const email = p_email.value.trim();
 
-  if(!ok){
-    toast("必須項目が未入力です（赤枠）");
+  if(!name || !base || !licenseNo || !phone || !email){
+    alert("必須項目（氏名・拠点・免許証番号・電話・メール）を入力してください");
     return;
   }
 
   const profile = {
-    id: "me",
-    name: $("p_name").value.trim(),
-    base: $("p_base").value.trim(),
-    vehicle: $("p_vehicle").value.trim(),
-    licenseNo: $("p_licenseNo").value.trim(),
-    phone: $("p_phone").value.trim(),
-    email: $("p_email").value.trim(),
-    updatedAt: Date.now(),
+    id:"me",
+    name, base,
+    carNo: p_carNo.value.trim(),
+    licenseNo, phone, email,
+    updatedAt: new Date().toISOString()
   };
-  await idbPut("profile", profile);
-  toast("基本情報を保存しました");
+
+  const s = tx("profile","readwrite");
+  s.put(profile);
+  s.transaction.oncomplete=()=>{
+    alert("基本情報を保存しました");
+    switchTab("tenko");
+  };
 }
-async function loadProfile(){
-  const p = await idbGet("profile","me");
-  if(!p){
-    toast("保存された基本情報がありません");
-    return;
-  }
-  $("p_name").value = p.name || "";
-  $("p_base").value = p.base || "";
-  $("p_vehicle").value = p.vehicle || "";
-  $("p_licenseNo").value = p.licenseNo || "";
-  $("p_phone").value = p.phone || "";
-  $("p_email").value = p.email || "";
-  toast("基本情報を読み込みました");
+async function resetProfile(){
+  if(!confirm("基本情報をリセットします。よろしいですか？")) return;
+  const s = tx("profile","readwrite");
+  s.delete("me");
+  s.transaction.oncomplete=()=>{
+    ["p_name","p_base","p_carNo","p_licenseNo","p_phone","p_email"].forEach(id=>document.getElementById(id).value="");
+    document.getElementById("p_licenseImg").value="";
+    document.getElementById("licensePreview").style.display="none";
+    document.getElementById("licensePreviewNone").style.display="";
+    licenseDataURL=null;
+    alert("リセットしました");
+  };
 }
-$("btnSaveProfile").addEventListener("click", saveProfile);
-$("btnLoadProfile").addEventListener("click", loadProfile);
 
 /* =========================
-   7) 入力データをまとめる
+   点呼：出発/帰着 分離
 ========================= */
-async function collectAll(){
-  // profile must exist (or fill now)
-  const prof = await idbGet("profile","me");
-  if(!prof){
-    toast("先に「基本情報を保存」してください");
-    $("secProfile").scrollIntoView({behavior:"smooth", block:"start"});
-    return null;
+function syncOdoLabel(){
+  const t = t_type.value;
+  const label = document.getElementById("odoLabel");
+  if(t==="出発") label.textContent = "出発ODO（出発点呼で入力）";
+  else if(t==="帰着") label.textContent = "帰着ODO（帰着点呼で入力）";
+  else label.textContent = "ODO（区分を選択）";
+}
+async function saveTenko(){
+  const profile = await loadProfile();
+  if(!profile){
+    alert("先に「基本情報を保存」してください");
+    switchTab("profile");
+    return;
   }
 
-  // tenko required
-  const tenkoOk =
-    need($("t_datetime")) &
-    need($("t_method")) &
-    need($("t_base")) &
-    need($("t_mainJob")) &
-    need($("t_loadArea")) &
-    need($("t_danger")) &
-    need($("t_rest")) &
-    need($("t_temp")) &
-    need($("t_condition")) &
-    need($("t_fatigue")) &
-    need($("t_med")) &
-    need($("t_drink")) &
-    need($("t_alcJudge")) &
-    need($("t_alcValue")) &
-    need($("t_odoStart")) &
-    need($("t_odoEnd")) &
-    need($("t_abnormal"));
+  const type = t_type.value;
+  const at   = t_at.value;
+  const method = t_method.value;
 
-  // med detail
-  if(($("t_med").value||"")==="あり"){
-    const ok = need($("t_medNote"));
-    if(!ok) toast("服薬が「あり」の場合は内容が必須です");
-  } else {
-    setInvalid($("t_medNote"), false);
+  if(!type || !at || !method){
+    alert("必須（点呼区分・点呼日時・点呼方法）を入力してください");
+    return;
   }
 
-  // abnormal detail
-  if(($("t_abnormal").value||"")==="あり"){
-    const ok = need($("t_abnormalNote"));
-    if(!ok) toast("異常が「あり」の場合は異常内容が必須です");
-  } else {
-    setInvalid($("t_abnormalNote"), false);
-  }
-
-  // ODO diff check
-  const s = Number(($("t_odoStart").value||"").trim());
-  const e = Number(($("t_odoEnd").value||"").trim());
-  if(!(s>0 && e>0 && e>=s)){
-    setInvalid($("t_odoStart"), true);
-    setInvalid($("t_odoEnd"), true);
-    toast("ODOが不正です（帰着は出発以上）");
-    return null;
-  } else {
-    setInvalid($("t_odoStart"), false);
-    setInvalid($("t_odoEnd"), false);
-  }
-
-  if(!tenkoOk){
-    toast("点呼の必須項目が未入力です（赤枠）");
-    $("secTenko").scrollIntoView({behavior:"smooth", block:"start"});
-    return null;
-  }
-
-  // checks required
-  const {out:checks, ngKeys} = getCheckValues();
-  // required checks: all except optional tools
-  let checkReqOk = true;
-  for(const it of CHECK_ITEMS){
-    if(it.optional) continue;
-    const v = (checks[it.key]||"").trim();
-    if(!v) checkReqOk = false;
-  }
-  if(!checkReqOk || !need($("c_overall"))){
-    toast("日常点検の必須が未入力です（赤枠）");
-    $("secCheck").scrollIntoView({behavior:"smooth", block:"start"});
-    return null;
-  }
-
-  // NG rule
-  $("c_ngList").value = ngKeys.join(", ");
-  if(ngKeys.length>0 || $("c_overall").value==="NG"){
-    if(!need($("c_ngNote"))){
-      toast("NGがある場合は「NG詳細メモ」が必須です");
-      $("secCheck").scrollIntoView({behavior:"smooth", block:"start"});
-      return null;
-    }
-  } else {
-    setInvalid($("c_ngNote"), false);
-  }
-
-  // daily required
-  const dailyOk =
-    need($("d_date")) &
-    need($("d_mainJob")) &
-    need($("d_start")) &
-    need($("d_end")) &
-    need($("d_breakMin")) &
-    need($("d_count")) &
-    need($("m_pay"));
-
-  if(!dailyOk){
-    toast("日報の必須項目が未入力です（赤枠）");
-    $("secDaily").scrollIntoView({behavior:"smooth", block:"start"});
-    return null;
-  }
-  // claim detail
-  if(($("d_claim").value||"")==="あり"){
-    const ok = need($("d_claimNote"));
-    if(!ok){
-      toast("クレームが「あり」の場合は内容が必須です");
-      return null;
-    }
-  } else {
-    setInvalid($("d_claimNote"), false);
-  }
-
-  // daily computed
-  const odoDiff = e - s;
-  const total = num($("m_total"));
-  const profit = num($("m_profit"));
-
-  const tenko = {
-    type: currentType,
-    datetime: $("t_datetime").value,
-    base: $("t_base").value.trim(),
-    vehicleNo: prof.vehicle,
-    method: $("t_method").value,
-    mainJob: $("t_mainJob").value,
-    loadArea: $("t_loadArea").value.trim(),
-    danger: $("t_danger").value,
-    rest: $("t_rest").value.trim(), // 出発=睡眠h / 帰着=休憩min
-    temp: $("t_temp").value.trim(),
-    condition: $("t_condition").value,
-    fatigue: $("t_fatigue").value,
-    med: $("t_med").value,
-    medNote: $("t_medNote").value.trim(),
-    drink: $("t_drink").value,
-    alcoholJudge: $("t_alcJudge").value,
-    alcoholValue: $("t_alcValue").value.trim(),
-    odoStart: s,
-    odoEnd: e,
-    odoDiff,
-    abnormal: $("t_abnormal").value,
-    abnormalNote: $("t_abnormalNote").value.trim(),
-  };
-
-  const check = {
-    overall: $("c_overall").value,
-    items: checks,
-    ngKeys,
-    ngNote: $("c_ngNote").value.trim(),
-    hasNgPhoto: ($("c_ngPhoto").files||[]).length>0
-  };
-
-  const daily = {
-    date: $("d_date").value,
-    mainJob: $("d_mainJob").value,
-    jobs: readJobs(), // 複数案件
-    start: $("d_start").value,
-    end: $("d_end").value,
-    breakMin: num($("d_breakMin")),
-    count: num($("d_count")),
-    absent: num($("d_absent")),
-    redelivery: num($("d_redelivery")),
-    ret: num($("d_return")),
-    claim: $("d_claim").value,
-    claimNote: $("d_claimNote").value.trim(),
-    pay: num($("m_pay")),
-    inc: num($("m_inc")),
-    fuel: num($("m_fuel")),
-    highway: num($("m_highway")),
-    parking: num($("m_parking")),
-    other: num($("m_other")),
-    total,
-    profit,
-    accident: $("d_accident").value,
-    delay: $("d_delay").value,
-    note: $("d_note").value.trim(),
-    hasPhotos: ($("d_photos").files||[]).length>0
-  };
-
-  const dateKey = ymdFromDT(tenko.datetime) || daily.date;
-  if(!dateKey){
-    toast("日付の取得に失敗しました。点呼日時/稼働日を確認してください");
-    return null;
-  }
+  const date = at.slice(0,10); // YYYY-MM-DD
+  const odo = (t_odo.value||"").trim();
 
   const record = {
-    id: `${dateKey}_${currentType}_${Date.now()}`,
-    date: dateKey,
-    createdAt: Date.now(),
-    profile: {
-      name: prof.name,
-      base: prof.base,
-      vehicle: prof.vehicle,
-      licenseNo: prof.licenseNo,
-      phone: prof.phone,
-      email: prof.email
-    },
-    tenko,
-    check,
-    daily
+    id: id(),
+    kind: "点呼",
+    type, at,
+    date,
+    name: profile.name,
+    base: profile.base,
+    carNo: profile.carNo || "",
+    licenseNo: profile.licenseNo,
+    phone: profile.phone,
+    email: profile.email,
+
+    method,
+    sleep: (t_sleep.value||"").trim(),
+    temp: (t_temp.value||"").trim(),
+    condition: t_condition.value || "",
+    fatigue: t_fatigue.value || "",
+    medication: t_med.value || "",
+    alcoholValue: (t_alc.value||"").trim(),
+
+    odo: odo, // 出発なら出発ODO、帰着なら帰着ODO
+    checklist: getChecklist(),
+    memo: (t_memo.value||"").trim(),
+
+    createdAt: new Date().toISOString()
   };
 
-  return record;
+  const s = tx("tenko","readwrite");
+  s.put(record);
+  s.transaction.oncomplete=async ()=>{
+    alert("点呼を保存しました（履歴に追加）");
+    // 走行距離の自動計算に使えるよう、日報画面の日付を自動セット（任意）
+    if(!d_date.value) d_date.value = date;
+
+    // 入力欄は残しつつ、次入力しやすく
+    t_memo.value="";
+    // そのまま日報へ行ける
+    switchTab("daily");
+  };
 }
 
 /* =========================
-   8) 保存（IndexedDB）
+   日報（任意）
 ========================= */
-async function saveAll(){
-  const rec = await collectAll();
-  if(!rec) return;
-  await idbPut("records", rec);
-  toast("保存しました（履歴に反映）");
-  await loadHistory();
-  // PDF生成用に直近レコードを保持
-  window.__lastRecord = rec;
+let jobCount = 0;
+function addJob(prefill={}){
+  jobCount++;
+  const wrap = document.getElementById("jobsWrap");
+  const box = document.createElement("div");
+  box.className="card";
+  box.style.borderStyle="dashed";
+  box.innerHTML = `
+    <div class="right">
+      <button class="btn small secondary inline" onclick="this.closest('.card').remove()">削除</button>
+    </div>
+    <div class="row two">
+      <div>
+        <div class="label">案件名（任意）</div>
+        <input class="input job_name" placeholder="例：Amazon / 企業配" value="${prefill.name||""}">
+      </div>
+      <div>
+        <div class="label">エリア（任意）</div>
+        <input class="input job_area" placeholder="例：鹿児島市" value="${prefill.area||""}">
+      </div>
+    </div>
+    <div class="row two">
+      <div>
+        <div class="label">開始（任意）</div>
+        <input class="input job_start" placeholder="例：08:00" value="${prefill.start||""}">
+      </div>
+      <div>
+        <div class="label">終了（任意）</div>
+        <input class="input job_end" placeholder="例：18:00" value="${prefill.end||""}">
+      </div>
+    </div>
+    <div class="row two">
+      <div>
+        <div class="label">配達個数（任意）</div>
+        <input class="input job_cnt" inputmode="numeric" placeholder="例：120" value="${prefill.count||""}">
+      </div>
+      <div>
+        <div class="label">メモ（任意）</div>
+        <input class="input job_memo" placeholder="任意" value="${prefill.memo||""}">
+      </div>
+    </div>
+  `;
+  wrap.appendChild(box);
 }
-$("btnSaveAll").addEventListener("click", saveAll);
-
-/* =========================
-   9) 履歴表示（検索対応）
-========================= */
-function between(dateStr, from, to){
-  if(!dateStr) return false;
-  if(from && dateStr < from) return false;
-  if(to && dateStr > to) return false;
-  return true;
+function clearJobs(){
+  if(!confirm("案件欄をすべて削除します。よろしいですか？")) return;
+  document.getElementById("jobsWrap").innerHTML="";
+}
+function readJobs(){
+  const boxes = Array.from(document.querySelectorAll("#jobsWrap .card"));
+  return boxes.map(b=>({
+    name: b.querySelector(".job_name")?.value?.trim()||"",
+    area: b.querySelector(".job_area")?.value?.trim()||"",
+    start:b.querySelector(".job_start")?.value?.trim()||"",
+    end:  b.querySelector(".job_end")?.value?.trim()||"",
+    count:b.querySelector(".job_cnt")?.value?.trim()||"",
+    memo: b.querySelector(".job_memo")?.value?.trim()||"",
+  })).filter(x=> Object.values(x).some(v=>v));
 }
 
-async function loadHistory(){
-  const list = await idbGetAll("records");
-  // sort new -> old
-  list.sort((a,b)=> (b.createdAt||0) - (a.createdAt||0));
-
-  const from = ($("h_from").value||"").trim();
-  const to   = ($("h_to").value||"").trim();
-  const type = ($("h_type").value||"").trim();
-  const job  = ($("h_job").value||"").trim().toLowerCase();
-
-  const filtered = list.filter(r=>{
-    if(!between(r.date, from, to)) return false;
-    if(type && r.tenko?.type !== type) return false;
-    if(job){
-      const mj = (r.daily?.mainJob||"").toLowerCase();
-      const jobs = (r.daily?.jobs||[]).map(x=>`${x.name||""} ${x.area||""}`.toLowerCase()).join(" ");
-      if(!mj.includes(job) && !jobs.includes(job)) return false;
-    }
-    return true;
-  });
-
-  const box = $("historyList");
-  if(filtered.length===0){
-    box.innerHTML = `<div class="hisItem"><div class="hisLeft"><div class="hisTop">該当なし</div><div class="hisSub">条件を変えてください</div></div></div>`;
+function n(v){ // 数値化
+  const x = parseFloat(String(v||"").replace(/,/g,""));
+  return isNaN(x) ? 0 : x;
+}
+async function saveDaily(){
+  const profile = await loadProfile();
+  if(!profile){
+    alert("先に「基本情報を保存」してください");
+    switchTab("profile");
     return;
   }
 
-  box.innerHTML = "";
-  for(const r of filtered.slice(0, 120)){ // 表示は最大120件（DBには無制限）
-    const el = document.createElement("div");
-    el.className = "hisItem";
-    const sub = `${r.profile?.name||"-"} / ${r.profile?.base||"-"} / ${r.daily?.mainJob||"-"} / 走行:${r.tenko?.odoDiff||0}km`;
-    el.innerHTML = `
-      <div class="hisLeft">
-        <div class="hisTop">${r.date}｜${r.tenko?.type||"-"} 点呼</div>
-        <div class="hisSub">${sub}</div>
-      </div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end">
-        <button class="hisBtn" data-view="${r.id}">PDF</button>
-        <button class="hisBtn" data-load="${r.id}">読込</button>
-      </div>
-    `;
-    box.appendChild(el);
-  }
+  // 日報は任意。ただし保存するなら date が空のままは困るので補助
+  const date = d_date.value || new Date().toISOString().slice(0,10);
 
-  // handlers
-  box.querySelectorAll("[data-view]").forEach(btn=>{
-    btn.addEventListener("click", async ()=>{
-      const id = btn.getAttribute("data-view");
-      const all = await idbGetAll("records");
-      const rec = all.find(x=>x.id===id);
-      if(!rec) return toast("レコードが見つかりません");
-      window.__lastRecord = rec;
-      await generatePDF(rec);
-    });
-  });
+  const rec = {
+    id: id(),
+    kind:"日報",
+    date,
+    name: profile.name,
+    base: profile.base,
+    carNo: profile.carNo || "",
+    licenseNo: profile.licenseNo,
+    phone: profile.phone,
+    email: profile.email,
 
-  box.querySelectorAll("[data-load]").forEach(btn=>{
-    btn.addEventListener("click", async ()=>{
-      const id = btn.getAttribute("data-load");
-      const all = await idbGetAll("records");
-      const rec = all.find(x=>x.id===id);
-      if(!rec) return toast("レコードが見つかりません");
-      fillFromRecord(rec);
-      toast("履歴から読み込みました");
-      window.scrollTo({top:0, behavior:"smooth"});
-    });
-  });
-}
+    mainJob: (d_mainJob.value||"").trim(),
+    jobs: readJobs(),
+    pay: (d_pay.value||"").trim(),
+    incentive: (d_incentive.value||"").trim(),
+    fuel: (d_fuel.value||"").trim(),
+    toll: (d_toll.value||"").trim(),
+    parking: (d_parking.value||"").trim(),
+    otherCost: (d_otherCost.value||"").trim(),
+    trouble: (d_trouble.value||"").trim(),
 
-$("btnReloadHistory").addEventListener("click", loadHistory);
-$("btnJumpHistory").addEventListener("click", ()=>$("secHistory").scrollIntoView({behavior:"smooth"}));
+    createdAt: new Date().toISOString()
+  };
 
-$("btnClearDB").addEventListener("click", async ()=>{
-  if(!confirm("この端末の履歴（records）を全削除します。よろしいですか？")) return;
-  await idbClear("records");
-  toast("履歴を削除しました");
-  await loadHistory();
-});
-
-// 初回表示
-loadProfile();
-loadHistory();
-
-/* =========================
-   10) 履歴からフォームへ反映
-========================= */
-function fillFromRecord(r){
-  // profile
-  $("p_name").value = r.profile?.name||"";
-  $("p_base").value = r.profile?.base||"";
-  $("p_vehicle").value = r.profile?.vehicle||"";
-  $("p_licenseNo").value = r.profile?.licenseNo||"";
-  $("p_phone").value = r.profile?.phone||"";
-  $("p_email").value = r.profile?.email||"";
-
-  // tenko
-  setTenkoType(r.tenko?.type||"出発");
-  $("t_datetime").value = r.tenko?.datetime||"";
-  $("t_method").value = r.tenko?.method||"";
-  $("t_base").value = r.tenko?.base||"";
-  $("t_mainJob").value = r.tenko?.mainJob||"";
-  $("t_loadArea").value = r.tenko?.loadArea||"";
-  $("t_danger").value = r.tenko?.danger||"";
-  $("t_rest").value = r.tenko?.rest||"";
-  $("t_temp").value = r.tenko?.temp||"";
-  $("t_condition").value = r.tenko?.condition||"";
-  $("t_fatigue").value = r.tenko?.fatigue||"";
-  $("t_med").value = r.tenko?.med||"";
-  $("t_medNote").value = r.tenko?.medNote||"";
-  $("t_drink").value = r.tenko?.drink||"";
-  $("t_alcJudge").value = r.tenko?.alcoholJudge||"";
-  $("t_alcValue").value = r.tenko?.alcoholValue||"";
-  $("t_odoStart").value = r.tenko?.odoStart||"";
-  $("t_odoEnd").value = r.tenko?.odoEnd||"";
-  calcOdo();
-  $("t_abnormal").value = r.tenko?.abnormal||"";
-  $("t_abnormalNote").value = r.tenko?.abnormalNote||"";
-
-  // check
-  const items = r.check?.items || {};
-  document.querySelectorAll("[data-check]").forEach(s=>{
-    const key = s.getAttribute("data-check");
-    s.value = items[key] || "";
-  });
-  $("c_overall").value = r.check?.overall||"";
-  $("c_ngList").value = (r.check?.ngKeys||[]).join(", ");
-  $("c_ngNote").value = r.check?.ngNote||"";
-
-  // daily
-  $("d_date").value = r.daily?.date||"";
-  $("d_mainJob").value = r.daily?.mainJob||"";
-  $("d_start").value = r.daily?.start||"";
-  $("d_end").value = r.daily?.end||"";
-  $("d_breakMin").value = r.daily?.breakMin||"";
-  $("d_count").value = r.daily?.count||"";
-  $("d_absent").value = r.daily?.absent||"";
-  $("d_redelivery").value = r.daily?.redelivery||"";
-  $("d_return").value = r.daily?.ret||"";
-  $("d_claim").value = r.daily?.claim||"なし";
-  $("d_claimNote").value = r.daily?.claimNote||"";
-  $("m_pay").value = r.daily?.pay||"";
-  $("m_inc").value = r.daily?.inc||"";
-  $("m_fuel").value = r.daily?.fuel||"";
-  $("m_highway").value = r.daily?.highway||"";
-  $("m_parking").value = r.daily?.parking||"";
-  $("m_other").value = r.daily?.other||"";
-  calcMoney();
-  $("d_accident").value = r.daily?.accident||"なし";
-  $("d_delay").value = r.daily?.delay||"なし";
-  $("d_note").value = r.daily?.note||"";
-
-  // jobs
-  $("jobsArea").innerHTML="";
-  jobRows = [];
-  const jobs = r.daily?.jobs || [];
-  if(jobs.length===0){
-    addJob();
-  }else{
-    for(const j of jobs){
-      addJob();
-      const row = jobRows[jobRows.length-1];
-      row.querySelector(`[data-job="name"]`).value = j.name||"";
-      row.querySelector(`[data-job="area"]`).value = j.area||"";
-      row.querySelector(`[data-job="start"]`).value = j.start||"";
-      row.querySelector(`[data-job="end"]`).value = j.end||"";
-      row.querySelector(`[data-job="count"]`).value = j.count||"";
-      row.querySelector(`[data-job="note"]`).value = j.note||"";
-    }
-  }
+  const s = tx("daily","readwrite");
+  s.put(rec);
+  s.transaction.oncomplete=()=>{
+    alert("日報を保存しました（任意）");
+    switchTab("history");
+  };
 }
 
 /* =========================
-   11) PDF生成（完全OFAフォーマット）
-      - カラー見出し
-      - 表（AutoTable）
-      - 写真埋め込み（任意）
+   走行距離：出発/帰着を同日で突合
 ========================= */
-function fileToDataURL(file){
-  return new Promise((resolve,reject)=>{
-    if(!file) return resolve(null);
-    const fr = new FileReader();
-    fr.onload = ()=>resolve(fr.result);
-    fr.onerror = ()=>reject(fr.error);
-    fr.readAsDataURL(file);
+async function listTenkoByRange(from, to){
+  // 全件走査（1000件程度なら問題なし。さらに増えるなら index cursor にしてもOK）
+  const s = tx("tenko");
+  const req = s.getAll();
+  return new Promise((resolve)=>{
+    req.onsuccess=()=>{
+      let arr=req.result||[];
+      if(from) arr = arr.filter(r=>r.date>=from);
+      if(to)   arr = arr.filter(r=>r.date<=to);
+      resolve(arr);
+    };
+    req.onerror=()=>resolve([]);
   });
 }
-
-async function drawHeader(pdf, title){
-  // OFAカラー帯
-  pdf.setFillColor(30, 202, 211); // #1ecad3
-  pdf.rect(0, 0, 210, 18, "F");
-  pdf.setFillColor(138, 92, 255); // #8a5cff
-  pdf.rect(0, 18, 210, 6, "F");
-
-  pdf.setTextColor(255,255,255);
-  pdf.setFontSize(14);
-  pdf.text("OFA GROUP", 12, 12);
-  pdf.setFontSize(12);
-  pdf.text(title, 12, 22);
-
-  pdf.setTextColor(17,24,39);
+function calcDistanceMap(tenkos){
+  // 同日で「出発ODO」「帰着ODO」両方ある場合に距離算出
+  // 同日に複数ある場合は「最後に保存された出発」「最後に保存された帰着」を採用
+  const map = {}; // key = date|name|base -> {startOdo,endOdo,distance}
+  for(const r of tenkos){
+    const key = `${r.date}__${r.name}__${r.base}`;
+    map[key] ||= {date:r.date,name:r.name,base:r.base,startOdo:null,endOdo:null,distance:null};
+    const odoNum = n(r.odo);
+    if(!odoNum) continue;
+    if(r.type==="出発") map[key].startOdo = odoNum;
+    if(r.type==="帰着") map[key].endOdo = odoNum;
+    if(map[key].startOdo!=null && map[key].endOdo!=null){
+      map[key].distance = Math.max(0, map[key].endOdo - map[key].startOdo);
+    }
+  }
+  return map;
 }
-
-async function generatePDF(record){
-  const { jsPDF } = window.jspdf;
-  const pdf = new jsPDF({unit:"mm", format:"a4"});
-  await drawHeader(pdf, `点呼・日報 報告書（${record.tenko.type}）`);
-
-  // 免許写真（任意）：プロフィール入力欄のファイルを使う（保存しない）
-  const licenseImgFile = $("p_licensePhoto").files?.[0] || null;
-  const alcImgFile = $("t_alcPhoto").files?.[0] || null;
-  const abnormalFile = $("t_abnormalPhoto").files?.[0] || null;
-  const ngFiles = Array.from($("c_ngPhoto").files||[]);
-  const dailyFiles = Array.from($("d_photos").files||[]);
-
-  const licenseURL = await fileToDataURL(licenseImgFile);
-  const alcURL = await fileToDataURL(alcImgFile);
-  const abnormalURL = await fileToDataURL(abnormalFile);
-
-  let y = 30;
-
-  // ① 基本情報
-  pdf.setFontSize(11);
-  pdf.setTextColor(17,24,39);
-  pdf.text("① 基本情報", 12, y); y+=2;
-
-  pdf.autoTable({
-    startY: y+2,
-    theme: "grid",
-    head: [["氏名","拠点","車両番号","免許証番号","電話","メール"]],
-    body: [[
-      record.profile.name,
-      record.profile.base,
-      record.profile.vehicle,
-      record.profile.licenseNo,
-      record.profile.phone,
-      record.profile.email
-    ]],
-    headStyles:{fillColor:[30,202,211], textColor:255, fontStyle:"bold"},
-    styles:{fontSize:9, cellPadding:2},
-  });
-
-  y = pdf.lastAutoTable.finalY + 6;
-
-  // 免許画像
-  if(licenseURL){
-    pdf.text("免許証写真（任意）", 12, y); y+=2;
-    try{
-      pdf.addImage(licenseURL, "JPEG", 12, y+2, 60, 45);
-      y += 52;
-    }catch(e){
-      // PNGの場合など
-      try{
-        pdf.addImage(licenseURL, "PNG", 12, y+2, 60, 45);
-        y += 52;
-      }catch(_){}
-    }
-  }
-
-  // ② 点呼
-  pdf.text("② 点呼", 12, y); y+=2;
-
-  pdf.autoTable({
-    startY: y+2,
-    theme: "grid",
-    head: [["区分","点呼日時","方法","案件","積込拠点/エリア","危険物/高額品"]],
-    body: [[
-      record.tenko.type,
-      record.tenko.datetime,
-      record.tenko.method,
-      record.tenko.mainJob,
-      record.tenko.loadArea,
-      record.tenko.danger
-    ]],
-    headStyles:{fillColor:[138,92,255], textColor:255, fontStyle:"bold"},
-    styles:{fontSize:9, cellPadding:2},
-  });
-  y = pdf.lastAutoTable.finalY + 6;
-
-  pdf.autoTable({
-    startY: y,
-    theme: "grid",
-    head: [["睡眠/休憩","体温","体調","疲労","服薬","飲酒","酒気帯び","アルコール数値"]],
-    body: [[
-      record.tenko.rest,
-      record.tenko.temp,
-      record.tenko.condition,
-      record.tenko.fatigue,
-      record.tenko.med + (record.tenko.med==="あり" ? `（${record.tenko.medNote||""}）`:""),
-      record.tenko.drink,
-      record.tenko.alcoholJudge,
-      record.tenko.alcoholValue
-    ]],
-    headStyles:{fillColor:[30,202,211], textColor:255, fontStyle:"bold"},
-    styles:{fontSize:9, cellPadding:2},
-  });
-  y = pdf.lastAutoTable.finalY + 6;
-
-  // アルコール写真
-  if(alcURL){
-    pdf.text("アルコール測定写真（任意・推奨）", 12, y); y+=2;
-    try{
-      pdf.addImage(alcURL, "JPEG", 12, y+2, 60, 45);
-      y += 52;
-    }catch(e){
-      try{
-        pdf.addImage(alcURL, "PNG", 12, y+2, 60, 45);
-        y += 52;
-      }catch(_){}
-    }
-  }
-
-  // 走行距離
-  pdf.autoTable({
-    startY: y,
-    theme:"grid",
-    head:[["出発ODO","帰着ODO","走行距離（差分）"]],
-    body:[[ String(record.tenko.odoStart), String(record.tenko.odoEnd), `${record.tenko.odoDiff} km` ]],
-    headStyles:{fillColor:[17,24,39], textColor:255, fontStyle:"bold"},
-    styles:{fontSize:10, cellPadding:2},
-  });
-  y = pdf.lastAutoTable.finalY + 6;
-
-  // 異常
-  pdf.autoTable({
-    startY: y,
-    theme:"grid",
-    head:[["異常の有無","異常内容"]],
-    body:[[ record.tenko.abnormal, record.tenko.abnormal==="あり" ? (record.tenko.abnormalNote||"") : "" ]],
-    headStyles:{fillColor:[239,68,68], textColor:255, fontStyle:"bold"},
-    styles:{fontSize:10, cellPadding:2},
-  });
-  y = pdf.lastAutoTable.finalY + 6;
-
-  if(abnormalURL){
-    pdf.text("異常写真（任意・推奨）", 12, y); y+=2;
-    try{
-      pdf.addImage(abnormalURL, "JPEG", 12, y+2, 60, 45);
-      y += 52;
-    }catch(e){
-      try{
-        pdf.addImage(abnormalURL, "PNG", 12, y+2, 60, 45);
-        y += 52;
-      }catch(_){}
-    }
-  }
-
-  // ③ 日常点検
-  pdf.text("③ 日常点検（フル）", 12, y); y+=2;
-
-  const checkRows = [];
-  for(const it of CHECK_ITEMS){
-    const v = record.check.items[it.key] || "";
-    checkRows.push([it.label, v]);
-  }
-  pdf.autoTable({
-    startY: y+2,
-    theme:"grid",
-    head:[["点検項目","結果"]],
-    body: checkRows,
-    headStyles:{fillColor:[30,202,211], textColor:255, fontStyle:"bold"},
-    styles:{fontSize:9, cellPadding:2},
-    columnStyles:{0:{cellWidth:140},1:{cellWidth:40}}
-  });
-  y = pdf.lastAutoTable.finalY + 4;
-
-  pdf.autoTable({
-    startY: y,
-    theme:"grid",
-    head:[["総合","NG項目","NG詳細"]],
-    body:[[
-      record.check.overall,
-      (record.check.ngKeys||[]).join(", "),
-      (record.check.ngKeys||[]).length>0 ? (record.check.ngNote||"") : ""
-    ]],
-    headStyles:{fillColor:[138,92,255], textColor:255, fontStyle:"bold"},
-    styles:{fontSize:9, cellPadding:2}
-  });
-  y = pdf.lastAutoTable.finalY + 6;
-
-  // NG写真（複数）— 1ページに最大2枚程度
-  if(ngFiles.length>0){
-    pdf.text("点検 NG写真（任意・推奨）", 12, y); y+=2;
-    for(let i=0;i<Math.min(ngFiles.length,4);i++){
-      const u = await fileToDataURL(ngFiles[i]);
-      if(!u) continue;
-      if(y>240){ pdf.addPage(); await drawHeader(pdf,"点検写真"); y=30; }
-      try{
-        pdf.addImage(u, "JPEG", 12, y+2, 80, 60);
-      }catch(e){
-        try{ pdf.addImage(u, "PNG", 12, y+2, 80, 60); }catch(_){}
-      }
-      y += 66;
-    }
-    y += 6;
-  }
-
-  // ④ 日報
-  if(y>230){ pdf.addPage(); await drawHeader(pdf,"日報（業務実績）"); y=30; }
-  pdf.text("④ 日報（業務実績）", 12, y); y+=2;
-
-  pdf.autoTable({
-    startY: y+2,
-    theme:"grid",
-    head:[["稼働日","案件","開始","終了","休憩(分)","配達個数","不在","再配達"]],
-    body:[[
-      record.daily.date,
-      record.daily.mainJob,
-      record.daily.start,
-      record.daily.end,
-      String(record.daily.breakMin),
-      String(record.daily.count),
-      String(record.daily.absent),
-      String(record.daily.redelivery)
-    ]],
-    headStyles:{fillColor:[30,202,211], textColor:255, fontStyle:"bold"},
-    styles:{fontSize:9, cellPadding:2}
-  });
-  y = pdf.lastAutoTable.finalY + 6;
-
-  // 複数案件（ある場合）
-  const jobs = record.daily.jobs || [];
-  if(jobs.length>0){
-    pdf.autoTable({
-      startY: y,
-      theme:"grid",
-      head:[["案件名","エリア","開始","終了","配達個数","メモ"]],
-      body: jobs.map(j=>[
-        j.name||"", j.area||"", j.start||"", j.end||"", String(j.count||0), (j.note||"")
-      ]),
-      headStyles:{fillColor:[138,92,255], textColor:255, fontStyle:"bold"},
-      styles:{fontSize:9, cellPadding:2}
-    });
-    y = pdf.lastAutoTable.finalY + 6;
-  }
-
-  pdf.autoTable({
-    startY: y,
-    theme:"grid",
-    head:[["売上（日当）","インセン","売上合計","燃料","高速","駐車","その他","概算利益"]],
-    body:[[
-      String(record.daily.pay),
-      String(record.daily.inc),
-      String(record.daily.total),
-      String(record.daily.fuel),
-      String(record.daily.highway),
-      String(record.daily.parking),
-      String(record.daily.other),
-      String(record.daily.profit)
-    ]],
-    headStyles:{fillColor:[17,24,39], textColor:255, fontStyle:"bold"},
-    styles:{fontSize:9, cellPadding:2}
-  });
-  y = pdf.lastAutoTable.finalY + 6;
-
-  pdf.autoTable({
-    startY: y,
-    theme:"grid",
-    head:[["返品/持戻り","クレーム","事故/物損","遅延理由","明日の稼働予定（メモ欄に記載）"]],
-    body:[[
-      String(record.daily.ret),
-      record.daily.claim + (record.daily.claim==="あり" ? `（${record.daily.claimNote||""}）`:""),
-      record.daily.accident,
-      record.daily.delay,
-      ""
-    ]],
-    headStyles:{fillColor:[30,202,211], textColor:255, fontStyle:"bold"},
-    styles:{fontSize:9, cellPadding:2}
-  });
-  y = pdf.lastAutoTable.finalY + 6;
-
-  if(record.daily.note){
-    pdf.setFontSize(10);
-    pdf.text("日報メモ", 12, y);
-    pdf.setFontSize(9);
-    const lines = pdf.splitTextToSize(record.daily.note, 180);
-    pdf.text(lines, 12, y+6);
-    y += 6 + lines.length*4;
-  }
-
-  // 日報写真（複数）
-  if(dailyFiles.length>0){
-    if(y>220){ pdf.addPage(); await drawHeader(pdf,"日報写真"); y=30; }
-    pdf.setFontSize(11);
-    pdf.text("日報写真（任意）", 12, y); y+=2;
-
-    for(let i=0;i<Math.min(dailyFiles.length,6);i++){
-      const u = await fileToDataURL(dailyFiles[i]);
-      if(!u) continue;
-      if(y>240){ pdf.addPage(); await drawHeader(pdf,"日報写真"); y=30; }
-      try{
-        pdf.addImage(u, "JPEG", 12, y+2, 90, 68);
-      }catch(e){
-        try{ pdf.addImage(u, "PNG", 12, y+2, 90, 68); }catch(_){}
-      }
-      y += 74;
-    }
-  }
-
-  const safeDate = record.date.replaceAll("-","");
-  const fname = `OFA_${record.profile.name}_${record.tenko.type}_${safeDate}.pdf`;
-  pdf.save(fname);
-  toast("PDFを生成しました");
-}
-
-$("btnPDF").addEventListener("click", async ()=>{
-  const rec = await collectAll();
-  if(!rec) return;
-  // 保存しなくてもPDFは作れる（ただし履歴に残すなら保存ボタン）
-  window.__lastRecord = rec;
-  await generatePDF(rec);
-});
 
 /* =========================
-   12) CSV ワンクリック（日本語・文字化け防止）
+   履歴表示
 ========================= */
-function toCSVRow(arr){
-  return arr.map(v=>{
-    const s = (v===null||v===undefined) ? "" : String(v);
-    const escaped = s.replaceAll('"','""');
-    return `"${escaped}"`;
-  }).join(",");
+async function reloadHistory(){
+  const profile = await loadProfile();
+  const baseFilter = (h_base.value||"").trim();
+
+  const from = h_from.value || "";
+  const to   = h_to.value || "";
+
+  const tenkos = await listTenkoByRange(from,to);
+
+  // 拠点フィルタ
+  let filtered = tenkos;
+  if(baseFilter) filtered = filtered.filter(r=>(r.base||"").includes(baseFilter));
+
+  // 自分の端末用なので氏名一致を優先（管理者は admin で全部を見る）
+  if(profile?.name){
+    filtered = filtered.filter(r=>r.name===profile.name);
+  }
+
+  // 走行距離マップ（同日突合）
+  const distMap = calcDistanceMap(filtered);
+
+  // 並び替え（新しい順）
+  filtered.sort((a,b)=> (b.at||"").localeCompare(a.at||""));
+
+  const wrap = document.getElementById("historyTableWrap");
+  if(filtered.length===0){
+    wrap.innerHTML = `<div class="note">履歴がありません（期間条件を変えてみてください）</div>`;
+    return;
+  }
+
+  let html = `<table class="table">
+    <thead>
+      <tr>
+        <th>日時</th>
+        <th>区分</th>
+        <th>拠点</th>
+        <th>ODO</th>
+        <th>走行距離（同日突合）</th>
+        <th>チェック</th>
+        <th>特記事項</th>
+      </tr>
+    </thead><tbody>`;
+
+  for(const r of filtered){
+    const key = `${r.date}__${r.name}__${r.base}`;
+    const d = distMap[key]?.distance;
+    const distStr = (d==null) ? "-" : (d+" km");
+    html += `<tr>
+      <td>${escapeHtml(r.at||"")}</td>
+      <td><b>${escapeHtml(r.type||"")}</b></td>
+      <td>${escapeHtml(r.base||"")}</td>
+      <td>${escapeHtml(r.odo||"")}</td>
+      <td>${distStr}</td>
+      <td>${escapeHtml((r.checklist||[]).join("、"))}</td>
+      <td>${escapeHtml(r.memo||"")}</td>
+    </tr>`;
+  }
+  html += `</tbody></table>`;
+  wrap.innerHTML = html;
 }
-function downloadText(filename, text){
-  const blob = new Blob([text], {type:"text/csv;charset=utf-8;"});
+function escapeHtml(s){
+  return String(s||"").replace(/[&<>"']/g,m=>({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[m]));
+}
+
+/* =========================
+   CSV：日本語ヘッダー + BOM
+========================= */
+function downloadText(filename, text, mime="text/plain"){
+  const blob = new Blob([text], {type:mime});
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
@@ -1869,78 +803,386 @@ function downloadText(filename, text){
   document.body.appendChild(a);
   a.click();
   a.remove();
-  URL.revokeObjectURL(url);
+  setTimeout(()=>URL.revokeObjectURL(url), 1000);
 }
+async function exportCsvRange(){
+  const profile = await loadProfile();
+  const baseFilter = (h_base.value||"").trim();
+  const from = h_from.value || "";
+  const to   = h_to.value || "";
+  let tenkos = await listTenkoByRange(from,to);
 
-$("btnCSV").addEventListener("click", async ()=>{
-  const list = await idbGetAll("records");
-  if(list.length===0){ toast("履歴がありません"); return; }
+  if(baseFilter) tenkos = tenkos.filter(r=>(r.base||"").includes(baseFilter));
+  if(profile?.name) tenkos = tenkos.filter(r=>r.name===profile.name);
 
-  // 自分（端末）のプロフィール名で絞る
-  const prof = await idbGet("profile","me");
-  const myName = prof?.name || "";
-  const mine = list.filter(r=> (r.profile?.name||"")===myName);
+  tenkos.sort((a,b)=> (a.at||"").localeCompare(b.at||""));
 
-  if(mine.length===0){ toast("自分の履歴がありません"); return; }
+  const distMap = calcDistanceMap(tenkos);
 
-  mine.sort((a,b)=> (a.date||"").localeCompare(b.date||""));
-
-  const header = [
-    "日付","点呼区分","氏名","拠点","車両番号","免許証番号","電話","メール",
-    "点呼日時","点呼方法","案件","積込拠点/エリア","危険物/高額品",
-    "睡眠/休憩","体温","体調","疲労","服薬","服薬内容","飲酒","酒気帯び","アルコール数値",
-    "出発ODO","帰着ODO","走行距離","異常","異常内容",
-    "点検総合","NG項目","NG詳細",
-    "稼働開始","稼働終了","休憩(分)","配達個数","不在","再配達","返品/持戻り",
-    "クレーム","クレーム内容","日当","インセン","燃料","高速","駐車","その他","売上合計","概算利益",
-    "事故/物損","遅延理由","日報メモ","日報写真有無","点検写真有無"
+  const headers = [
+    "種別","氏名","拠点","車両番号","免許証番号","電話","メール",
+    "点呼区分","点呼日時","点呼方法","睡眠時間(h)","体温(℃)","体調","疲労","服薬",
+    "アルコール数値","ODO","走行距離(km:同日突合)","日常点検","特記事項"
   ];
 
-  const rows = [toCSVRow(header)];
-
-  for(const r of mine){
-    const row = [
-      r.date, r.tenko?.type, r.profile?.name, r.profile?.base, r.profile?.vehicle, r.profile?.licenseNo, r.profile?.phone, r.profile?.email,
-      r.tenko?.datetime, r.tenko?.method, r.tenko?.mainJob, r.tenko?.loadArea, r.tenko?.danger,
-      r.tenko?.rest, r.tenko?.temp, r.tenko?.condition, r.tenko?.fatigue, r.tenko?.med, r.tenko?.medNote, r.tenko?.drink, r.tenko?.alcoholJudge, r.tenko?.alcoholValue,
-      r.tenko?.odoStart, r.tenko?.odoEnd, r.tenko?.odoDiff, r.tenko?.abnormal, r.tenko?.abnormalNote,
-      r.check?.overall, (r.check?.ngKeys||[]).join("|"), r.check?.ngNote,
-      r.daily?.start, r.daily?.end, r.daily?.breakMin, r.daily?.count, r.daily?.absent, r.daily?.redelivery, r.daily?.ret,
-      r.daily?.claim, r.daily?.claimNote, r.daily?.pay, r.daily?.inc, r.daily?.fuel, r.daily?.highway, r.daily?.parking, r.daily?.other, r.daily?.total, r.daily?.profit,
-      r.daily?.accident, r.daily?.delay, r.daily?.note,
-      r.daily?.hasPhotos ? "あり":"なし",
-      r.check?.hasNgPhoto ? "あり":"なし"
-    ];
-    rows.push(toCSVRow(row));
+  const rows = [headers];
+  for(const r of tenkos){
+    const key = `${r.date}__${r.name}__${r.base}`;
+    const dist = distMap[key]?.distance;
+    rows.push([
+      "点呼",
+      r.name||"", r.base||"", r.carNo||"", r.licenseNo||"", r.phone||"", r.email||"",
+      r.type||"", r.at||"", r.method||"",
+      r.sleep||"", r.temp||"", r.condition||"", r.fatigue||"", r.medication||"",
+      r.alcoholValue||"", r.odo||"", (dist==null?"":String(dist)),
+      (r.checklist||[]).join("、"),
+      r.memo||""
+    ]);
   }
 
-  // BOM付きUTF-8（Excel文字化け対策）
-  const csv = "\ufeff" + rows.join("\n");
-  const profNameSafe = (myName||"me").replaceAll(" ","_");
-  downloadText(`OFA_CSV_${profNameSafe}.csv`, csv);
-  toast("CSVを出力しました");
-});
+  const csv = rows.map(cols=> cols.map(v=>{
+    const s=String(v??"");
+    return /[",\n]/.test(s) ? `"${s.replace(/"/g,'""')}"` : s;
+  }).join(",")).join("\n");
+
+  // Excel対策：BOM
+  const bom = "\uFEFF";
+  downloadText(`OFA_tenko_${from||"all"}_${to||"all"}.csv`, bom+csv, "text/csv;charset=utf-8");
+}
 
 /* =========================
-   13) 共有（LINE/メール）
+   バックアップ / 復元
 ========================= */
-let lastGeneratedFile = null;
+async function backupJson(){
+  const profile = await new Promise(res=>{
+    const r = tx("profile").get("me"); r.onsuccess=()=>res(r.result||null); r.onerror=()=>res(null);
+  });
+  const tenko = await new Promise(res=>{
+    const r = tx("tenko").getAll(); r.onsuccess=()=>res(r.result||[]); r.onerror=()=>res([]);
+  });
+  const daily = await new Promise(res=>{
+    const r = tx("daily").getAll(); r.onsuccess=()=>res(r.result||[]); r.onerror=()=>res([]);
+  });
+  const data = { exportedAt:new Date().toISOString(), profile, tenko, daily };
+  downloadText(`OFA_backup_${new Date().toISOString().slice(0,10)}.json`, JSON.stringify(data,null,2), "application/json");
+}
+async function restoreJson(ev){
+  const file = ev.target.files?.[0];
+  if(!file) return;
+  const txt = await file.text();
+  let data;
+  try{ data=JSON.parse(txt); }catch(e){ alert("JSONが壊れています"); return; }
 
-$("btnShare").addEventListener("click", async ()=>{
-  // 共有は「直近PDF」があると最強。なければ案内。
-  // jsPDFのsaveは直接保存なので、WebShareでファイル共有したい場合は生成→Blobが必要。
-  // ここでは“導線”として、PDF生成→共有の手順を明確化する。
-  if(navigator.share){
-    try{
-      await navigator.share({
-        title: "OFA 点呼・日報",
-        text: "PDFを作成したら、この画面からLINE/メールで共有できます。"
-      });
-    }catch(e){}
-  }else{
-    alert("この端末は共有機能に未対応です。PDFを保存後、LINE/メールで添付してください。");
+  if(!confirm("復元します。現在のデータは上書きされます。よろしいですか？")) return;
+
+  // 全消しして入れ直し
+  await new Promise(res=>{
+    const t = db.transaction(["profile","tenko","daily"],"readwrite");
+    t.objectStore("profile").clear();
+    t.objectStore("tenko").clear();
+    t.objectStore("daily").clear();
+    t.oncomplete=()=>res();
+  });
+  await new Promise(res=>{
+    const t = db.transaction(["profile","tenko","daily"],"readwrite");
+    if(data.profile) t.objectStore("profile").put({...data.profile,id:"me"});
+    (data.tenko||[]).forEach(x=>t.objectStore("tenko").put(x));
+    (data.daily||[]).forEach(x=>t.objectStore("daily").put(x));
+    t.oncomplete=()=>res();
+  });
+  alert("復元しました");
+  location.reload();
+}
+
+/* =========================
+   PDF（OFAフォーマット）
+   - 画面テンプレを作って画像化 → PDFへ
+   - 日本語文字化けしない
+========================= */
+async function makeTodayPdf(){
+  const profile = await loadProfile();
+  if(!profile){
+    alert("先に「基本情報を保存」してください");
+    switchTab("profile");
+    return;
   }
-});
+  // 点呼入力の最低条件
+  if(!t_type.value || !t_at.value || !t_method.value){
+    alert("点呼（区分・日時・方法）は必須です");
+    switchTab("tenko");
+    return;
+  }
+
+  // 今日（指定日）の点呼を引いて「同日突合距離」も算出
+  const date = t_at.value.slice(0,10);
+  const tenkos = await listTenkoByRange(date,date);
+  const self = tenkos.filter(r=>r.name===profile.name && r.base===profile.base);
+  const distMap = calcDistanceMap(self);
+  const key = `${date}__${profile.name}__${profile.base}`;
+  const distance = distMap[key]?.distance ?? null;
+
+  // OFA PDF用のHTMLを作る（見た目がそのままPDFに入る）
+  const html = buildOFAReportHTML({
+    profile,
+    tenkoInput: {
+      type: t_type.value,
+      at: t_at.value,
+      method: t_method.value,
+      sleep: t_sleep.value,
+      temp: t_temp.value,
+      condition: t_condition.value,
+      fatigue: t_fatigue.value,
+      medication: t_med.value,
+      alcoholValue: t_alc.value,
+      odo: t_odo.value,
+      checklist: getChecklist(),
+      memo: t_memo.value
+    },
+    distance,
+    licenseImg: licenseDataURL,
+    alcoholImg: alcDataURL
+  });
+
+  const wrap = document.createElement("div");
+  wrap.style.position="fixed";
+  wrap.style.left="-9999px";
+  wrap.style.top="0";
+  wrap.style.width="794px"; // A4幅相当（96dpi想定）
+  wrap.innerHTML = html;
+  document.body.appendChild(wrap);
+
+  // 画像化
+  const canvas = await html2canvas(wrap, {scale:2, useCORS:true});
+  const img = canvas.toDataURL("image/png");
+
+  // PDFへ
+  const { jsPDF } = window.jspdf;
+  const pdf = new jsPDF("p","mm","a4");
+  const pageW = 210, pageH = 297;
+
+  // 画像比率で高さ計算
+  const imgProps = pdf.getImageProperties(img);
+  const imgW = pageW;
+  const imgH = (imgProps.height * imgW) / imgProps.width;
+
+  let y = 0;
+  if(imgH <= pageH){
+    pdf.addImage(img, "PNG", 0, 0, imgW, imgH);
+  }else{
+    // 複数ページ対応
+    let remain = imgH;
+    let pos = 0;
+    while(remain > 0){
+      pdf.addImage(img, "PNG", 0, pos, imgW, imgH);
+      remain -= pageH;
+      pos -= pageH;
+      if(remain > 0) pdf.addPage();
+    }
+  }
+
+  const safeAt = (t_at.value||"").replace(/[:]/g,"-");
+  pdf.save(`OFA_${profile.name}_${date}_${t_type.value}.pdf`);
+
+  wrap.remove();
+}
+
+function buildOFAReportHTML({profile, tenkoInput, distance, licenseImg, alcoholImg}){
+  const logo = "https://ofagroup2020-gif.github.io/logo.png";
+  const distStr = (distance==null) ? "—" : `${distance} km（出発/帰着の同日突合）`;
+
+  const checkList = (tenkoInput.checklist||[]).map(x=>`<li>${escapeHtml(x)}</li>`).join("") || "<li>未選択</li>";
+
+  // 画像は「保存しない」が要件。ここはPDF生成時だけ埋める。
+  const licenseBlock = licenseImg ? `<img src="${licenseImg}" style="width:260px;max-height:180px;object-fit:contain;border-radius:12px;border:1px solid #e8eef7">`
+                                 : `<div style="font-size:12px;color:#6a7a8b">未添付</div>`;
+  const alcBlock = alcoholImg ? `<img src="${alcoholImg}" style="width:260px;max-height:180px;object-fit:contain;border-radius:12px;border:1px solid #e8eef7">`
+                              : `<div style="font-size:12px;color:#6a7a8b">未添付</div>`;
+
+  return `
+  <div style="font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Noto Sans JP',Arial,sans-serif;color:#1b2430;background:#fff">
+    <div style="border-bottom:10px solid #12c8cf">
+      <div style="background:#12c8cf;color:#fff;padding:14px 16px;font-weight:900;display:flex;justify-content:space-between;align-items:center">
+        <div>OFA GROUP　点呼・日報（PDF）</div>
+        <div style="font-size:12px;font-weight:800;background:rgba(255,255,255,.22);padding:6px 10px;border-radius:999px">端末完結</div>
+      </div>
+      <div style="height:8px;background:#7a55ff"></div>
+    </div>
+
+    <div style="padding:16px">
+      <div style="display:flex;gap:12px;align-items:center">
+        <img src="${logo}" onerror="this.style.display='none'" style="width:56px;height:56px;border-radius:14px;border:1px solid #eef2f7;background:#fff;object-fit:contain">
+        <div>
+          <div style="font-size:18px;font-weight:900">点呼票（${escapeHtml(tenkoInput.type)}）</div>
+          <div style="font-size:12px;color:#5c6b7a">作成日時：${escapeHtml(tenkoInput.at)}</div>
+        </div>
+      </div>
+
+      <div style="margin-top:12px;border:1px solid #e8eef7;border-radius:14px;overflow:hidden">
+        <div style="background:#f7f9fc;padding:10px 12px;font-weight:900">基本情報</div>
+        <table style="width:100%;border-collapse:collapse;font-size:12px">
+          <tr>
+            <td style="padding:10px;border-top:1px solid #eef2f7;width:16%">氏名</td>
+            <td style="padding:10px;border-top:1px solid #eef2f7;width:34%"><b>${escapeHtml(profile.name)}</b></td>
+            <td style="padding:10px;border-top:1px solid #eef2f7;width:16%">拠点</td>
+            <td style="padding:10px;border-top:1px solid #eef2f7;width:34%"><b>${escapeHtml(profile.base)}</b></td>
+          </tr>
+          <tr>
+            <td style="padding:10px;border-top:1px solid #eef2f7">車両番号</td>
+            <td style="padding:10px;border-top:1px solid #eef2f7">${escapeHtml(profile.carNo||"")}</td>
+            <td style="padding:10px;border-top:1px solid #eef2f7">免許証番号</td>
+            <td style="padding:10px;border-top:1px solid #eef2f7">${escapeHtml(profile.licenseNo)}</td>
+          </tr>
+          <tr>
+            <td style="padding:10px;border-top:1px solid #eef2f7">電話</td>
+            <td style="padding:10px;border-top:1px solid #eef2f7">${escapeHtml(profile.phone)}</td>
+            <td style="padding:10px;border-top:1px solid #eef2f7">メール</td>
+            <td style="padding:10px;border-top:1px solid #eef2f7">${escapeHtml(profile.email)}</td>
+          </tr>
+        </table>
+      </div>
+
+      <div style="margin-top:12px;border:1px solid #e8eef7;border-radius:14px;overflow:hidden">
+        <div style="background:#f7f9fc;padding:10px 12px;font-weight:900">点呼情報</div>
+        <table style="width:100%;border-collapse:collapse;font-size:12px">
+          <tr>
+            <td style="padding:10px;border-top:1px solid #eef2f7;width:16%">区分</td>
+            <td style="padding:10px;border-top:1px solid #eef2f7;width:34%"><b>${escapeHtml(tenkoInput.type)}</b></td>
+            <td style="padding:10px;border-top:1px solid #eef2f7;width:16%">方法</td>
+            <td style="padding:10px;border-top:1px solid #eef2f7;width:34%">${escapeHtml(tenkoInput.method||"")}</td>
+          </tr>
+          <tr>
+            <td style="padding:10px;border-top:1px solid #eef2f7">睡眠</td>
+            <td style="padding:10px;border-top:1px solid #eef2f7">${escapeHtml(tenkoInput.sleep||"")}</td>
+            <td style="padding:10px;border-top:1px solid #eef2f7">体温</td>
+            <td style="padding:10px;border-top:1px solid #eef2f7">${escapeHtml(tenkoInput.temp||"")}</td>
+          </tr>
+          <tr>
+            <td style="padding:10px;border-top:1px solid #eef2f7">体調</td>
+            <td style="padding:10px;border-top:1px solid #eef2f7">${escapeHtml(tenkoInput.condition||"")}</td>
+            <td style="padding:10px;border-top:1px solid #eef2f7">疲労</td>
+            <td style="padding:10px;border-top:1px solid #eef2f7">${escapeHtml(tenkoInput.fatigue||"")}</td>
+          </tr>
+          <tr>
+            <td style="padding:10px;border-top:1px solid #eef2f7">服薬</td>
+            <td style="padding:10px;border-top:1px solid #eef2f7">${escapeHtml(tenkoInput.medication||"")}</td>
+            <td style="padding:10px;border-top:1px solid #eef2f7">アルコール</td>
+            <td style="padding:10px;border-top:1px solid #eef2f7">${escapeHtml(tenkoInput.alcoholValue||"")}</td>
+          </tr>
+          <tr>
+            <td style="padding:10px;border-top:1px solid #eef2f7">ODO</td>
+            <td style="padding:10px;border-top:1px solid #eef2f7">${escapeHtml(tenkoInput.odo||"")}</td>
+            <td style="padding:10px;border-top:1px solid #eef2f7">走行距離</td>
+            <td style="padding:10px;border-top:1px solid #eef2f7"><b>${distStr}</b></td>
+          </tr>
+        </table>
+      </div>
+
+      <div style="margin-top:12px;display:flex;gap:12px">
+        <div style="flex:1;border:1px solid #e8eef7;border-radius:14px;overflow:hidden">
+          <div style="background:#f7f9fc;padding:10px 12px;font-weight:900">日常点検</div>
+          <div style="padding:10px 12px;font-size:12px">
+            <ul style="margin:0;padding-left:18px;line-height:1.55">${checkList}</ul>
+          </div>
+        </div>
+        <div style="flex:1;border:1px solid #e8eef7;border-radius:14px;overflow:hidden">
+          <div style="background:#f7f9fc;padding:10px 12px;font-weight:900">特記事項</div>
+          <div style="padding:10px 12px;font-size:12px;white-space:pre-wrap;min-height:90px">${escapeHtml(tenkoInput.memo||"")}</div>
+        </div>
+      </div>
+
+      <div style="margin-top:12px;display:flex;gap:12px">
+        <div style="flex:1;border:1px solid #e8eef7;border-radius:14px;overflow:hidden">
+          <div style="background:#f7f9fc;padding:10px 12px;font-weight:900">免許証写真（PDF埋め込みのみ）</div>
+          <div style="padding:10px 12px">${licenseBlock}</div>
+        </div>
+        <div style="flex:1;border:1px solid #e8eef7;border-radius:14px;overflow:hidden">
+          <div style="background:#f7f9fc;padding:10px 12px;font-weight:900">アルコール測定写真（PDF埋め込みのみ）</div>
+          <div style="padding:10px 12px">${alcBlock}</div>
+        </div>
+      </div>
+
+      <div style="margin-top:14px;font-size:11px;color:#6a7a8b">
+        © OFA GROUP / 端末完結（保存：IndexedDB）/ 写真は保存せずPDFに埋め込みのみ
+      </div>
+    </div>
+  </div>`;
+}
+
+/* =========================
+   今日CSV（ワンクリック）
+========================= */
+async function makeTodayCsv(){
+  const profile = await loadProfile();
+  if(!profile){ alert("先に基本情報を保存してください"); return; }
+
+  const date = d_date.value || new Date().toISOString().slice(0,10);
+
+  const tenkos = await listTenkoByRange(date,date);
+  const self = tenkos.filter(r=>r.name===profile.name && r.base===profile.base);
+  const distMap = calcDistanceMap(self);
+  const key = `${date}__${profile.name}__${profile.base}`;
+  const dist = distMap[key]?.distance ?? "";
+
+  const headers = [
+    "日付","氏名","拠点","車両番号",
+    "出発ODO","帰着ODO","走行距離(km)",
+    "案件（メイン）","案件（複数：JSON）",
+    "日当","インセンティブ","燃料","高速","駐車","その他経費","トラブル"
+  ];
+
+  // 出発/帰着ODOを抽出
+  let startOdo="", endOdo="";
+  for(const r of self){
+    if(r.type==="出発" && r.odo) startOdo = r.odo;
+    if(r.type==="帰着" && r.odo) endOdo = r.odo;
+  }
+
+  // 日報は「最新の1件」を採用（必要なら期間で集計も可能）
+  const daily = await new Promise(res=>{
+    const r = tx("daily").getAll(); r.onsuccess=()=>res(r.result||[]); r.onerror=()=>res([]);
+  });
+  const d = daily.filter(x=>x.date===date && x.name===profile.name && x.base===profile.base)
+                 .sort((a,b)=>(b.createdAt||"").localeCompare(a.createdAt||""))[0];
+
+  const row = [
+    date, profile.name, profile.base, profile.carNo||"",
+    startOdo, endOdo, String(dist),
+    d?.mainJob||"",
+    d?.jobs ? JSON.stringify(d.jobs) : "",
+    d?.pay||"", d?.incentive||"", d?.fuel||"", d?.toll||"", d?.parking||"", d?.otherCost||"", d?.trouble||""
+  ];
+
+  const csv = [headers,row].map(cols=>cols.map(v=>{
+    const s=String(v??"");
+    return /[",\n]/.test(s) ? `"${s.replace(/"/g,'""')}"` : s;
+  }).join(",")).join("\n");
+
+  downloadText(`OFA_daily_${date}.csv`, "\uFEFF"+csv, "text/csv;charset=utf-8");
+}
+
+/* =========================
+   初期化
+========================= */
+(async function init(){
+  await openDB();
+  renderChecklist();
+
+  // 既存プロフィールを画面へ
+  const p = await loadProfile();
+  if(p){
+    p_name.value = p.name||"";
+    p_base.value = p.base||"";
+    p_carNo.value = p.carNo||"";
+    p_licenseNo.value = p.licenseNo||"";
+    p_phone.value = p.phone||"";
+    p_email.value = p.email||"";
+  }
+
+  // 日付の補助（任意）
+  const today = new Date().toISOString().slice(0,10);
+  if(!d_date.value) d_date.value = today;
+})();
 </script>
+
 </body>
 </html>
