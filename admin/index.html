@@ -1,307 +1,38 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>OFA 管理者 月報（端末内検索）</title>
+<meta charset="UTF-8">
+<title>OFA 管理者 月報</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <style>
-  body{font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue",sans-serif;background:#fff;margin:0;color:#222}
-  header{text-align:center;padding:16px;border-bottom:1px solid #eee}
-  header img{width:120px}
-  section{padding:16px}
-  h2{margin-top:20px;border-left:6px solid #8a5cff;padding-left:10px}
-  label{display:block;font-weight:bold;margin-top:14px}
-  input,select{width:100%;padding:10px;margin-top:6px;border:1px solid #ccc;border-radius:8px;font-size:16px}
-  button{margin-top:14px;padding:14px;width:100%;font-size:16px;border:none;border-radius:10px;color:#fff;
-    background:linear-gradient(90deg,#1ecad3,#8a5cff)}
-  .btn2{background:#333}
-  .small{font-size:13px;color:#555}
-  .box{border:1px solid #eee;border-radius:10px;padding:12px;margin-top:12px}
-  table{width:100%;border-collapse:collapse;margin-top:10px}
-  th,td{border:1px solid #ddd;padding:8px;font-size:13px}
-  th{background:#f7f7f7}
-  .pill{display:inline-block;padding:4px 10px;border-radius:999px;background:#eef;color:#334;font-size:12px}
+body{font-family:sans-serif;background:#fff;padding:16px}
+label{font-weight:bold;display:block;margin-top:12px}
+input,button{width:100%;padding:10px;margin-top:6px}
+table{width:100%;border-collapse:collapse;margin-top:16px}
+th,td{border:1px solid #ccc;padding:8px;font-size:14px}
+th{background:#eee}
 </style>
 </head>
 <body>
 
-<header>
-  <img src="https://ofagroup2020-gif.github.io/logo.png" alt="OFA">
-</header>
+<h2>月報検索</h2>
 
-<section>
-  <h2>管理者ログイン（端末内）</h2>
-  <div class="box">
-    <p class="small">
-      ※ この管理者画面は「同じ端末内に保存された履歴」を検索します。<br>
-      全ドライバーのデータを集めるには、各端末からJSONバックアップを回収してこの端末へ取り込む必要があります。
-    </p>
+<label>開始日</label><input type="date" id="from">
+<label>終了日</label><input type="date" id="to">
+<button onclick="search()">検索</button>
 
-    <label>管理者パスコード（端末内）*</label>
-    <input id="adminPass" type="password" placeholder="例：OFA2026">
-    <button onclick="adminLogin()">管理者として開始</button>
-    <p class="small" id="adminState"></p>
-  </div>
+<table id="tbl">
+<tr><th>氏名</th><th>日付</th><th>点呼</th></tr>
+</table>
 
-  <hr>
-
-  <h2>バックアップ（JSON）</h2>
-  <div class="box">
-    <button class="btn2" onclick="exportJSON()">端末内データを書き出し（JSON）</button>
-    <label>JSON取り込み（他端末から回収したファイル）</label>
-    <input type="file" id="importFile" accept="application/json">
-    <button onclick="importJSON()">JSONを取り込み（統合）</button>
-    <p class="small">※ 取り込みすると、この端末の履歴に「追加統合」されます（重複は自動で可能な範囲で排除）</p>
-  </div>
-
-  <hr>
-
-  <h2>月報検索（期間・拠点・氏名）</h2>
-  <div class="box">
-    <label>開始日 *</label>
-    <input id="fromDate" type="date">
-
-    <label>終了日 *</label>
-    <input id="toDate" type="date">
-
-    <label>拠点（部分一致OK）</label>
-    <input id="base" placeholder="例：鹿児島 / 東京">
-
-    <label>氏名（部分一致OK）</label>
-    <input id="name" placeholder="例：森下">
-
-    <button onclick="search()">検索</button>
-    <p class="small" id="resultInfo"></p>
-  </div>
-
-  <h2>検索結果</h2>
-  <div class="box" id="resultBox">
-    <span class="pill">未検索</span>
-  </div>
-
-  <button onclick="exportMonthlyPDF()">月報PDFを出力</button>
-</section>
-
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script>
-/** ====== ストレージキー ====== **/
-const KEY_ADMIN = "ofa_admin_pass";
-const KEY_RECORDS = "ofa_records"; // 統合履歴をここに保存（配列）
-/**
- * 記録フォーマット例（統一）
- * {
- *   kind: "tenko"|"daily",
- *   name, base, carNo, licenseNo, phone, email,
- *   tenkoType, tenkoAt, method, sleep, temp, condition, fatigue,
- *   odoStart, odoEnd, distance,
- *   memo,
- *   createdAt: ISO
- * }
- */
-
-/** ====== 管理者ログイン ====== **/
-function adminLogin(){
-  const pass = document.getElementById("adminPass").value.trim();
-  if(!pass){ alert("パスコードを入力してください"); return; }
-  localStorage.setItem(KEY_ADMIN, pass);
-  document.getElementById("adminState").textContent = "✅ 管理者モード：ON";
-  alert("管理者モードを有効にしました");
-}
-
-/** ====== 共通：履歴取得 ====== **/
-function loadRecords(){
-  try{
-    return JSON.parse(localStorage.getItem(KEY_RECORDS) || "[]");
-  }catch(e){
-    return [];
-  }
-}
-function saveRecords(records){
-  localStorage.setItem(KEY_RECORDS, JSON.stringify(records));
-}
-
-/** ====== JSON 書き出し ====== **/
-function exportJSON(){
-  const records = loadRecords();
-  const blob = new Blob([JSON.stringify({version:1, exportedAt:new Date().toISOString(), records}, null, 2)], {type:"application/json"});
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = `OFA_backup_${new Date().toISOString().slice(0,10)}.json`;
-  a.click();
-  URL.revokeObjectURL(url);
-}
-
-/** ====== JSON 取り込み ====== **/
-async function importJSON(){
-  const fileInput = document.getElementById("importFile");
-  if(!fileInput.files || !fileInput.files[0]){ alert("JSONファイルを選択してください"); return; }
-  const text = await fileInput.files[0].text();
-  let json;
-  try{ json = JSON.parse(text); }catch(e){ alert("JSON形式が不正です"); return; }
-  if(!json.records || !Array.isArray(json.records)){ alert("recordsが見つかりません"); return; }
-
-  const current = loadRecords();
-  const merged = mergeUnique(current, json.records);
-  saveRecords(merged);
-
-  alert(`取り込み完了：追加 ${merged.length - current.length} 件 / 合計 ${merged.length} 件`);
-}
-
-/** ====== 重複排除（簡易） ====== **/
-function mergeUnique(base, add){
-  const map = new Map();
-  const makeKey = (r)=>[
-    r.kind||"",
-    r.tenkoType||"",
-    r.tenkoAt||"",
-    r.name||"",
-    r.base||"",
-    r.odoStart||"",
-    r.odoEnd||"",
-    r.createdAt||""
-  ].join("|");
-
-  [...base, ...add].forEach(r=>{
-    map.set(makeKey(r), r);
-  });
-  return Array.from(map.values()).sort((a,b)=> (a.tenkoAt||a.createdAt||"").localeCompare(b.tenkoAt||b.createdAt||""));
-}
-
-/** ====== 検索 ====== **/
-let lastResults = [];
 function search(){
-  const from = document.getElementById("fromDate").value;
-  const to = document.getElementById("toDate").value;
-  if(!from || !to){ alert("開始日・終了日は必須です"); return; }
-
-  const baseQ = document.getElementById("base").value.trim();
-  const nameQ = document.getElementById("name").value.trim();
-
-  const fromISO = new Date(from+"T00:00:00").toISOString();
-  const toISO   = new Date(to+"T23:59:59").toISOString();
-
-  const records = loadRecords();
-
-  lastResults = records.filter(r=>{
-    const t = r.tenkoAt || r.createdAt || "";
-    if(!t) return false;
-    if(t < fromISO || t > toISO) return false;
-    if(baseQ && !(r.base||"").includes(baseQ)) return false;
-    if(nameQ && !(r.name||"").includes(nameQ)) return false;
-    return true;
+  const list=JSON.parse(localStorage.getItem("ofa_daily")||"[]");
+  const t=document.getElementById("tbl");
+  t.innerHTML="<tr><th>氏名</th><th>日付</th><th>点呼</th></tr>";
+  list.forEach(d=>{
+    t.innerHTML+=`<tr><td>${d.name}</td><td>${d.dt}</td><td>${d.type}</td></tr>`;
   });
-
-  renderResults(lastResults);
-}
-
-/** ====== 結果表示 ====== **/
-function renderResults(list){
-  const box = document.getElementById("resultBox");
-  if(list.length===0){
-    box.innerHTML = `<span class="pill">0件</span><p class="small">条件に一致する記録がありません</p>`;
-    document.getElementById("resultInfo").textContent = "0件";
-    return;
-  }
-
-  document.getElementById("resultInfo").textContent = `${list.length}件`;
-
-  let html = `<span class="pill">${list.length}件</span>`;
-  html += `<table><thead>
-    <tr>
-      <th>日時</th>
-      <th>区分</th>
-      <th>氏名</th>
-      <th>拠点</th>
-      <th>ODO差</th>
-      <th>体調</th>
-      <th>疲労</th>
-    </tr>
-  </thead><tbody>`;
-
-  list.forEach(r=>{
-    const dt = (r.tenkoAt||"").replace("T"," ").slice(0,16);
-    const diff = (r.distance!=null)? r.distance : calcDistance(r);
-    html += `<tr>
-      <td>${escapeHtml(dt)}</td>
-      <td>${escapeHtml(r.tenkoType||"")}</td>
-      <td>${escapeHtml(r.name||"")}</td>
-      <td>${escapeHtml(r.base||"")}</td>
-      <td>${diff!=null? escapeHtml(String(diff)) : ""}</td>
-      <td>${escapeHtml(r.condition||"")}</td>
-      <td>${escapeHtml(r.fatigue||"")}</td>
-    </tr>`;
-  });
-
-  html += `</tbody></table>`;
-  box.innerHTML = html;
-}
-
-function calcDistance(r){
-  const s = Number(r.odoStart);
-  const e = Number(r.odoEnd);
-  if(!isNaN(s) && !isNaN(e)) return e - s;
-  return null;
-}
-function escapeHtml(str){
-  return (str||"").replace(/[&<>"']/g, s=>({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[s]));
-}
-
-/** ====== 月報PDF ====== **/
-function exportMonthlyPDF(){
-  if(!lastResults || lastResults.length===0){
-    alert("先に検索してください（0件は出力できません）");
-    return;
-  }
-  const {jsPDF} = window.jspdf;
-  const pdf = new jsPDF({unit:"mm", format:"a4"});
-  pdf.setFont("Helvetica");
-  pdf.setFontSize(14);
-  pdf.text("OFA 月報（端末内検索）", 10, 15);
-
-  const from = document.getElementById("fromDate").value;
-  const to = document.getElementById("toDate").value;
-  const baseQ = document.getElementById("base").value.trim();
-  const nameQ = document.getElementById("name").value.trim();
-
-  pdf.setFontSize(10);
-  pdf.text(`期間：${from} 〜 ${to}`, 10, 22);
-  pdf.text(`拠点：${baseQ||"指定なし"} / 氏名：${nameQ||"指定なし"}`, 10, 27);
-
-  let y = 35;
-  pdf.setFontSize(9);
-
-  // 表ヘッダ
-  const header = ["日時","区分","氏名","拠点","ODO差","体調","疲労"];
-  const colX = [10,40,60,85,120,140,160];
-
-  pdf.text(header[0], colX[0], y);
-  pdf.text(header[1], colX[1], y);
-  pdf.text(header[2], colX[2], y);
-  pdf.text(header[3], colX[3], y);
-  pdf.text(header[4], colX[4], y);
-  pdf.text(header[5], colX[5], y);
-  pdf.text(header[6], colX[6], y);
-  y += 5;
-
-  pdf.line(10, y, 200, y);
-  y += 4;
-
-  lastResults.forEach(r=>{
-    if(y>280){ pdf.addPage(); y=20; }
-    const dt = (r.tenkoAt||"").replace("T"," ").slice(0,16);
-    const diff = (r.distance!=null)? r.distance : calcDistance(r);
-    pdf.text(String(dt||""), colX[0], y);
-    pdf.text(String(r.tenkoType||""), colX[1], y);
-    pdf.text(String(r.name||""), colX[2], y);
-    pdf.text(String(r.base||""), colX[3], y);
-    pdf.text(diff!=null? String(diff) : "", colX[4], y);
-    pdf.text(String(r.condition||""), colX[5], y);
-    pdf.text(String(r.fatigue||""), colX[6], y);
-    y += 6;
-  });
-
-  pdf.save(`OFA_monthly_${from}_${to}.pdf`);
 }
 </script>
 
