@@ -1,182 +1,115 @@
-/* global OFA_PDF */
-const $ = (id)=>document.getElementById(id);
+// js/admin.js
 
-let adminRows = [];   // daily CSV rows
-let adminMonthly = null;
+function $(id){ return document.getElementById(id); }
+function toast(m){ alert(m); }
 
-function parseCSV(text){
-  const lines = text.split(/\r?\n/).filter(l=>l.trim().length);
-  if (!lines.length) return [];
-  const parseLine = (line) => {
-    const out = [];
-    let cur = "", inQ = false;
-    for (let i=0;i<line.length;i++){
-      const ch = line[i];
-      if (ch === '"' ) {
-        if (inQ && line[i+1] === '"') { cur += '"'; i++; }
-        else inQ = !inQ;
-      } else if (ch === "," && !inQ) {
-        out.push(cur); cur = "";
-      } else cur += ch;
-    }
-    out.push(cur);
-    return out;
-  };
-  const header = parseLine(lines[0]).map(s=>s.replaceAll(/^"|"$/g,""));
-  return lines.slice(1).map(l=>{
-    const cols = parseLine(l);
-    const obj = {};
-    header.forEach((h,idx)=>{
-      obj[h] = (cols[idx] ?? "").replaceAll(/^"|"$/g,"");
-    });
-    return obj;
-  });
+function getAdminPass(){
+  return localStorage.getItem("ofa_admin_pass") || "ofa-admin";
 }
 
-function num(x){ return Number(x||0); }
+function checkPass(input){
+  return input === getAdminPass();
+}
 
-function setDisabled(){
-  $("btnAdminCalc").disabled = adminRows.length === 0;
+function showPanel(ok){
+  $("adminPanel").classList.toggle("hidden", !ok);
+}
+
+async function monthlySearch(){
+  const from = $("m_from").value;
+  const to   = $("m_to").value;
+  if(!from || !to){
+    toast("期間（開始/終了）は必須です");
+    return [];
+  }
+  const filters = {
+    from, to,
+    base: $("m_base").value.trim(),
+    name: $("m_name").value.trim()
+  };
+  const groups = await searchMonthly(filters);
+  renderMonthly(groups, filters);
+  // store last
+  window.__monthly_last = { groups, filters };
+  return groups;
+}
+
+function renderMonthly(groups, filters){
+  const list = $("monthlyList");
+  list.innerHTML = "";
+
+  const info = document.createElement("div");
+  info.className="note";
+  info.innerHTML = `検索結果：<b>${groups.length} グループ</b>　期間：${filters.from} ～ ${filters.to}`;
+  list.appendChild(info);
+
+  groups.forEach(g=>{
+    const card = document.createElement("div");
+    card.className="card";
+    card.style.boxShadow="none";
+    card.innerHTML = `
+      <div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap">
+        <div style="font-weight:900">${g.name} / ${g.base}</div>
+        <div class="badge">点呼 ${g.tenko.length} / 日報 ${g.daily.length}</div>
+      </div>
+      <div class="small">※月報PDFは「月報PDFを作成」で一括出力</div>
+    `;
+    list.appendChild(card);
+  });
 }
 
 window.addEventListener("DOMContentLoaded", ()=>{
-  $("adminCsvFiles").addEventListener("change", handleFiles);
-  $("btnAdminCalc").addEventListener("click", calcAdmin);
-  $("btnAdminPDF").addEventListener("click", adminPDF);
-  $("btnAdminCSV").addEventListener("click", adminCSV);
-});
+  $("btnAdminLogin").addEventListener("click", ()=>{
+    const pass = $("a_pass").value;
+    if(!checkPass(pass)){
+      toast("管理者パスが違います");
+      showPanel(false);
+      return;
+    }
+    toast("管理者ログインOK");
+    showPanel(true);
 
-async function handleFiles(e){
-  const files = [...(e.target.files||[])];
-  adminRows = [];
-  for (const f of files){
-    const t = await f.text();
-    const rows = parseCSV(t);
-
-    // dailyだけ拾う（kind=daily）
-    rows.forEach(r=>{
-      if ((r.kind||"").toLowerCase() === "daily") adminRows.push(r);
-    });
-  }
-  setDisabled();
-  alert(`取込み完了：日報 ${adminRows.length}件`);
-}
-
-function inRange(d, from, to){
-  if (from && d < from) return false;
-  if (to && d > to) return false;
-  return true;
-}
-
-function calcAdmin(){
-  const from = $("aFrom").value;
-  const to = $("aTo").value;
-  const base = $("aBase").value.trim();
-  const name = $("aName").value.trim();
-
-  const rows = adminRows.filter(r=>{
-    const d = r.date || "";
-    if (!inRange(d, from, to)) return false;
-    if (base && (r.base||"") !== base) return false;
-    if (name && !(r.name||"").includes(name)) return false;
-    return true;
+    // デフォルト期間：今月
+    const d = new Date();
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth()+1).padStart(2,"0");
+    const first = `${yyyy}-${mm}-01`;
+    const last  = new Date(yyyy, d.getMonth()+1, 0).toISOString().slice(0,10);
+    $("m_from").value = first;
+    $("m_to").value = last;
   });
 
-  const days = new Set(rows.map(r=>r.date)).size;
-  const totalWorkMin = rows.reduce((a,r)=>a+num(r.workMinutes),0);
-  const totalBreak = rows.reduce((a,r)=>a+num(r.breakMin),0);
-  const totalDist = rows.reduce((a,r)=>a+num(r.distanceKm),0);
-  const totalDeliv = rows.reduce((a,r)=>a+num(r.delivered),0);
-  const totalAbs = rows.reduce((a,r)=>a+num(r.absent),0);
-  const totalRed = rows.reduce((a,r)=>a+num(r.redelivery),0);
-  const totalClaim = rows.filter(r=>r.claimFlag==="あり").length;
-  const totalAcc = rows.filter(r=>r.accidentFlag==="あり").length;
+  $("btnChangePass").addEventListener("click", ()=>{
+    const current = prompt("現在の管理者パスを入力");
+    if(current===null) return;
+    if(!checkPass(current)){
+      toast("現在パスが違います");
+      return;
+    }
+    const next = prompt("新しい管理者パス（8文字以上推奨）");
+    if(!next) return;
+    localStorage.setItem("ofa_admin_pass", next);
+    toast("管理者パスを変更しました");
+  });
 
-  const totalSales = rows.reduce((a,r)=>a + num(r.payDaily) + num(r.payIncentive),0);
-  const totalExp = rows.reduce((a,r)=>a + num(r.expTotal),0);
-  const totalProfit = rows.reduce((a,r)=>a + num(r.profit),0);
+  $("btnMonthlySearch").addEventListener("click", monthlySearch);
 
-  const avg = days ? totalDeliv/days : 0;
-  const absRate = totalDeliv ? totalAbs/totalDeliv*100 : 0;
-  const redRate = totalDeliv ? totalRed/totalDeliv*100 : 0;
+  $("btnMonthlyCsv").addEventListener("click", async ()=>{
+    await monthlySearch();
+    const last = window.__monthly_last;
+    if(!last){ toast("先に検索してください"); return; }
 
-  adminMonthly = {
-    from: from || "-",
-    to: to || "-",
-    days,
-    totalWorkMin,
-    totalBreak,
-    totalDist,
-    totalDeliv,
-    avg,
-    absRate,
-    redRate,
-    totalClaim,
-    totalAcc,
-    totalSales,
-    totalExp,
-    totalProfit,
-    rows
-  };
+    // CSV：検索条件を使って点呼/日報まとめて出す
+    await exportCsvSearchResult(last.filters);
+    toast("CSVを出力しました");
+  });
 
-  $("adminMonthlyBox").style.display = "block";
-  $("btnAdminPDF").disabled = false;
-  $("btnAdminCSV").disabled = false;
+  $("btnMonthlyPdf").addEventListener("click", async ()=>{
+    await monthlySearch();
+    const last = window.__monthly_last;
+    if(!last){ toast("先に検索してください"); return; }
 
-  $("am_days").textContent = String(days);
-  $("am_work").textContent = `${Math.floor(totalWorkMin/60)}h${String(totalWorkMin%60).padStart(2,"0")}m`;
-  $("am_break").textContent = `${Math.floor(totalBreak/60)}h${String(totalBreak%60).padStart(2,"0")}m`;
-  $("am_dist").textContent = totalDist.toFixed(1);
-
-  $("am_deliv").textContent = String(totalDeliv);
-  $("am_avg").textContent = avg.toFixed(1);
-  $("am_absRate").textContent = `${absRate.toFixed(1)}%`;
-  $("am_redRate").textContent = `${redRate.toFixed(1)}%`;
-
-  $("am_claim").textContent = String(totalClaim);
-  $("am_acc").textContent = String(totalAcc);
-  $("am_sales").textContent = totalSales.toLocaleString();
-  $("am_exp").textContent = totalExp.toLocaleString();
-  $("am_profit").textContent = totalProfit.toLocaleString();
-}
-
-async function adminPDF(){
-  if (!adminMonthly) return;
-  // 管理者PDFは「名前/拠点」を検索条件で出す（代表値）
-  const profile = {
-    name: $("aName").value.trim() || "（検索条件：全員）",
-    base: $("aBase").value.trim() || "（全拠点）",
-    carNo: "",
-    licenseNo: ""
-  };
-  await OFA_PDF.makeMonthlyPDF({ profile, monthly: {
-    ...adminMonthly,
-    missText: "（サーバー無し運用のため、点呼未実施はCSVに含まれない場合があります）"
-  }});
-}
-
-function adminCSV(){
-  if (!adminMonthly) return;
-  const rows = adminMonthly.rows.map(r=>({
-    date: r.date,
-    name: r.name,
-    base: r.base,
-    workCase: r.workCase,
-    delivered: r.delivered,
-    absent: r.absent,
-    redelivery: r.redelivery,
-    sales: (num(r.payDaily)+num(r.payIncentive)),
-    exp: num(r.expTotal),
-    profit: num(r.profit)
-  }));
-  const esc = (s) => `"${String(s ?? "").replaceAll('"','""')}"`;
-  const cols = Object.keys(rows[0]||{});
-  const csv = cols.map(esc).join(",") + "\n" + rows.map(o=>cols.map(c=>esc(o[c])).join(",")).join("\n");
-
-  const blob = new Blob([csv], {type:"text/csv"});
-  const a = document.createElement("a");
-  a.href = URL.createObjectURL(blob);
-  a.download = `OFA_admin_aggregate_${adminMonthly.from}_${adminMonthly.to}.csv`;
-  a.click();
-  URL.revokeObjectURL(a.href);
-}
+    await generateMonthlyPdf(last.groups, last.filters);
+    toast("月報PDFを出力しました");
+  });
+});
