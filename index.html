@@ -3,368 +3,85 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <title>OFA 点呼・日報（端末保存 / PDF / CSV）</title>
+  <title>OFA 管理者（月報PDF・期間検索）</title>
   <link rel="stylesheet" href="./style.css">
 </head>
 <body>
   <div class="header">
     <div class="logo">OFA</div>
     <div class="titlewrap">
-      <div class="title">OFA 点呼・日報</div>
-      <div class="subtitle">保存（IndexedDB） / PDF（OFAカラー） / 履歴 / CSV</div>
+      <div class="title">管理者（月報PDF・期間検索）</div>
+      <div class="subtitle">端末内データ（IndexedDB）を検索して月報PDF/CSV出力</div>
     </div>
-    <a href="./admin.html"><button class="rightTopBtn">管理者</button></a>
+    <a href="./index.html"><button class="rightTopBtn">戻る</button></a>
   </div>
 
   <div class="container">
 
     <div class="card">
-      <div class="h2">重要ルール（必読）</div>
+      <div class="h2">① 管理者認証（簡易）</div>
       <div class="note">
-        ・点呼は「出発（業務開始前）」と「帰着（業務終了後）」の2回。<br>
-        ・アルコールチェックは必須（数値＋写真は任意推奨）。<br>
-        ・日常点検はチェック式（スクロール）。NGはメモ必須。<br>
-        ・写真はアップロードせず、PDFに埋め込むだけ（端末内処理）。<br>
-        ・走行距離は「出発ODO」と「帰着ODO」が揃ったら自動計算し日報へ反映。
+        Firebaseが使えない場合のため、管理者は「端末内の管理者パス」でロックします。<br>
+        初期パスは「ofa-admin」。必ず変更して運用してください。
       </div>
+
+      <label>管理者パス</label>
+      <input id="a_pass" type="password" placeholder="初期：ofa-admin">
+      <div class="actions" style="margin-top:12px">
+        <button class="btn" id="btnAdminLogin">ログイン</button>
+        <button class="btn secondary" id="btnChangePass">管理者パス変更</button>
+      </div>
+      <div class="small">※パスは端末内保存（localStorage）です。</div>
     </div>
 
-    <div class="card" id="profileCard">
-      <div class="h2">① 基本情報（必須）</div>
+    <div class="card hidden" id="adminPanel">
+      <div class="h2">② 月報検索</div>
 
       <div class="row">
         <div>
-          <label>氏名（本名）*</label>
-          <input id="p_name" placeholder="例：森下 洸">
+          <label>期間（開始）*</label>
+          <input type="date" id="m_from">
         </div>
         <div>
-          <label>拠点（47都道府県 or 自由記入）*</label>
-          <input id="p_base" placeholder="例：鹿児島 / 東京都 / 福岡">
+          <label>期間（終了）*</label>
+          <input type="date" id="m_to">
         </div>
       </div>
 
       <div class="row">
         <div>
-          <label>車両番号</label>
-          <input id="p_carNo" placeholder="例：鹿児島 480 あ 21-15">
+          <label>拠点（部分一致）</label>
+          <input id="m_base" placeholder="例：鹿児島">
         </div>
         <div>
-          <label>運転免許証番号*</label>
-          <input id="p_licenseNo" placeholder="数字のみでもOK">
+          <label>氏名（部分一致）</label>
+          <input id="m_name" placeholder="例：森下">
         </div>
       </div>
-
-      <div class="row">
-        <div>
-          <label>電話番号*</label>
-          <input id="p_phone" inputmode="tel" placeholder="例：08012345678">
-        </div>
-        <div>
-          <label>メールアドレス*</label>
-          <input id="p_email" inputmode="email" placeholder="例：xxx@gmail.com">
-        </div>
-      </div>
-
-      <label>運転免許証写真（PDFに埋め込み）</label>
-      <input type="file" id="p_licenseImg" accept="image/*">
-      <div class="small">※アップロードしません。PDF生成時のみ利用します。</div>
 
       <div class="actions" style="margin-top:12px">
-        <button class="btn" id="btnSaveProfile">基本情報を保存</button>
-        <button class="btn secondary" id="btnResetProfile">基本情報をリセット</button>
+        <button class="btn" id="btnMonthlySearch">検索</button>
+        <button class="btn secondary" id="btnMonthlyCsv">CSV出力（検索結果）</button>
       </div>
 
       <div class="divider"></div>
-      <a href="https://lin.ee/7sO7SCQ" target="_blank" rel="noopener">
-        <button class="btn secondary">OFAメンバー専用LINEへ問い合わせ</button>
-      </a>
-    </div>
 
-    <div class="card">
-      <div class="h2">② 操作</div>
-      <div class="tabs">
-        <button class="tab active" data-tab="tenko">点呼（出発/帰着）</button>
-        <button class="tab" data-tab="daily">日報（任意）</button>
-        <button class="tab" data-tab="history">履歴 / CSV</button>
-      </div>
-
-      <!-- 点呼 -->
-      <div id="tab_tenko">
-        <div class="note" style="margin-top:10px">
-          出発点呼は「出発ODO」を入力。帰着点呼は「帰着ODO」を入力。<br>
-          走行距離は両方が揃ったら自動計算され、日報にも反映されます。
-        </div>
-
-        <label>点呼区分*</label>
-        <select id="t_type">
-          <option value="">選択</option>
-          <option value="departure">出発（業務開始前）</option>
-          <option value="arrival">帰着（業務終了後）</option>
-        </select>
-
-        <label>点呼日時（手入力）*</label>
-        <input type="datetime-local" id="t_at">
-
-        <div class="row">
-          <div>
-            <label>点呼方法*</label>
-            <select id="t_method">
-              <option value="">選択</option>
-              <option>対面</option>
-              <option>電話</option>
-              <option>その他</option>
-            </select>
-          </div>
-          <div>
-            <label>睡眠時間（h）*</label>
-            <input id="t_sleep" inputmode="decimal" placeholder="例：7.5">
-          </div>
-        </div>
-
-        <div class="row">
-          <div>
-            <label>体温（℃）*</label>
-            <input id="t_temp" inputmode="decimal" placeholder="例：36.5">
-          </div>
-          <div>
-            <label>体調*</label>
-            <select id="t_condition">
-              <option value="">選択</option>
-              <option>良好</option>
-              <option>注意</option>
-              <option>不良</option>
-            </select>
-          </div>
-        </div>
-
-        <div class="row">
-          <div>
-            <label>疲労*</label>
-            <select id="t_fatigue">
-              <option value="">選択</option>
-              <option>なし</option>
-              <option>あり</option>
-            </select>
-          </div>
-          <div>
-            <label>服薬*</label>
-            <select id="t_med">
-              <option value="">選択</option>
-              <option>なし</option>
-              <option>あり</option>
-            </select>
-          </div>
-        </div>
-
-        <label>服薬内容（服薬ありの場合）</label>
-        <input id="t_medDetail" placeholder="例：頭痛薬 1錠">
-
-        <div class="divider"></div>
-
-        <div class="row">
-          <div>
-            <label>アルコール数値（必須）*</label>
-            <input id="t_alcValue" inputmode="decimal" placeholder="例：0.00">
-          </div>
-          <div>
-            <label>アルコール判定（任意）</label>
-            <select id="t_alcJudge">
-              <option value="">なし</option>
-              <option>OK</option>
-              <option>NG</option>
-            </select>
-          </div>
-        </div>
-
-        <label>アルコール測定写真（任意・推奨 / PDFへ埋め込み）</label>
-        <input type="file" id="t_alcImg" accept="image/*">
-        <div class="small">※アップロードしません。PDF生成時のみ使用</div>
-
-        <div class="divider"></div>
-
-        <div class="row">
-          <div>
-            <label>出発ODO（出発点呼で入力）</label>
-            <input id="t_odoStart" inputmode="numeric" placeholder="例：123456">
-          </div>
-          <div>
-            <label>帰着ODO（帰着点呼で入力）</label>
-            <input id="t_odoEnd" inputmode="numeric" placeholder="例：123999">
-          </div>
-        </div>
-
-        <div class="row">
-          <div>
-            <label>走行距離（自動）</label>
-            <input id="t_odoDiff" readonly value="0">
-          </div>
-          <div>
-            <label>異常の有無*</label>
-            <select id="t_abnormal">
-              <option value="">選択</option>
-              <option>なし</option>
-              <option>あり</option>
-            </select>
-          </div>
-        </div>
-
-        <label>異常内容（異常ありの場合は必須）</label>
-        <textarea id="t_abnormalDetail" placeholder="例：タイヤ釘刺さり / 置き配トラブル 等"></textarea>
-
-        <div class="divider"></div>
-
-        <div class="h2" style="margin-top:8px">③ 日常点検（スクロール入力）</div>
-        <div class="checklist" id="dailyChecklist"></div>
-
-        <label>日常点検メモ（NGがある場合は必須）</label>
-        <textarea id="t_checkMemo" placeholder="例：左前タイヤ空気圧低下・要対応"></textarea>
-
-        <div class="actions" style="margin-top:12px">
-          <button class="btn" id="btnSaveTenko">この点呼を保存</button>
-          <button class="btn secondary" id="btnAutoFillNow">点呼日時を現在時刻に入れる</button>
-        </div>
-
-        <div class="divider"></div>
-
-        <div class="note">
-          ✅ PDFは「今日のPDF（点呼＋日報）」で出力できます。日報は任意入力でもOK。<br>
-          ✅ LINE送信用に、PDFを作った後「共有」からLINE送信が可能です（iPhone最適化）。
-        </div>
-
-        <div class="floatBar">
-          <button class="btn secondary" id="btnGoDaily">日報へ</button>
-          <button class="btn" id="btnPdfToday">今日のPDF（点呼＋日報）</button>
-        </div>
-      </div>
-
-      <!-- 日報 -->
-      <div id="tab_daily" class="hidden">
-        <div class="note" style="margin-top:10px">
-          日報（業務実績）と売上/経費は <strong>完全に任意（オプション）</strong> です。<br>
-          入力しない人はスキップOK。点呼の走行距離（ODO差分）は自動反映されます。
-        </div>
-
-        <label>稼働日（手入力）</label>
-        <input type="date" id="d_date">
-
-        <label>案件（メイン / 任意）</label>
-        <input id="d_mainProject" placeholder="例：佐川 / Amazon / 企業配">
-
-        <div class="divider"></div>
-
-        <div class="h2">複数案件（追加式 / 任意）</div>
-        <div id="projectsWrap"></div>
-        <button class="btn secondary" id="btnAddProject">案件を追加</button>
-
-        <div class="divider"></div>
-
-        <div class="h2">売上・経費（任意）</div>
-
-        <div class="row">
-          <div>
-            <label>日当（固定）</label>
-            <input id="d_payBase" inputmode="numeric" placeholder="例：16000">
-          </div>
-          <div>
-            <label>インセンティブ</label>
-            <input id="d_incentive" inputmode="numeric" placeholder="例：2000">
-          </div>
-        </div>
-
-        <div class="row">
-          <div>
-            <label>燃料（経費）</label>
-            <input id="d_fuel" inputmode="numeric">
-          </div>
-          <div>
-            <label>高速（経費）</label>
-            <input id="d_highway" inputmode="numeric">
-          </div>
-        </div>
-
-        <div class="row">
-          <div>
-            <label>駐車（経費）</label>
-            <input id="d_parking" inputmode="numeric">
-          </div>
-          <div>
-            <label>その他経費</label>
-            <input id="d_otherCost" inputmode="numeric">
-          </div>
-        </div>
-
-        <div class="row">
-          <div>
-            <label>売上合計（自動）</label>
-            <input id="d_salesTotal" readonly value="0">
-          </div>
-          <div>
-            <label>差引（概算利益 / 自動）</label>
-            <input id="d_profit" readonly value="0">
-          </div>
-        </div>
-
-        <label>メモ</label>
-        <textarea id="d_memo" placeholder="例：引渡し待ちが多かった、再配達あり など"></textarea>
-
-        <div class="actions" style="margin-top:12px">
-          <button class="btn" id="btnSaveDaily">日報を保存（任意）</button>
-          <button class="btn secondary" id="btnGoTenko">点呼へ</button>
-        </div>
-      </div>
-
-      <!-- 履歴 -->
-      <div id="tab_history" class="hidden">
-        <div class="note" style="margin-top:10px">
-          保存された点呼/日報を端末内（IndexedDB）から検索・CSV出力できます。<br>
-          1000件以上でも動作します。
-        </div>
-
-        <div class="row">
-          <div>
-            <label>期間（開始）</label>
-            <input type="date" id="h_from">
-          </div>
-          <div>
-            <label>期間（終了）</label>
-            <input type="date" id="h_to">
-          </div>
-        </div>
-
-        <div class="row">
-          <div>
-            <label>拠点（部分一致）</label>
-            <input id="h_base" placeholder="例：鹿児島">
-          </div>
-          <div>
-            <label>氏名（部分一致）</label>
-            <input id="h_name" placeholder="例：森下">
-          </div>
-        </div>
-
-        <div class="actions" style="margin-top:12px">
-          <button class="btn" id="btnSearch">検索</button>
-          <button class="btn secondary" id="btnCsv">CSV出力（検索結果）</button>
-        </div>
-
-        <div class="divider"></div>
-        <div id="historyList"></div>
-      </div>
-    </div>
-
-    <div class="card">
+      <div class="h2">③ 月報PDF</div>
       <div class="note">
-        「保存が反応しない」原因になりやすいのは、写真ファイルをそのまま保存しようとしてしまうケースです。<br>
-        この版は <strong>写真はDBへ保存しません</strong>（PDF生成時のみメモリで処理）。だから確実に保存できます。
+        検索結果をもとに、月報PDF（OFAフォーマット）を生成します。<br>
+        PDFは日本語表示で文字化けしない設定です。
       </div>
+      <button class="btn" id="btnMonthlyPdf">月報PDFを作成</button>
+
+      <div class="divider"></div>
+      <div id="monthlyList"></div>
     </div>
 
   </div>
 
-  <!-- JS -->
   <script src="./js/db.js"></script>
   <script src="./js/pdf.js"></script>
   <script src="./js/csv.js"></script>
-  <script src="./js/app.js"></script>
+  <script src="./js/admin.js"></script>
 </body>
 </html>
