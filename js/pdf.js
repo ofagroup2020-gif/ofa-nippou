@@ -1,277 +1,382 @@
-/* global jspdf */
-(function(){
-  const { jsPDF } = (window.jspdf || {});
-  if (!jsPDF) {
-    console.warn("jsPDFが読み込めていません（CDNがブロックの可能性）");
+// js/pdf.js
+// PDF: OFAフォーマット（ロゴ・カラー・表） / 日本語文字化け対策：HTML→canvas→PDF
+
+// 外部ライブラリ（index.html内でCDN読み込みしていないので、ここで動的ロード）
+async function loadScriptOnce(src){
+  if(document.querySelector(`script[data-src="${src}"]`)) return;
+  await new Promise((resolve, reject) => {
+    const s = document.createElement("script");
+    s.src = src;
+    s.async = true;
+    s.dataset.src = src;
+    s.onload = resolve;
+    s.onerror = reject;
+    document.head.appendChild(s);
+  });
+}
+
+async function ensurePdfLibs(){
+  // html2canvas + jsPDF
+  await loadScriptOnce("https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js");
+  await loadScriptOnce("https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js");
+}
+
+function fmtDateTime(v){
+  if(!v) return "";
+  // "2026-01-14T15:28"
+  return v.replace("T"," ").slice(0,16);
+}
+
+function safeNum(n){
+  const x = Number(n);
+  return Number.isFinite(x) ? x : 0;
+}
+
+function buildOfaPdfHtml({profile, dep, arr, daily, odoDiff, images}){
+  // images: {licenseDataUrl?, alcDepDataUrl?, alcArrDataUrl?}
+  const logoText = "OFA GROUP"; // 画像ロゴが無い場合の保険
+  const headerGrad = `linear-gradient(90deg,#20d3c2,#4a90ff,#9b5cff,#ff4d8d)`;
+
+  const depRow = dep ? `
+    <tr><th colspan="4" style="background:#e9fbff">出発点呼（業務開始前）</th></tr>
+    <tr>
+      <th>日時</th><td>${fmtDateTime(dep.at)}</td>
+      <th>方法</th><td>${dep.method||""}</td>
+    </tr>
+    <tr>
+      <th>睡眠(h)</th><td>${dep.sleep||""}</td>
+      <th>体温(℃)</th><td>${dep.temp||""}</td>
+    </tr>
+    <tr>
+      <th>体調</th><td>${dep.condition||""}</td>
+      <th>疲労</th><td>${dep.fatigue||""}</td>
+    </tr>
+    <tr>
+      <th>服薬</th><td>${dep.med||""}</td>
+      <th>服薬内容</th><td>${dep.medDetail||""}</td>
+    </tr>
+    <tr>
+      <th>アルコール数値</th><td>${dep.alcValue||""}</td>
+      <th>判定</th><td>${dep.alcJudge||""}</td>
+    </tr>
+    <tr>
+      <th>出発ODO</th><td>${dep.odoStart||""}</td>
+      <th>異常</th><td>${dep.abnormal||""}</td>
+    </tr>
+    <tr><th>異常内容</th><td colspan="3">${(dep.abnormalDetail||"")}</td></tr>
+  ` : `<tr><th colspan="4" style="background:#e9fbff">出発点呼</th></tr><tr><td colspan="4">未入力</td></tr>`;
+
+  const arrRow = arr ? `
+    <tr><th colspan="4" style="background:#fff2f8">帰着点呼（業務終了後）</th></tr>
+    <tr>
+      <th>日時</th><td>${fmtDateTime(arr.at)}</td>
+      <th>方法</th><td>${arr.method||""}</td>
+    </tr>
+    <tr>
+      <th>睡眠(h)</th><td>${arr.sleep||""}</td>
+      <th>体温(℃)</th><td>${arr.temp||""}</td>
+    </tr>
+    <tr>
+      <th>体調</th><td>${arr.condition||""}</td>
+      <th>疲労</th><td>${arr.fatigue||""}</td>
+    </tr>
+    <tr>
+      <th>服薬</th><td>${arr.med||""}</td>
+      <th>服薬内容</th><td>${arr.medDetail||""}</td>
+    </tr>
+    <tr>
+      <th>アルコール数値</th><td>${arr.alcValue||""}</td>
+      <th>判定</th><td>${arr.alcJudge||""}</td>
+    </tr>
+    <tr>
+      <th>帰着ODO</th><td>${arr.odoEnd||""}</td>
+      <th>異常</th><td>${arr.abnormal||""}</td>
+    </tr>
+    <tr><th>異常内容</th><td colspan="3">${(arr.abnormalDetail||"")}</td></tr>
+  ` : `<tr><th colspan="4" style="background:#fff2f8">帰着点呼</th></tr><tr><td colspan="4">未入力</td></tr>`;
+
+  const dailyRow = daily ? `
+    <tr><th colspan="4" style="background:#f7fbff">日報（任意）</th></tr>
+    <tr>
+      <th>稼働日</th><td>${daily.date||""}</td>
+      <th>案件（メイン）</th><td>${daily.mainProject||""}</td>
+    </tr>
+    <tr>
+      <th>売上合計</th><td>${daily.salesTotal||0}</td>
+      <th>差引（概算利益）</th><td>${daily.profit||0}</td>
+    </tr>
+    <tr><th>メモ</th><td colspan="3">${daily.memo||""}</td></tr>
+  ` : `<tr><th colspan="4" style="background:#f7fbff">日報（任意）</th></tr><tr><td colspan="4">未入力（オプション）</td></tr>`;
+
+  const imageBlock = (title, dataUrl) => {
+    if(!dataUrl) return "";
+    return `
+      <div style="margin-top:10px">
+        <div style="font-weight:800;margin:6px 0">${title}</div>
+        <img src="${dataUrl}" style="width:100%;max-height:280px;object-fit:contain;border:1px solid #e9eef5;border-radius:12px">
+      </div>
+    `;
+  };
+
+  const checklist = (dep?.checklist || arr?.checklist || []);
+  const checkOk = checklist.filter(x=>x.ok).map(x=>x.label);
+  const checkNg = checklist.filter(x=>!x.ok).map(x=>x.label);
+
+  return `
+  <div id="ofaPdfRoot" style="width:794px;background:#fff;font-family:'Noto Sans JP',-apple-system,BlinkMacSystemFont,'Hiragino Kaku Gothic ProN','Helvetica Neue',Arial,sans-serif;color:#222;padding:18px">
+    <div style="border-radius:18px;overflow:hidden;border:1px solid #e9eef5">
+      <div style="padding:14px;background:${headerGrad};color:#fff;display:flex;align-items:center;justify-content:space-between">
+        <div style="font-weight:900;font-size:18px">${logoText}</div>
+        <div style="font-weight:800;font-size:13px">点呼・日報 PDF</div>
+      </div>
+
+      <div style="padding:14px">
+        <div style="display:flex;gap:12px;align-items:flex-start">
+          <div style="flex:1">
+            <div style="font-weight:900;font-size:16px;margin-bottom:8px">基本情報</div>
+            <table style="width:100%;border-collapse:collapse;font-size:13px">
+              <tr><th style="width:24%;text-align:left;background:#f7fbff;border:1px solid #e9eef5;padding:8px">氏名</th><td style="border:1px solid #e9eef5;padding:8px">${profile.name||""}</td></tr>
+              <tr><th style="text-align:left;background:#f7fbff;border:1px solid #e9eef5;padding:8px">拠点</th><td style="border:1px solid #e9eef5;padding:8px">${profile.base||""}</td></tr>
+              <tr><th style="text-align:left;background:#f7fbff;border:1px solid #e9eef5;padding:8px">車両番号</th><td style="border:1px solid #e9eef5;padding:8px">${profile.carNo||""}</td></tr>
+              <tr><th style="text-align:left;background:#f7fbff;border:1px solid #e9eef5;padding:8px">免許番号</th><td style="border:1px solid #e9eef5;padding:8px">${profile.licenseNo||""}</td></tr>
+              <tr><th style="text-align:left;background:#f7fbff;border:1px solid #e9eef5;padding:8px">電話</th><td style="border:1px solid #e9eef5;padding:8px">${profile.phone||""}</td></tr>
+              <tr><th style="text-align:left;background:#f7fbff;border:1px solid #e9eef5;padding:8px">メール</th><td style="border:1px solid #e9eef5;padding:8px">${profile.email||""}</td></tr>
+            </table>
+          </div>
+
+          <div style="width:240px">
+            ${imageBlock("運転免許証（PDF埋め込み）", images.licenseDataUrl)}
+          </div>
+        </div>
+
+        <div style="margin-top:14px;border-top:1px solid #e9eef5;padding-top:12px">
+          <div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap">
+            <div style="font-weight:900;font-size:16px">点呼・日報</div>
+            <div style="font-size:12px;color:#555">走行距離：<span style="font-weight:900">${odoDiff} km</span>（出発ODO/帰着ODOから自動）</div>
+          </div>
+
+          <table style="width:100%;border-collapse:collapse;font-size:13px;margin-top:10px">
+            ${depRow}
+            ${arrRow}
+            <tr>
+              <th style="background:#f0fbff;border:1px solid #e9eef5;padding:8px">走行距離（ODO差分）</th>
+              <td style="border:1px solid #e9eef5;padding:8px">${odoDiff} km</td>
+              <th style="background:#f0fbff;border:1px solid #e9eef5;padding:8px">日常点検NG</th>
+              <td style="border:1px solid #e9eef5;padding:8px">${checkNg.join(" / ") || "なし"}</td>
+            </tr>
+            <tr>
+              <th style="background:#f0fbff;border:1px solid #e9eef5;padding:8px">日常点検OK</th>
+              <td colspan="3" style="border:1px solid #e9eef5;padding:8px">${checkOk.join(" / ") || ""}</td>
+            </tr>
+            <tr>
+              <th style="background:#f0fbff;border:1px solid #e9eef5;padding:8px">日常点検メモ</th>
+              <td colspan="3" style="border:1px solid #e9eef5;padding:8px">${(dep?.checkMemo || arr?.checkMemo || "")}</td>
+            </tr>
+            ${dailyRow}
+          </table>
+
+          <div style="display:flex;gap:12px;margin-top:12px">
+            <div style="flex:1">${imageBlock("アルコール写真（出発）", images.alcDepDataUrl)}</div>
+            <div style="flex:1">${imageBlock("アルコール写真（帰着）", images.alcArrDataUrl)}</div>
+          </div>
+        </div>
+
+        <div style="margin-top:14px;border-top:1px solid #e9eef5;padding-top:10px;font-size:12px;color:#666;display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap">
+          <div>© OFA GROUP</div>
+          <div>※本PDFは端末内で生成（アップロードなし）</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  `;
+}
+
+async function fileToDataUrl(file){
+  if(!file) return "";
+  return new Promise((resolve, reject)=>{
+    const fr = new FileReader();
+    fr.onload = ()=> resolve(fr.result);
+    fr.onerror = reject;
+    fr.readAsDataURL(file);
+  });
+}
+
+async function makePdfFromHtml(html, filename){
+  await ensurePdfLibs();
+  const holder = document.createElement("div");
+  holder.style.position = "fixed";
+  holder.style.left = "-10000px";
+  holder.style.top = "0";
+  holder.innerHTML = html;
+  document.body.appendChild(holder);
+
+  const root = holder.querySelector("#ofaPdfRoot");
+
+  const canvas = await html2canvas(root, { scale:2, backgroundColor:"#ffffff" });
+  const imgData = canvas.toDataURL("image/png");
+
+  const { jsPDF } = window.jspdf;
+  const pdf = new jsPDF("p", "pt", "a4"); // 595x842pt
+  const pageW = 595;
+  const pageH = 842;
+
+  // fit
+  const imgW = pageW;
+  const imgH = (canvas.height * imgW) / canvas.width;
+
+  let y = 0;
+  let remain = imgH;
+
+  // 1ページで収まる想定（ほぼ収まるレイアウト）
+  // もし長くなれば分割
+  if(imgH <= pageH){
+    pdf.addImage(imgData, "PNG", 0, 0, imgW, imgH);
+  }else{
+    // multi-page split
+    let position = 0;
+    while(remain > 0){
+      pdf.addImage(imgData, "PNG", 0, position, imgW, imgH);
+      remain -= pageH;
+      position -= pageH;
+      if(remain > 0) pdf.addPage();
+    }
   }
 
-  function mm(n){ return n; }
+  document.body.removeChild(holder);
+  pdf.save(filename);
+}
 
-  async function dataUrlToJpegDataUrl(dataUrl, maxW=900, quality=0.78){
-    if(!dataUrl) return null;
-    return new Promise((resolve) => {
-      const img = new Image();
-      img.onload = () => {
-        const ratio = Math.min(1, maxW / img.width);
-        const w = Math.floor(img.width * ratio);
-        const h = Math.floor(img.height * ratio);
-        const canvas = document.createElement("canvas");
-        canvas.width = w; canvas.height = h;
-        const ctx = canvas.getContext("2d");
-        ctx.fillStyle = "#fff";
-        ctx.fillRect(0,0,w,h);
-        ctx.drawImage(img,0,0,w,h);
-        resolve(canvas.toDataURL("image/jpeg", quality));
-      };
-      img.onerror = () => resolve(null);
-      img.src = dataUrl;
+// Public API
+async function generateTodayPdf({ profile, dep, arr, daily, odoDiff, files }){
+  const images = {
+    licenseDataUrl: await fileToDataUrl(files.licenseImg),
+    alcDepDataUrl: await fileToDataUrl(files.alcDepImg),
+    alcArrDataUrl: await fileToDataUrl(files.alcArrImg),
+  };
+  const html = buildOfaPdfHtml({ profile, dep, arr, daily, odoDiff, images });
+  const dateKey = (daily?.date || dep?.at || arr?.at || "").toString().slice(0,10) || "today";
+  await makePdfFromHtml(html, `OFA_${dateKey}_点呼日報.pdf`);
+}
+
+async function generateMonthlyPdf(groups, filters){
+  // 管理者用：グループごとに1つのPDFにまとめる（ページ分割）
+  await ensurePdfLibs();
+  const { jsPDF } = window.jspdf;
+  const pdf = new jsPDF("p", "pt", "a4");
+
+  let first = true;
+  for(const g of groups){
+    if(!first) pdf.addPage();
+    first = false;
+
+    const holder = document.createElement("div");
+    holder.style.position = "fixed";
+    holder.style.left = "-10000px";
+    holder.style.top = "0";
+
+    // monthly summary calc
+    const days = new Set();
+    let totalKm = 0;
+    g.tenko.forEach(t=>{
+      const d = (t.at||"").slice(0,10);
+      if(d) days.add(d);
     });
-  }
 
-  function header(doc, title){
-    // カラーバー
-    doc.setFillColor(32,211,176); doc.rect(0,0,210,10,"F");
-    doc.setFillColor(76,154,255); doc.rect(70,0,70,10,"F");
-    doc.setFillColor(176,97,255); doc.rect(140,0,40,10,"F");
-    doc.setFillColor(255,77,141); doc.rect(180,0,30,10,"F");
+    // km by pairing dep+arr per date
+    const byDate = new Map();
+    g.tenko.forEach(t=>{
+      const d = (t.at||"").slice(0,10);
+      if(!byDate.has(d)) byDate.set(d,{dep:null,arr:null});
+      if(t.type==="departure") byDate.get(d).dep = t;
+      if(t.type==="arrival")   byDate.get(d).arr = t;
+    });
+    for(const [d,pair] of byDate){
+      const dep = pair.dep?.odoStart;
+      const arr = pair.arr?.odoEnd;
+      const diff = safeNum(arr) - safeNum(dep);
+      if(diff>0) totalKm += diff;
+    }
 
-    doc.setFont("helvetica","bold");
-    doc.setTextColor(11,18,32);
-    doc.setFontSize(14);
-    doc.text(title, 12, 20);
+    const headerGrad = `linear-gradient(90deg,#20d3c2,#4a90ff,#9b5cff,#ff4d8d)`;
 
-    doc.setDrawColor(220,229,240);
-    doc.line(12, 23, 198, 23);
-  }
+    const html = `
+      <div id="ofaPdfRoot" style="width:794px;background:#fff;font-family:'Noto Sans JP',-apple-system,BlinkMacSystemFont,'Hiragino Kaku Gothic ProN','Helvetica Neue',Arial,sans-serif;color:#222;padding:18px">
+        <div style="border-radius:18px;overflow:hidden;border:1px solid #e9eef5">
+          <div style="padding:14px;background:${headerGrad};color:#fff;display:flex;align-items:center;justify-content:space-between">
+            <div style="font-weight:900;font-size:18px">OFA GROUP</div>
+            <div style="font-weight:800;font-size:13px">月報（管理者）</div>
+          </div>
+          <div style="padding:14px">
+            <div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap">
+              <div style="font-weight:900;font-size:16px">${g.name} / ${g.base}</div>
+              <div style="font-size:12px;color:#555">期間：${filters.from||""} ～ ${filters.to||""}</div>
+            </div>
 
-  function kv(doc, x, y, k, v){
-    doc.setFont("helvetica","bold"); doc.setFontSize(10);
-    doc.setTextColor(91,103,122);
-    doc.text(k, x, y);
-    doc.setFont("helvetica","bold"); doc.setFontSize(12);
-    doc.setTextColor(11,18,32);
-    doc.text(String(v ?? ""), x, y+6);
-    doc.setDrawColor(220,229,240);
-    doc.roundedRect(x-2, y-6, 90, 16, 3,3);
-  }
+            <div style="margin-top:10px;border:1px solid #e9eef5;border-radius:14px;padding:12px;background:#f7fbff">
+              <div style="display:flex;gap:14px;flex-wrap:wrap;font-size:13px">
+                <div><b>稼働日数</b>：${days.size} 日</div>
+                <div><b>走行距離合計</b>：${totalKm} km</div>
+                <div><b>点呼件数</b>：${g.tenko.length}</div>
+                <div><b>日報件数</b>：${g.daily.length}</div>
+              </div>
+            </div>
 
-  function wrapText(doc, text, x, y, maxW, lineH=5){
-    const lines = doc.splitTextToSize(String(text||""), maxW);
-    lines.forEach((ln,i)=>doc.text(ln,x,y+i*lineH));
-    return y + lines.length*lineH;
-  }
+            <div style="margin-top:12px;font-weight:900">点呼一覧</div>
+            <table style="width:100%;border-collapse:collapse;font-size:12px;margin-top:8px">
+              <tr>
+                <th style="background:#f0fbff;border:1px solid #e9eef5;padding:8px">日付</th>
+                <th style="background:#f0fbff;border:1px solid #e9eef5;padding:8px">区分</th>
+                <th style="background:#f0fbff;border:1px solid #e9eef5;padding:8px">時刻</th>
+                <th style="background:#f0fbff;border:1px solid #e9eef5;padding:8px">アルコール</th>
+                <th style="background:#f0fbff;border:1px solid #e9eef5;padding:8px">ODO</th>
+                <th style="background:#f0fbff;border:1px solid #e9eef5;padding:8px">異常</th>
+              </tr>
+              ${g.tenko.map(t=>`
+                <tr>
+                  <td style="border:1px solid #e9eef5;padding:8px">${(t.at||"").slice(0,10)}</td>
+                  <td style="border:1px solid #e9eef5;padding:8px">${t.type==="departure"?"出発":"帰着"}</td>
+                  <td style="border:1px solid #e9eef5;padding:8px">${(t.at||"").slice(11,16)}</td>
+                  <td style="border:1px solid #e9eef5;padding:8px">${t.alcValue||""}</td>
+                  <td style="border:1px solid #e9eef5;padding:8px">${t.type==="departure"?(t.odoStart||""):(t.odoEnd||"")}</td>
+                  <td style="border:1px solid #e9eef5;padding:8px">${t.abnormal||""}</td>
+                </tr>
+              `).join("")}
+            </table>
 
-  async function addPhotoBlock(doc, title, dataUrl, x, y, w=90, h=50){
-    doc.setFont("helvetica","bold"); doc.setFontSize(10);
-    doc.setTextColor(91,103,122);
-    doc.text(title, x, y);
-    doc.setDrawColor(220,229,240);
-    doc.roundedRect(x-2, y+2, w+4, h+4, 3,3);
+            <div style="margin-top:14px;border-top:1px solid #e9eef5;padding-top:10px;font-size:12px;color:#666;display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap">
+              <div>© OFA GROUP</div>
+              <div>※端末内データから月報生成</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
 
-    const jpeg = await dataUrlToJpegDataUrl(dataUrl, 1200, 0.78);
-    if (jpeg) {
-      try {
-        doc.addImage(jpeg, "JPEG", x, y+4, w, h);
-      } catch {
-        doc.setFontSize(10);
-        doc.setTextColor(255,59,48);
-        doc.text("画像の埋め込みに失敗", x, y+12);
+    holder.innerHTML = html;
+    document.body.appendChild(holder);
+    const root = holder.querySelector("#ofaPdfRoot");
+    const canvas = await html2canvas(root, { scale:2, backgroundColor:"#ffffff" });
+    const imgData = canvas.toDataURL("image/png");
+
+    const pageW = 595, pageH = 842;
+    const imgW = pageW;
+    const imgH = (canvas.height * imgW) / canvas.width;
+
+    if(imgH <= pageH){
+      pdf.addImage(imgData, "PNG", 0, 0, imgW, imgH);
+    }else{
+      // split
+      let remain = imgH;
+      let pos = 0;
+      while(remain > 0){
+        pdf.addImage(imgData, "PNG", 0, pos, imgW, imgH);
+        remain -= pageH;
+        pos -= pageH;
+        if(remain > 0) pdf.addPage();
       }
-    } else {
-      doc.setFontSize(10);
-      doc.setTextColor(91,103,122);
-      doc.text("画像なし", x, y+12);
     }
+    document.body.removeChild(holder);
   }
 
-  async function makeTenkoPDF(payload){
-    const doc = new jsPDF({unit:"mm", format:"a4"});
-    const { profile, tenko } = payload;
-
-    header(doc, `点呼報告書（${tenko.tenkoType === "departure" ? "出発" : "帰着"}）`);
-
-    kv(doc, 12, 30, "氏名", profile.name);
-    kv(doc, 108, 30, "拠点", profile.base);
-    kv(doc, 12, 52, "車両番号", profile.carNo);
-    kv(doc, 108, 52, "点呼日時", tenko.atText);
-    kv(doc, 12, 74, "免許証番号", profile.licenseNo);
-    kv(doc, 108, 74, "点呼実施方法", tenko.method);
-
-    doc.setFont("helvetica","bold"); doc.setFontSize(12);
-    doc.setTextColor(11,18,32);
-    doc.text("健康・状態", 12, 102);
-    doc.setDrawColor(220,229,240); doc.line(12,104,198,104);
-
-    doc.setFont("helvetica","normal"); doc.setFontSize(11);
-    doc.setTextColor(11,18,32);
-    const health = [
-      `睡眠時間：${tenko.sleepHours}h`,
-      `体温：${tenko.bodyTemp}℃`,
-      `体調：${tenko.condition}`,
-      `疲労：${tenko.fatigue}`,
-      `服薬：${tenko.medication}${tenko.medication==="あり" ? "（"+tenko.medicationDetail+"）":""}`,
-      `飲酒：${tenko.drank}`,
-      `酒気帯び：${tenko.alcoholJudge}`,
-      `アルコール数値：${tenko.alcoholValue}`
-    ];
-    let y = 112;
-    health.forEach((t,i)=>doc.text(t, 12 + (i%2)*96, y + Math.floor(i/2)*7));
-
-    doc.setFont("helvetica","bold"); doc.setFontSize(12);
-    doc.text("稼働案件（複数）", 12, 146);
-    doc.setDrawColor(220,229,240); doc.line(12,148,198,148);
-
-    doc.setFont("helvetica","normal"); doc.setFontSize(10);
-    y = 156;
-    (tenko.jobs || []).forEach((j, idx) => {
-      const line = `#${idx+1} ${j.name} / エリア:${j.area} / 危険物:${j.danger} / 高額品:${j.high}`;
-      y = wrapText(doc, line, 12, y, 186, 5) + 2;
-    });
-
-    doc.setFont("helvetica","bold"); doc.setFontSize(12);
-    doc.text("異常申告", 12, y+6);
-    doc.setDrawColor(220,229,240); doc.line(12,y+8,198,y+8);
-    doc.setFont("helvetica","normal"); doc.setFontSize(11);
-    doc.text(`異常：${tenko.abnormal}`, 12, y+18);
-    if (tenko.abnormal === "あり") {
-      y = wrapText(doc, `内容：${tenko.abnormalDetail}`, 12, y+26, 186, 5) + 2;
-    } else {
-      y = y + 26;
-    }
-
-    doc.setFont("helvetica","bold"); doc.setFontSize(12);
-    doc.text("日常点検（車両点検）", 12, y+8);
-    doc.setDrawColor(220,229,240); doc.line(12,y+10,198,y+10);
-
-    doc.setFont("helvetica","normal"); doc.setFontSize(9);
-    const ng = tenko.inspectNG || [];
-    doc.text(`NG項目：${ng.length ? ng.join(" / ") : "なし"}`, 12, y+18);
-    if (ng.length) {
-      y = wrapText(doc, `NG詳細：${tenko.ngMemo || ""}`, 12, y+26, 186, 5) + 2;
-    } else {
-      y = y + 26;
-    }
-
-    // 写真ページ
-    doc.addPage();
-    header(doc, "添付写真（PDF埋め込み / アップロードなし）");
-
-    await addPhotoBlock(doc, "運転免許証", tenko.photos?.licensePhoto, 12, 28, 90, 55);
-    await addPhotoBlock(doc, "アルコール測定", tenko.photos?.alcoholPhoto, 108, 28, 90, 55);
-    await addPhotoBlock(doc, "異常写真", tenko.photos?.abnormalPhoto, 12, 95, 90, 55);
-    await addPhotoBlock(doc, "点検NG写真", tenko.photos?.ngPhoto, 108, 95, 90, 55);
-
-    doc.setFont("helvetica","normal"); doc.setFontSize(10);
-    doc.setTextColor(91,103,122);
-    doc.text("© OFA GROUP", 12, 285);
-
-    const fname = `OFA_TENKO_${tenko.atText.replaceAll(":","-").replaceAll(" ","_")}_${tenko.tenkoType}.pdf`;
-    doc.save(fname);
-  }
-
-  async function makeDailyPDF(payload){
-    const doc = new jsPDF({unit:"mm", format:"a4"});
-    const { profile, daily } = payload;
-
-    header(doc, "日報（業務実績）報告書");
-
-    kv(doc, 12, 30, "氏名", profile.name);
-    kv(doc, 108, 30, "拠点", profile.base);
-    kv(doc, 12, 52, "車両番号", profile.carNo);
-    kv(doc, 108, 52, "稼働日", daily.date);
-    kv(doc, 12, 74, "案件", daily.workCase);
-    kv(doc, 108, 74, "稼働時間", `${daily.workStart}〜${daily.workEnd}`);
-
-    doc.setFont("helvetica","bold"); doc.setFontSize(12);
-    doc.setTextColor(11,18,32);
-    doc.text("実績", 12, 102);
-    doc.setDrawColor(220,229,240); doc.line(12,104,198,104);
-
-    doc.setFont("helvetica","normal"); doc.setFontSize(11);
-    const r1 = [
-      `稼働：${Math.floor(daily.workMinutes/60)}h${String(daily.workMinutes%60).padStart(2,"0")}m`,
-      `休憩：${Math.floor(daily.breakMin/60)}h${String(daily.breakMin%60).padStart(2,"0")}m`,
-      `走行距離：${Number(daily.distanceKm||0).toFixed(1)}km`,
-      `配達個数：${daily.delivered}`,
-      `不在：${daily.absent} / 再配達：${daily.redelivery} / 返品：${daily.returned}`
-    ];
-    let y = 114;
-    r1.forEach(t => { y = wrapText(doc, t, 12, y, 186, 6) + 1; });
-
-    doc.setFont("helvetica","bold"); doc.setFontSize(12);
-    doc.text("売上 / 経費 / 利益", 12, y+8);
-    doc.setDrawColor(220,229,240); doc.line(12,y+10,198,y+10);
-
-    doc.setFont("helvetica","normal"); doc.setFontSize(11);
-    const sales = Number(daily.payDaily||0) + Number(daily.payIncentive||0);
-    const exp = Number(daily.expTotal||0);
-    const prof = Number(daily.profit||0);
-    doc.text(`売上合計：${sales.toLocaleString()}円（固定:${daily.payDaily} / ｲﾝｾﾝ:${daily.payIncentive}）`, 12, y+20);
-    doc.text(`経費合計：${exp.toLocaleString()}円（高速:${daily.expToll} / 駐車:${daily.expParking} / 燃料:${daily.expFuel} / 他:${daily.expOther}）`, 12, y+28);
-    doc.setFont("helvetica","bold"); doc.setFontSize(12);
-    doc.text(`概算利益：${prof.toLocaleString()}円`, 12, y+38);
-
-    doc.setFont("helvetica","normal"); doc.setFontSize(11);
-    doc.text(`クレーム：${daily.claimFlag}${daily.claimFlag==="あり" ? "（"+daily.claimDetail+"）":""}`, 12, y+52);
-    doc.text(`事故/物損：${daily.accidentFlag}${daily.accidentFlag==="あり" ? "（"+daily.accidentDetail+"）":""}`, 12, y+60);
-    doc.text(`遅延理由：${daily.delayReason}`, 12, y+68);
-    doc.text(`明日の稼働：${daily.tomorrowPlan}`, 12, y+76);
-
-    // 写真ページ
-    doc.addPage();
-    header(doc, "日報 添付写真（PDF埋め込み）");
-    await addPhotoBlock(doc, "日報写真", daily.photos?.dailyPhoto, 12, 28, 186, 120);
-
-    doc.setFont("helvetica","normal"); doc.setFontSize(10);
-    doc.setTextColor(91,103,122);
-    doc.text("© OFA GROUP", 12, 285);
-
-    doc.save(`OFA_DAILY_${daily.date}.pdf`);
-  }
-
-  async function makeMonthlyPDF(payload){
-    const doc = new jsPDF({unit:"mm", format:"a4"});
-    const { profile, monthly } = payload;
-
-    header(doc, "月報（集計）");
-
-    kv(doc, 12, 30, "氏名", profile.name);
-    kv(doc, 108, 30, "拠点", profile.base);
-    kv(doc, 12, 52, "期間", `${monthly.from} 〜 ${monthly.to}`);
-    kv(doc, 108, 52, "稼働日数", monthly.days);
-
-    doc.setFont("helvetica","bold"); doc.setFontSize(12);
-    doc.setTextColor(11,18,32);
-    doc.text("指標", 12, 82);
-    doc.setDrawColor(220,229,240); doc.line(12,84,198,84);
-
-    doc.setFont("helvetica","normal"); doc.setFontSize(11);
-    const lines = [
-      `総稼働時間：${Math.floor(monthly.totalWorkMin/60)}h${String(monthly.totalWorkMin%60).padStart(2,"0")}m`,
-      `総休憩：${Math.floor(monthly.totalBreak/60)}h${String(monthly.totalBreak%60).padStart(2,"0")}m`,
-      `総走行距離：${Number(monthly.totalDist||0).toFixed(1)}km`,
-      `総配達個数：${monthly.totalDeliv}（1日平均：${Number(monthly.avg||0).toFixed(1)}）`,
-      `不在率：${Number(monthly.absRate||0).toFixed(1)}% / 再配達率：${Number(monthly.redRate||0).toFixed(1)}%`,
-      `クレーム件数：${monthly.totalClaim} / 事故件数：${monthly.totalAcc}`,
-      `売上合計：${Number(monthly.totalSales||0).toLocaleString()}円`,
-      `経費合計：${Number(monthly.totalExp||0).toLocaleString()}円`,
-      `概算利益：${Number(monthly.totalProfit||0).toLocaleString()}円`,
-    ];
-    let y = 96;
-    lines.forEach(t => { y = wrapText(doc, t, 12, y, 186, 6) + 2; });
-
-    doc.setFont("helvetica","bold"); doc.setFontSize(12);
-    doc.text("点呼未実施日", 12, y+8);
-    doc.setDrawColor(220,229,240); doc.line(12,y+10,198,y+10);
-    doc.setFont("helvetica","normal"); doc.setFontSize(10);
-    y = wrapText(doc, monthly.missText || "なし", 12, y+20, 186, 5);
-
-    doc.setFont("helvetica","normal"); doc.setFontSize(10);
-    doc.setTextColor(91,103,122);
-    doc.text("© OFA GROUP", 12, 285);
-
-    doc.save(`OFA_MONTHLY_${monthly.from}_${monthly.to}.pdf`);
-  }
-
-  window.OFA_PDF = { makeTenkoPDF, makeDailyPDF, makeMonthlyPDF };
-})();
+  pdf.save(`OFA_月報_${filters.from||""}_${filters.to||""}.pdf`);
+}
