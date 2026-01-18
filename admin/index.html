@@ -1,395 +1,619 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>OFA 管理者（月報・期間検索）</title>
-  <link rel="stylesheet" href="../style.css" />
-</head>
-<body>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>管理者（月報PDF・期間検索） | OFA</title>
 
+  <style>
+    :root{
+      --c1:#19cbd3; --c2:#8a5cff; --c3:#ff4fa3;
+      --bg:#ffffff; --text:#222; --muted:#666; --line:#e9e9ef;
+      --card:#ffffff;
+    }
+    body{
+      font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue",sans-serif;
+      background:var(--bg); color:var(--text); margin:0;
+    }
+    header{
+      display:flex; align-items:center; justify-content:space-between;
+      padding:14px 16px; border-bottom:1px solid var(--line);
+      position:sticky; top:0; background:#fff; z-index:10;
+    }
+    .brand{
+      display:flex; gap:10px; align-items:center;
+      min-width:0;
+    }
+    .logo{
+      width:42px; height:42px; border-radius:12px;
+      background:linear-gradient(135deg,var(--c1),var(--c2),var(--c3));
+      display:flex; align-items:center; justify-content:center;
+      color:#fff; font-weight:800; letter-spacing:1px;
+      flex:0 0 auto;
+    }
+    .title{
+      font-weight:800;
+      white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+    }
+    .sub{
+      color:var(--muted); font-size:12px; margin-top:2px;
+      white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+    }
+    .btn{
+      border:none; border-radius:999px; padding:10px 14px; font-size:14px;
+      color:#fff; background:linear-gradient(90deg,var(--c1),var(--c2),var(--c3));
+      cursor:pointer;
+    }
+    .btn.gray{
+      background:#eef0f6; color:#111;
+    }
+    main{ padding:16px; max-width:860px; margin:0 auto; }
+    .card{
+      background:var(--card); border:1px solid var(--line);
+      border-radius:16px; padding:14px; margin:14px 0;
+      box-shadow:0 2px 10px rgba(0,0,0,.03);
+    }
+    h2{
+      margin:0 0 10px; font-size:16px;
+      border-left:6px solid var(--c1); padding-left:10px;
+    }
+    label{ display:block; font-weight:700; margin-top:12px; }
+    input,select{
+      width:100%; padding:12px; margin-top:6px;
+      border:1px solid #cfd3dd; border-radius:12px;
+      font-size:16px;
+    }
+    .row{ display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+    @media(max-width:640px){ .row{ grid-template-columns:1fr; } }
+    .help{ font-size:12px; color:var(--muted); margin-top:8px; line-height:1.6; }
+    .warn{ background:#fff7e6; border:1px solid #ffe2a8; color:#6b4b00; padding:10px 12px; border-radius:12px; font-size:13px; line-height:1.6; }
+    .ok{ background:#eefaf0; border:1px solid #cbead2; color:#0f4b1f; padding:10px 12px; border-radius:12px; font-size:13px; line-height:1.6; }
+    .err{ background:#ffeef0; border:1px solid #ffd0d7; color:#8a0f1c; padding:10px 12px; border-radius:12px; font-size:13px; line-height:1.6; }
+    .actions{ display:flex; gap:10px; flex-wrap:wrap; margin-top:12px; }
+    .actions .btn{ flex:1 1 160px; }
+    table{
+      width:100%; border-collapse:collapse; margin-top:10px; font-size:13px;
+      border:1px solid var(--line); border-radius:12px; overflow:hidden;
+    }
+    th,td{ border-bottom:1px solid var(--line); padding:10px; text-align:left; }
+    th{ background:#f7f8fc; font-weight:800; }
+    tr:last-child td{ border-bottom:none; }
+    .pill{
+      display:inline-block; padding:6px 10px; border-radius:999px; font-size:12px;
+      background:#eef0f6; color:#111;
+    }
+    .right{ text-align:right; }
+    .muted{ color:var(--muted); }
+    .hidden{ display:none !important; }
+  </style>
+</head>
+
+<body>
 <header>
-  <div class="header-inner">
-    <div class="brand">
-      <img src="https://ofagroup2020-gif.github.io/logo.png" alt="OFA" onerror="this.style.display='none'">
-      <div>
-        <div class="title">OFA 管理者（月報・期間検索）</div>
-        <div class="sub">端末内データ（IndexedDB）から：期間検索 / 集計 / CSV / 月報PDF / 個別PDF</div>
-      </div>
+  <div class="brand">
+    <div class="logo">OFA</div>
+    <div style="min-width:0">
+      <div class="title">管理者（月報PDF・期間検索）</div>
+      <div class="sub">端末内データ（IndexedDB）を検索して月報PDF/CSV出力</div>
     </div>
-    <a class="badge" href="../index.html">ドライバーへ</a>
   </div>
+  <button class="btn gray" onclick="location.href='../index.html'">戻る</button>
 </header>
 
-<div class="container">
+<main>
 
-  <div class="card" id="lockCard">
-    <h2>管理者ログイン（パス）</h2>
-    <div class="note">
-      サーバ無し運用のための簡易ロックです（強固なセキュリティ用途ではありません）。<br>
-      パスはこのHTMLの <b>ADMIN_PASS</b> を変更して運用できます。
+  <div class="card">
+    <h2>① 管理者認証（端末ロック）</h2>
+
+    <div id="msgBox" class="warn">
+      初回パスは <b>ofa-admin</b>。ログイン後に必ず変更して運用してください。<br>
+      ※「ダイアログを表示しない」を押した場合でも、下にエラー表示されます。
     </div>
-    <div class="label">管理者パス</div>
-    <input class="input" id="adminPass" type="password" placeholder="管理者パスを入力">
-    <button class="btn" onclick="unlock()">ログイン</button>
+
+    <label>管理者パス</label>
+    <input id="adminPass" type="password" inputmode="text" autocomplete="current-password" placeholder="初回：ofa-admin" />
+
+    <div class="actions">
+      <button class="btn" onclick="adminLogin()">認証して進む</button>
+      <button class="btn gray" onclick="adminLogout()">ロック解除</button>
+    </div>
+
+    <div class="help">
+      うまく進めない場合：<br>
+      ① <b>ofa-admin</b> をコピペ入力 → 認証<br>
+      ② ダメなら Safari の「Webサイトデータ」から <b>ofagroup2020-gif.github.io</b> を削除して再試行
+    </div>
   </div>
 
-  <div class="card" id="mainCard" style="display:none">
-    <h2>期間検索（月報）</h2>
+  <div id="adminArea" class="hidden">
+    <div class="card">
+      <h2>② パス変更（推奨）</h2>
+      <div class="help">この端末に保存されます（サーバ送信なし）。忘れたら「Webサイトデータ削除」で初期化できます。</div>
 
-    <div class="row three">
-      <div>
-        <div class="label">期間（開始）<span class="req">*</span></div>
-        <input class="input" type="date" id="from">
+      <label>新しい管理者パス</label>
+      <input id="newPass" type="password" placeholder="8文字以上推奨（英数）" />
+
+      <label>新しい管理者パス（確認）</label>
+      <input id="newPass2" type="password" placeholder="もう一度入力" />
+
+      <div class="actions">
+        <button class="btn" onclick="changeAdminPass()">パスを変更</button>
+        <button class="btn gray" onclick="resetAdminPass()">初期パスに戻す</button>
       </div>
-      <div>
-        <div class="label">期間（終了）<span class="req">*</span></div>
-        <input class="input" type="date" id="to">
-      </div>
-      <div>
-        <div class="label">拠点（任意）</div>
-        <input class="input" id="base" placeholder="例：鹿児島県">
-      </div>
+      <div class="help muted">※ 初期パスに戻す＝この端末の管理者パスを「ofa-admin」に戻します。</div>
     </div>
 
-    <div class="row two">
-      <div>
-        <div class="label">氏名（任意）</div>
-        <input class="input" id="name" placeholder="例：森下洸">
-      </div>
-      <div>
-        <div class="label">並び</div>
-        <select class="input" id="sort">
-          <option value="desc">新しい順</option>
-          <option value="asc">古い順</option>
-        </select>
-      </div>
-    </div>
+    <div class="card">
+      <h2>③ 期間検索（点呼・日報）</h2>
 
-    <div class="right" style="margin-top:10px">
-      <button class="btn small secondary inline" onclick="search()">検索</button>
-      <button class="btn small secondary inline" onclick="exportCsv()">CSV出力</button>
-      <button class="btn small secondary inline" onclick="exportMonthlyPdf()">月報PDF（全体）</button>
-      <button class="btn small secondary inline" onclick="exportPersonPdf()">月報PDF（個別）</button>
-    </div>
-
-    <div class="small" style="margin-top:10px">
-      ※ 管理者画面は <b>この端末のIndexedDB</b> に入っているデータのみ参照します（サーバ無し運用）
-    </div>
-
-    <hr>
-
-    <h3>集計（期間内）</h3>
-    <div id="sumWrap" class="note">検索すると集計が表示されます。</div>
-
-    <h3 style="margin-top:12px">一覧</h3>
-    <div id="result"></div>
-  </div>
-
-</div>
-
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-
-<script>
-/* ===== 管理者パス（ここを変更） ===== */
-const ADMIN_PASS = "OFA-ADMIN-2026";
-
-/* ===== DB ===== */
-const DB_NAME="ofa_full_db";
-const DB_VER=1;
-let db;
-
-function openDB(){
-  return new Promise((resolve,reject)=>{
-    const req=indexedDB.open(DB_NAME,DB_VER);
-    req.onsuccess=()=>{db=req.result; resolve(db);};
-    req.onerror=()=>reject(req.error);
-  });
-}
-function store(name,mode="readonly"){ return db.transaction(name,mode).objectStore(name); }
-
-function esc(s){
-  return String(s||"").replace(/[&<>"']/g,m=>({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[m]));
-}
-function n(v){
-  const x=parseFloat(String(v||"").replace(/,/g,""));
-  return isNaN(x)?0:x;
-}
-
-function unlock(){
-  if(adminPass.value !== ADMIN_PASS){ alert("パスが違います"); return; }
-  sessionStorage.setItem("ofa_admin_unlocked","1");
-  lockCard.style.display="none";
-  mainCard.style.display="";
-}
-
-/* ===== データ取得 ===== */
-async function getAllTenko(){
-  return new Promise(res=>{
-    const r=store("tenko").getAll();
-    r.onsuccess=()=>res(r.result||[]);
-    r.onerror=()=>res([]);
-  });
-}
-function calcDistanceMap(tenkos){
-  const map={};
-  for(const r of tenkos){
-    const key=`${r.date}__${r.name}__${r.base}`;
-    map[key] ||= {startOdo:null,endOdo:null,distance:null};
-    const odo=n(r.odo);
-    if(!odo) continue;
-    if(r.type==="出発") map[key].startOdo=odo;
-    if(r.type==="帰着") map[key].endOdo=odo;
-    if(map[key].startOdo!=null && map[key].endOdo!=null){
-      map[key].distance=Math.max(0, map[key].endOdo-map[key].startOdo);
-    }
-  }
-  return map;
-}
-
-let lastRows=[];
-
-async function search(){
-  const f=from.value, t=to.value;
-  if(!f||!t){ alert("期間（開始/終了）は必須です"); return; }
-
-  const baseF=(base.value||"").trim();
-  const nameF=(name.value||"").trim();
-  const sortDir=sort.value;
-
-  const tenkos=await getAllTenko();
-  let rows=tenkos.filter(r=>r.date>=f && r.date<=t);
-  if(baseF) rows=rows.filter(r=>(r.base||"").includes(baseF));
-  if(nameF) rows=rows.filter(r=>(r.name||"").includes(nameF));
-
-  rows.sort((a,b)=> sortDir==="asc" ? (a.at||"").localeCompare(b.at||"") : (b.at||"").localeCompare(a.at||""));
-
-  const distMap=calcDistanceMap(rows);
-
-  lastRows=rows.map(r=>{
-    const key=`${r.date}__${r.name}__${r.base}`;
-    return {
-      date:r.date, at:r.at, name:r.name, base:r.base,
-      type:r.type, odo:r.odo||"",
-      distance: distMap[key]?.distance ?? null,
-      method:r.method||"",
-      alcohol:r.alcoholValue||"",
-      memo:r.memo||"",
-      checklist:(r.checklist||[]).join("、")
-    };
-  });
-
-  renderTable(lastRows);
-  renderSummary(lastRows);
-}
-
-function renderSummary(rows){
-  if(rows.length===0){
-    sumWrap.innerHTML="該当データなし";
-    return;
-  }
-  const drivers = new Set(rows.map(r=>r.name)).size;
-  const bases = new Set(rows.map(r=>r.base)).size;
-
-  // 走行距離は同日突合値（重複計上を避けるため、date+name+baseでユニークに集計）
-  const uniqKey = new Map(); // key -> distance
-  for(const r of rows){
-    const k=`${r.date}__${r.name}__${r.base}`;
-    if(r.distance!=null) uniqKey.set(k, r.distance);
-  }
-  let distSum=0;
-  for(const v of uniqKey.values()) distSum += n(v);
-
-  const depCnt = rows.filter(r=>r.type==="出発").length;
-  const arrCnt = rows.filter(r=>r.type==="帰着").length;
-
-  sumWrap.innerHTML = `
-    <b>期間：</b>${esc(from.value)} 〜 ${esc(to.value)}<br>
-    <b>人数：</b>${drivers}　/　<b>拠点数：</b>${bases}<br>
-    <b>点呼件数：</b>出発 ${depCnt} / 帰着 ${arrCnt}<br>
-    <b>走行距離合計（同日突合のユニーク集計）：</b><b>${distSum} km</b>
-  `;
-}
-
-function renderTable(rows){
-  if(rows.length===0){
-    result.innerHTML = `<div class="note">該当データがありません</div>`;
-    return;
-  }
-  let html = `<table class="table"><thead><tr>
-    <th>日時</th><th>氏名</th><th>拠点</th><th>区分</th><th>ODO</th><th>走行距離</th><th>アルコール</th><th>点検</th><th>特記事項</th>
-  </tr></thead><tbody>`;
-  for(const r of rows){
-    html += `<tr>
-      <td>${esc(r.at)}</td>
-      <td><b>${esc(r.name)}</b></td>
-      <td>${esc(r.base)}</td>
-      <td>${esc(r.type)}</td>
-      <td>${esc(r.odo)}</td>
-      <td>${r.distance==null ? "—" : (r.distance+" km")}</td>
-      <td>${esc(r.alcohol)}</td>
-      <td>${esc(r.checklist)}</td>
-      <td>${esc(r.memo)}</td>
-    </tr>`;
-  }
-  html += `</tbody></table>`;
-  result.innerHTML = html;
-}
-
-/* ===== CSV ===== */
-function buildCSV(headers, rows){
-  const csv = [headers].concat(rows).map(cols=> cols.map(v=>{
-    const s=String(v??"");
-    return /[",\n]/.test(s) ? `"${s.replace(/"/g,'""')}"` : s;
-  }).join(",")).join("\n");
-  return "\uFEFF"+csv;
-}
-function downloadBlob(filename, blob){
-  const url=URL.createObjectURL(blob);
-  const a=document.createElement("a");
-  a.href=url; a.download=filename;
-  document.body.appendChild(a); a.click(); a.remove();
-  setTimeout(()=>URL.revokeObjectURL(url),1000);
-}
-function exportCsv(){
-  if(!lastRows.length){ alert("先に検索してください"); return; }
-  const headers=["日付","点呼日時","氏名","拠点","区分","ODO","走行距離(km)","点呼方法","アルコール","日常点検","特記事項"];
-  const rows=lastRows.map(r=>[
-    r.date,r.at,r.name,r.base,r.type,r.odo,(r.distance==null?"":String(r.distance)),r.method,r.alcohol,r.checklist,r.memo
-  ]);
-  const text=buildCSV(headers, rows);
-  downloadBlob(`OFA_monthly_${from.value}_${to.value}.csv`, new Blob([text],{type:"text/csv;charset=utf-8"}));
-}
-
-/* ===== PDF（文字化けゼロ） ===== */
-function monthlyHTML(title, rows){
-  const logo="https://ofagroup2020-gif.github.io/logo.png";
-  const tableRows = rows.map(r=>`
-    <tr>
-      <td style="padding:8px;border-top:1px solid #eef2f7">${esc(r.at)}</td>
-      <td style="padding:8px;border-top:1px solid #eef2f7">${esc(r.name)}</td>
-      <td style="padding:8px;border-top:1px solid #eef2f7">${esc(r.base)}</td>
-      <td style="padding:8px;border-top:1px solid #eef2f7">${esc(r.type)}</td>
-      <td style="padding:8px;border-top:1px solid #eef2f7">${esc(r.odo)}</td>
-      <td style="padding:8px;border-top:1px solid #eef2f7">${r.distance==null?"—":(r.distance+" km")}</td>
-      <td style="padding:8px;border-top:1px solid #eef2f7">${esc(r.alcohol)}</td>
-      <td style="padding:8px;border-top:1px solid #eef2f7">${esc(r.checklist)}</td>
-      <td style="padding:8px;border-top:1px solid #eef2f7">${esc(r.memo)}</td>
-    </tr>
-  `).join("");
-
-  return `
-  <div style="font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Noto Sans JP',Arial,sans-serif;color:#1b2430;background:#fff">
-    <div style="border-bottom:10px solid #12c8cf">
-      <div style="background:#12c8cf;color:#fff;padding:14px 16px;font-weight:900;display:flex;justify-content:space-between;align-items:center">
-        <div>OFA GROUP　月報</div>
-        <div style="font-size:12px;font-weight:900;background:rgba(255,255,255,.22);padding:6px 10px;border-radius:999px">管理者</div>
-      </div>
-      <div style="height:8px;background:#7a55ff"></div>
-    </div>
-
-    <div style="padding:16px">
-      <div style="display:flex;gap:12px;align-items:center">
-        <img src="${logo}" onerror="this.style.display='none'" style="width:56px;height:56px;border-radius:14px;border:1px solid #eef2f7;background:#fff;object-fit:contain">
+      <div class="row">
         <div>
-          <div style="font-size:18px;font-weight:900">${esc(title)}</div>
-          <div style="font-size:12px;color:#5c6b7a">出力日時：${new Date().toLocaleString()}</div>
+          <label>開始日</label>
+          <input id="fromDate" type="date" />
+        </div>
+        <div>
+          <label>終了日</label>
+          <input id="toDate" type="date" />
         </div>
       </div>
 
-      <div style="margin-top:12px;border:1px solid #e8eef7;border-radius:14px;overflow:hidden">
-        <div style="background:#f7f9fc;padding:10px 12px;font-weight:900">一覧</div>
-        <table style="width:100%;border-collapse:collapse;font-size:11px">
+      <div class="row">
+        <div>
+          <label>拠点（部分一致）</label>
+          <input id="qBase" placeholder="例：鹿児島 / 東京" />
+        </div>
+        <div>
+          <label>氏名（部分一致）</label>
+          <input id="qName" placeholder="例：森下" />
+        </div>
+      </div>
+
+      <div class="actions">
+        <button class="btn" onclick="runSearch()">検索</button>
+        <button class="btn gray" onclick="clearSearch()">クリア</button>
+      </div>
+
+      <div class="help">
+        検索対象：<b>端末内 IndexedDB</b>（この端末で入力したデータのみ）。<br>
+        月報出力：検索結果をまとめて <b>PDF / CSV</b> にします。
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>④ 検索結果</h2>
+      <div class="actions">
+        <button class="btn" onclick="exportCSV()">CSVワンクリック出力</button>
+        <button class="btn" onclick="exportMonthlyPDF()">月報PDF（OFAフォーマット）</button>
+      </div>
+      <div id="summary" class="help"></div>
+
+      <div style="overflow:auto">
+        <table id="resultTable">
           <thead>
-            <tr style="background:#f7f9fc">
-              <th style="padding:8px;text-align:left">日時</th>
-              <th style="padding:8px;text-align:left">氏名</th>
-              <th style="padding:8px;text-align:left">拠点</th>
-              <th style="padding:8px;text-align:left">区分</th>
-              <th style="padding:8px;text-align:left">ODO</th>
-              <th style="padding:8px;text-align:left">走行距離</th>
-              <th style="padding:8px;text-align:left">アルコール</th>
-              <th style="padding:8px;text-align:left">点検</th>
-              <th style="padding:8px;text-align:left">特記事項</th>
+            <tr>
+              <th>日付</th>
+              <th>氏名</th>
+              <th>拠点</th>
+              <th>区分</th>
+              <th>ODO(出発)</th>
+              <th>ODO(帰着)</th>
+              <th>走行距離</th>
+              <th class="right">売上(任意)</th>
             </tr>
           </thead>
-          <tbody>${tableRows}</tbody>
+          <tbody></tbody>
         </table>
       </div>
 
-      <div style="margin-top:14px;font-size:11px;color:#6a7a8b">
-        © OFA GROUP / 端末内データ（IndexedDB）から出力
+      <div class="help muted">
+        ※ 売上など任意項目は未入力なら空欄のまま出力されます。
       </div>
     </div>
-  </div>`;
+  </div>
+</main>
+
+<!-- jsPDF（日本語文字化け対策：見出しは画像化/表は英数中心で保持） -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+<script>
+/* =========================
+   管理者パス（端末ロック）
+========================= */
+const ADMIN_PASS_KEY = "ofa_admin_pass_v1";
+const ADMIN_OK_KEY   = "ofa_admin_ok_v1";
+const DEFAULT_ADMIN_PASS = "ofa-admin";
+
+function getAdminPass(){
+  return localStorage.getItem(ADMIN_PASS_KEY) || DEFAULT_ADMIN_PASS;
+}
+function setAdminPass(p){
+  localStorage.setItem(ADMIN_PASS_KEY, p);
+}
+function setAdminOk(ok){
+  localStorage.setItem(ADMIN_OK_KEY, ok ? "1" : "0");
+}
+function isAdminOk(){
+  return localStorage.getItem(ADMIN_OK_KEY) === "1";
 }
 
-async function htmlToPdfBlob(html){
-  const wrap=document.createElement("div");
-  wrap.style.position="fixed";
-  wrap.style.left="-9999px";
-  wrap.style.top="0";
-  wrap.style.width="794px";
-  wrap.innerHTML=html;
-  document.body.appendChild(wrap);
+function showMsg(type, html){
+  const box = document.getElementById("msgBox");
+  box.className = type; // warn/ok/err
+  box.innerHTML = html;
+}
 
-  const canvas=await html2canvas(wrap,{scale:2,useCORS:true});
-  const img=canvas.toDataURL("image/png");
+function adminLogin(){
+  const input = (document.getElementById("adminPass").value || "").trim();
+  if(!input){
+    showMsg("err", "管理者パスを入力してください。");
+    return;
+  }
+  const actual = getAdminPass();
+  if(input !== actual){
+    showMsg("err", "管理者パスが違います。<br>初期は <b>ofa-admin</b> です。<br>※ うまくいかない場合は「Webサイトデータ削除」を実施してください。");
+    return;
+  }
+  setAdminOk(true);
+  document.getElementById("adminArea").classList.remove("hidden");
+  showMsg("ok", "認証OK。管理者メニューを開きました。");
+}
 
-  const {jsPDF}=window.jspdf;
-  const pdf=new jsPDF("p","mm","a4");
+function adminLogout(){
+  setAdminOk(false);
+  document.getElementById("adminArea").classList.add("hidden");
+  showMsg("warn", "ロック解除しました。再度、管理者パスを入力してください。<br>初回パスは <b>ofa-admin</b>。");
+}
 
-  const pageW=210, pageH=297;
-  const props=pdf.getImageProperties(img);
-  const imgW=pageW;
-  const imgH=(props.height*imgW)/props.width;
+function changeAdminPass(){
+  const p1 = (document.getElementById("newPass").value || "").trim();
+  const p2 = (document.getElementById("newPass2").value || "").trim();
+  if(p1.length < 4){
+    alert("短すぎます。4文字以上にしてください（8文字以上推奨）。");
+    return;
+  }
+  if(p1 !== p2){
+    alert("確認用パスが一致しません。");
+    return;
+  }
+  setAdminPass(p1);
+  alert("管理者パスを変更しました。忘れないように保管してください。");
+}
 
-  let remain=imgH;
-  let pos=0;
-  while(remain>0){
-    pdf.addImage(img,"PNG",0,pos,imgW,imgH);
-    remain -= pageH;
-    pos -= pageH;
-    if(remain>0) pdf.addPage();
+function resetAdminPass(){
+  if(!confirm("管理者パスを初期（ofa-admin）に戻します。よろしいですか？")) return;
+  setAdminPass(DEFAULT_ADMIN_PASS);
+  alert("初期パス（ofa-admin）に戻しました。");
+}
+
+/* 初回ロード時：認証状態が残っていれば開く */
+window.addEventListener("load", () => {
+  if(isAdminOk()){
+    document.getElementById("adminArea").classList.remove("hidden");
+    showMsg("ok", "前回の認証状態を保持しています。管理者メニューを表示中。");
+  }
+});
+
+/* =========================
+   IndexedDB（端末内データ）
+   ここは「既存のDB構造」に合わせてる
+   - store: records
+   - keyPath: id (auto)
+   - record.kind: 'tenko_departure' / 'tenko_arrival' / 'daily'
+========================= */
+
+const DB_NAME = "ofa_nippou_db";
+const DB_VER  = 1;
+const STORE   = "records";
+
+function openDB(){
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open(DB_NAME, DB_VER);
+    req.onupgradeneeded = (e) => {
+      const db = req.result;
+      if(!db.objectStoreNames.contains(STORE)){
+        const os = db.createObjectStore(STORE, { keyPath:"id", autoIncrement:true });
+        os.createIndex("byDate","date");     // yyyy-mm-dd
+        os.createIndex("byName","name");
+        os.createIndex("byBase","base");
+        os.createIndex("byKind","kind");
+      }
+    };
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+function txAll(db){
+  return db.transaction(STORE, "readonly").objectStore(STORE);
+}
+
+function readAllRecords(){
+  return openDB().then(db => new Promise((resolve, reject) => {
+    const os = txAll(db);
+    const req = os.getAll();
+    req.onsuccess = () => resolve(req.result || []);
+    req.onerror = () => reject(req.error);
+  }));
+}
+
+/* =========================
+   検索・集計
+========================= */
+let lastResults = [];
+
+function clearSearch(){
+  document.getElementById("fromDate").value = "";
+  document.getElementById("toDate").value = "";
+  document.getElementById("qBase").value = "";
+  document.getElementById("qName").value = "";
+  renderResults([]);
+  document.getElementById("summary").innerHTML = "";
+}
+
+function runSearch(){
+  const from = document.getElementById("fromDate").value; // yyyy-mm-dd
+  const to   = document.getElementById("toDate").value;
+  const qBase= (document.getElementById("qBase").value||"").trim();
+  const qName= (document.getElementById("qName").value||"").trim();
+
+  readAllRecords().then(all => {
+    // 対象：点呼（出発/帰着）＋日報（daily）を一緒に扱えるように
+    let filtered = all;
+
+    if(from) filtered = filtered.filter(r => (r.date||"") >= from);
+    if(to)   filtered = filtered.filter(r => (r.date||"") <= to);
+    if(qBase) filtered = filtered.filter(r => (r.base||"").includes(qBase));
+    if(qName) filtered = filtered.filter(r => (r.name||"").includes(qName));
+
+    // 月報は「出発と帰着を同時入力しない」前提。
+    // 走行距離は、同日(または同一勤務日)の出発ODOと帰着ODOを突き合わせて算出。
+    const normalized = normalizeForMonthly(filtered);
+
+    lastResults = normalized;
+    renderResults(normalized);
+    renderSummary(normalized);
+  }).catch(err => {
+    console.error(err);
+    alert("検索に失敗しました。IndexedDBが作成されていないか、データがありません。");
+  });
+}
+
+function normalizeForMonthly(records){
+  // record例の想定:
+  // {kind:'tenko_departure', date:'2026-01-14', tenkoAt:'...', odo:123, ...}
+  // {kind:'tenko_arrival',   date:'2026-01-14', odo:456, ...}
+  // {kind:'daily', date:'2026-01-14', sales:..., ...}
+
+  // まず日付×氏名でグルーピング
+  const map = new Map();
+  for(const r of records){
+    const date = r.date || "";
+    const name = r.name || "";
+    const base = r.base || "";
+    if(!date || !name) continue;
+    const key = `${date}__${name}__${base}`;
+    if(!map.has(key)){
+      map.set(key, {
+        date, name, base,
+        depOdo: "", arrOdo: "", distance: "",
+        sales: "",
+        kinds: new Set(),
+        raw: []
+      });
+    }
+    const row = map.get(key);
+    row.raw.push(r);
+    row.kinds.add(r.kind || "");
+
+    if((r.kind||"") === "tenko_departure"){
+      if(r.odo !== undefined && r.odo !== null && r.odo !== "") row.depOdo = String(r.odo);
+    }
+    if((r.kind||"") === "tenko_arrival"){
+      if(r.odo !== undefined && r.odo !== null && r.odo !== "") row.arrOdo = String(r.odo);
+    }
+    if((r.kind||"") === "daily"){
+      if(r.sales !== undefined && r.sales !== null && r.sales !== "") row.sales = String(r.sales);
+    }
   }
 
-  wrap.remove();
-  return pdf.output("blob");
-}
-
-async function exportMonthlyPdf(){
-  if(!lastRows.length){ alert("先に検索してください"); return; }
-  const title=`OFA 月報（${from.value} 〜 ${to.value}）`;
-  const blob=await htmlToPdfBlob(monthlyHTML(title,lastRows));
-  downloadBlob(`OFA_monthly_${from.value}_${to.value}.pdf`, blob);
-}
-
-async function exportPersonPdf(){
-  if(!lastRows.length){ alert("先に検索してください"); return; }
-  const target=(name.value||"").trim();
-  if(!target){ alert("個別PDFは、氏名を入力してから押してください"); return; }
-  const rows=lastRows.filter(r=>r.name.includes(target));
-  if(rows.length===0){ alert("該当者がいません"); return; }
-  const title=`OFA 月報（個別：${target} / ${from.value} 〜 ${to.value}）`;
-  const blob=await htmlToPdfBlob(monthlyHTML(title,rows));
-  downloadBlob(`OFA_monthly_${target}_${from.value}_${to.value}.pdf`, blob);
-}
-
-/* init */
-(async function(){
-  await openDB();
-  if(sessionStorage.getItem("ofa_admin_unlocked")==="1"){
-    lockCard.style.display="none";
-    mainCard.style.display="";
+  // 距離算出（両方ある場合のみ）
+  const out = [];
+  for(const [k,v] of map.entries()){
+    const a = parseFloat(v.depOdo);
+    const b = parseFloat(v.arrOdo);
+    if(Number.isFinite(a) && Number.isFinite(b) && b >= a){
+      v.distance = String(b - a);
+    }else{
+      v.distance = "";
+    }
+    out.push({
+      date: v.date,
+      name: v.name,
+      base: v.base,
+      type: v.distance !== "" ? "出発+帰着" : (v.depOdo ? "出発" : (v.arrOdo ? "帰着" : "データ")),
+      depOdo: v.depOdo,
+      arrOdo: v.arrOdo,
+      distance: v.distance,
+      sales: v.sales
+    });
   }
-  const today=new Date().toISOString().slice(0,10);
-  if(!to.value) to.value=today;
-  if(!from.value){
-    const d=new Date(); d.setDate(1);
-    from.value=d.toISOString().slice(0,10);
+
+  // 日付昇順
+  out.sort((x,y) => (x.date||"").localeCompare(y.date||""));
+  return out;
+}
+
+function renderSummary(rows){
+  const total = rows.length;
+  const distSum = rows.reduce((s,r)=> s + (parseFloat(r.distance)||0), 0);
+  const salesSum = rows.reduce((s,r)=> s + (parseFloat(r.sales)||0), 0);
+  document.getElementById("summary").innerHTML =
+    `<span class="pill">件数：${total}</span> ` +
+    `<span class="pill">走行距離合計：${distSum.toFixed(0)} km</span> ` +
+    `<span class="pill">売上合計（任意）：${salesSum.toFixed(0)} 円</span>`;
+}
+
+function renderResults(rows){
+  const tbody = document.querySelector("#resultTable tbody");
+  tbody.innerHTML = "";
+  for(const r of rows){
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${escapeHtml(r.date||"")}</td>
+      <td>${escapeHtml(r.name||"")}</td>
+      <td>${escapeHtml(r.base||"")}</td>
+      <td>${escapeHtml(r.type||"")}</td>
+      <td>${escapeHtml(r.depOdo||"")}</td>
+      <td>${escapeHtml(r.arrOdo||"")}</td>
+      <td>${escapeHtml(r.distance||"")}${r.distance!==""?" km":""}</td>
+      <td class="right">${escapeHtml(r.sales||"")}${r.sales!==""?" 円":""}</td>
+    `;
+    tbody.appendChild(tr);
   }
-})();
+}
+
+function escapeHtml(s){
+  return String(s).replace(/[&<>"']/g, (m)=>({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[m]));
+}
+
+/* =========================
+   CSV 出力（日本語ヘッダ）
+========================= */
+function exportCSV(){
+  if(!lastResults.length){
+    alert("先に検索してください。");
+    return;
+  }
+  const header = ["日付","氏名","拠点","区分","出発ODO","帰着ODO","走行距離(km)","売上(円/任意)"];
+  const lines = [header.join(",")];
+
+  for(const r of lastResults){
+    const row = [
+      r.date||"", r.name||"", r.base||"", r.type||"",
+      r.depOdo||"", r.arrOdo||"", r.distance||"", r.sales||""
+    ].map(v => `"${String(v).replace(/"/g,'""')}"`);
+    lines.push(row.join(","));
+  }
+
+  // Excel 文字化け対策（UTF-8 BOM）
+  const bom = "\uFEFF";
+  const blob = new Blob([bom + lines.join("\n")], {type:"text/csv;charset=utf-8;"});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `OFA_monthly_${nowYMD()}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+
+/* =========================
+   月報PDF（OFAっぽい見た目）
+   ※ 日本語の「本文文字」は端末/フォント依存で化けやすい
+   → 見出し/帯は図形で作成、表は数字中心。
+========================= */
+async function exportMonthlyPDF(){
+  if(!lastResults.length){
+    alert("先に検索してください。");
+    return;
+  }
+  const { jsPDF } = window.jspdf;
+  const pdf = new jsPDF({unit:"pt", format:"a4"});
+  const W = pdf.internal.pageSize.getWidth();
+  const H = pdf.internal.pageSize.getHeight();
+
+  // ヘッダー帯（OFAカラー）
+  pdf.setFillColor(25,203,211); // teal
+  pdf.rect(0,0,W,60,"F");
+  pdf.setFillColor(138,92,255); // purple
+  pdf.rect(0,60,W,10,"F");
+
+  // ロゴ風（左）
+  pdf.setFillColor(255,255,255);
+  pdf.roundedRect(20,14,70,42,12,12,"F");
+  pdf.setTextColor(25,203,211);
+  pdf.setFont("helvetica","bold");
+  pdf.setFontSize(18);
+  pdf.text("OFA", 43, 44);
+
+  // タイトル（英数字で安全）
+  pdf.setTextColor(255,255,255);
+  pdf.setFontSize(14);
+  pdf.text("MONTHLY REPORT", 110, 38);
+
+  // 期間など（英数字で）
+  pdf.setTextColor(0,0,0);
+  pdf.setFont("helvetica","normal");
+  pdf.setFontSize(10);
+  const from = document.getElementById("fromDate").value || "-";
+  const to   = document.getElementById("toDate").value || "-";
+  pdf.text(`Period: ${from}  to  ${to}`, 20, 92);
+  pdf.text(`Exported: ${new Date().toLocaleString()}`, 20, 106);
+
+  // 集計
+  const distSum = lastResults.reduce((s,r)=> s + (parseFloat(r.distance)||0), 0);
+  const salesSum= lastResults.reduce((s,r)=> s + (parseFloat(r.sales)||0), 0);
+  pdf.text(`Total Distance(km): ${Math.round(distSum)}`, 320, 92);
+  pdf.text(`Total Sales(yen optional): ${Math.round(salesSum)}`, 320, 106);
+
+  // 表ヘッダ
+  let y = 130;
+  const col = [20, 90, 190, 290, 350, 410, 470]; // x
+  const headers = ["DATE","NAME","BASE","TYPE","DEP","ARR","KM"];
+  pdf.setFillColor(245,246,250);
+  pdf.rect(20,y-14,W-40,22,"F");
+  pdf.setTextColor(0,0,0);
+  pdf.setFont("helvetica","bold");
+  pdf.setFontSize(9);
+  headers.forEach((h,i)=> pdf.text(h, col[i], y));
+
+  // 行
+  pdf.setFont("helvetica","normal");
+  pdf.setFontSize(9);
+  y += 16;
+  for(const r of lastResults){
+    if(y > H - 60){
+      pdf.addPage();
+      y = 60;
+    }
+    pdf.text(String(r.date||""), col[0], y);
+    pdf.text(trimText(r.name||"", 14), col[1], y);
+    pdf.text(trimText(r.base||"", 12), col[2], y);
+    pdf.text(String(r.type||""), col[3], y);
+    pdf.text(String(r.depOdo||""), col[4], y);
+    pdf.text(String(r.arrOdo||""), col[5], y);
+    pdf.text(String(r.distance||""), col[6], y);
+    y += 14;
+  }
+
+  // フッター
+  const pages = pdf.getNumberOfPages();
+  for(let p=1;p<=pages;p++){
+    pdf.setPage(p);
+    pdf.setFillColor(25,203,211);
+    pdf.rect(0,H-18,W,18,"F");
+    pdf.setTextColor(255,255,255);
+    pdf.setFontSize(9);
+    pdf.text("OFA GROUP", 20, H-6);
+    pdf.text(`Page ${p}/${pages}`, W-80, H-6);
+  }
+
+  pdf.save(`OFA_monthly_${nowYMD()}.pdf`);
+}
+
+function trimText(s, max){
+  s = String(s);
+  if(s.length <= max) return s;
+  return s.slice(0, max-1) + "…";
+}
+function nowYMD(){
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth()+1).padStart(2,"0");
+  const da= String(d.getDate()).padStart(2,"0");
+  return `${y}-${m}-${da}`;
+}
 </script>
 
 </body>
