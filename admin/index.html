@@ -1,589 +1,188 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>OFA 管理者（月報PDF・期間検索）</title>
-  <style>
-    :root{
-      --c1:#16c7c9; --c2:#6a6cff; --c3:#ff4fa7;
-      --bg:#ffffff; --text:#1c1c1c; --muted:#6b7280;
-      --card:#ffffff; --line:#e5e7eb; --shadow:0 10px 25px rgba(0,0,0,.08);
-      --r:16px;
-    }
-    body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue",sans-serif;background:var(--bg);color:var(--text);}
-    header{
-      position:sticky;top:0;z-index:10;background:#fff;border-bottom:1px solid var(--line);
-      padding:12px 14px;display:flex;align-items:center;gap:12px;
-    }
-    .logo{width:42px;height:42px;border-radius:12px;object-fit:contain;background:#fff;border:1px solid var(--line);}
-    .ttl{font-weight:800;line-height:1.2}
-    .sub{font-size:12px;color:var(--muted);margin-top:2px}
-    .spacer{flex:1}
-    .btn{
-      border:0;border-radius:999px;padding:10px 14px;font-weight:700;
-      background:linear-gradient(90deg,var(--c1),var(--c2),var(--c3));color:#fff;
-      box-shadow:0 10px 25px rgba(26, 189, 200,.25);
-    }
-    .btn:active{transform:translateY(1px)}
-    main{padding:16px;max-width:900px;margin:0 auto;}
-    .card{
-      background:var(--card);border:1px solid var(--line);border-radius:var(--r);
-      padding:14px;box-shadow:var(--shadow);margin:14px 0;
-    }
-    h2{margin:0 0 10px 0;font-size:18px}
-    .hint{font-size:12px;color:var(--muted);line-height:1.5}
-    label{display:block;font-weight:800;margin:12px 0 6px}
-    input,select{
-      width:100%;box-sizing:border-box;padding:12px;border:1px solid var(--line);border-radius:12px;
-      font-size:16px;background:#fff;
-    }
-    .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-    @media (max-width:640px){.row{grid-template-columns:1fr}}
-    .actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
-    .btn2{
-      border:1px solid var(--line);background:#fff;color:#111;border-radius:12px;padding:12px 14px;font-weight:800;
-    }
-    .btn2.danger{border-color:#fecaca;background:#fff5f5;color:#991b1b}
-    .badge{display:inline-block;font-size:12px;font-weight:900;padding:6px 10px;border-radius:999px;background:#eef2ff;color:#3730a3}
-    .sep{height:1px;background:var(--line);margin:12px 0}
-    table{width:100%;border-collapse:collapse}
-    th,td{border:1px solid var(--line);padding:8px;font-size:12px;vertical-align:top}
-    th{background:#f9fafb;text-align:left}
-    .ok{color:#059669;font-weight:900}
-    .ng{color:#dc2626;font-weight:900}
-  </style>
+  <link rel="stylesheet" href="./style.css">
 </head>
+
 <body>
+  <div class="header">
+    <div class="logo">OFA</div>
 
-<header>
-  <img class="logo" src="../logo.png" alt="OFA" onerror="this.style.display='none'">
-  <div>
-    <div class="ttl">管理者（月報PDF・期間検索）</div>
-    <div class="sub">端末内データ（IndexedDB）を検索して 月報PDF / CSV 出力</div>
-  </div>
-  <div class="spacer"></div>
-  <button class="btn" onclick="goDriver()">ドライバーへ</button>
-</header>
-
-<main>
-
-  <div class="card">
-    <h2>① 管理者認証（端末内ロック） <span class="badge">Firebaseなし運用</span></h2>
-    <div class="hint">
-      これは「端末内の簡易ロック」です（強固なセキュリティ用途ではありません）。<br>
-      初期パスは <b>ofa-admin</b>。端末内（localStorage）に保存されます。
+    <div class="titlewrap">
+      <div class="title">管理者（月報PDF・期間検索）</div>
+      <div class="subtitle">端末内データ（IndexedDB）を検索して月報PDF/CSV出力</div>
     </div>
 
-    <label>管理者パス</label>
-    <input id="adminPass" type="password" autocomplete="current-password" placeholder="例：ofa-admin" />
-
-    <div class="actions">
-      <button class="btn" onclick="login()">ログイン</button>
-      <button class="btn2" onclick="showReset()">パスを初期化</button>
-    </div>
-
-    <div class="sep"></div>
-
-    <div id="lockedArea" class="hint">
-      状態：<span id="stateText" class="ng">未ログイン</span>
-    </div>
+    <!-- ★ここが重要：admin内ではなく親のindexに戻る -->
+    <a href="../index.html"><button class="rightTopBtn">戻る</button></a>
   </div>
 
-  <div id="afterLogin" style="display:none">
+  <div class="container">
 
+    <!-- ① 管理者認証 -->
     <div class="card">
-      <h2>② 管理者パス変更（iPhoneで詰まらない方式）</h2>
-      <div class="hint">
-        ※ <b>prompt()</b> を使わず、この画面内入力で変更します。<br>
-        「現在パス」が一致しないと変更できません。
+      <div class="h2">① 管理者認証（簡易）</div>
+      <div class="note">
+        Firebaseなし運用のため、管理者は「端末内の管理者パス（localStorage）」でロックします。<br>
+        初期パスは <b>ofa-admin</b>。必ず変更して運用してください。
       </div>
 
-      <div class="row">
-        <div>
-          <label>現在パス</label>
-          <input id="curPass" type="password" />
+      <label>管理者パス</label>
+      <input id="a_pass" type="password" placeholder="初期：ofa-admin">
+
+      <div class="actions" style="margin-top:12px">
+        <button class="btn" id="btnAdminLogin">ログイン</button>
+        <button class="btn secondary" id="btnOpenChange">管理者パス変更</button>
+        <button class="btn danger" id="btnResetAdmin">初期に戻す</button>
+      </div>
+
+      <div class="small">※パスは端末内保存（localStorage）です。</div>
+
+      <div class="divider"></div>
+
+      <!-- ★iPhoneで詰まりやすい prompt() を使わず、画面内で変更 -->
+      <div id="changeArea" class="hidden">
+        <div class="h2">管理者パス変更</div>
+
+        <label>現在パス</label>
+        <input id="cur_pass" type="password" placeholder="現在の管理者パス">
+
+        <label>新パス</label>
+        <input id="new_pass" type="password" placeholder="4文字以上推奨">
+
+        <label>新パス（確認）</label>
+        <input id="new_pass2" type="password" placeholder="もう一度入力">
+
+        <div class="actions" style="margin-top:12px">
+          <button class="btn" id="btnChangePass">変更する</button>
+          <button class="btn secondary" id="btnCloseChange">閉じる</button>
         </div>
-        <div>
-          <label>新パス</label>
-          <input id="newPass" type="password" />
-        </div>
-      </div>
-      <label>新パス（確認）</label>
-      <input id="newPass2" type="password" />
 
-      <div class="actions">
-        <button class="btn" onclick="changePass()">変更する</button>
-        <button class="btn2 danger" onclick="resetPassHard()">初期に戻す</button>
-      </div>
-
-      <div class="hint" style="margin-top:8px">
-        現在の保存キー：<code>ofa_admin_pass</code>
+        <div class="small">保存キー：<code>ofa_admin_pass</code></div>
       </div>
     </div>
 
-    <div class="card">
-      <h2>③ 月報検索（期間・拠点・氏名）</h2>
-      <div class="hint">
-        IndexedDBに保存された「点呼・日報」から抽出します。<br>
-        ※ ドライバー端末と同じ端末で見ている場合にデータが見えます（同一端末のIndexedDB）。
-      </div>
+    <!-- ②〜：ログイン後に表示 -->
+    <div class="card hidden" id="adminPanel">
+      <div class="h2">② 月報検索</div>
 
       <div class="row">
         <div>
           <label>期間（開始）*</label>
-          <input id="fromDate" type="date">
+          <input type="date" id="m_from">
         </div>
         <div>
           <label>期間（終了）*</label>
-          <input id="toDate" type="date">
+          <input type="date" id="m_to">
         </div>
       </div>
 
       <div class="row">
         <div>
           <label>拠点（部分一致）</label>
-          <input id="filterBase" placeholder="例：鹿児島 / 東京 / 福岡">
+          <input id="m_base" placeholder="例：鹿児島">
         </div>
         <div>
           <label>氏名（部分一致）</label>
-          <input id="filterName" placeholder="例：森下 / 田中">
+          <input id="m_name" placeholder="例：森下">
         </div>
       </div>
 
-      <div class="actions">
-        <button class="btn" onclick="search()">検索</button>
-        <button class="btn2" onclick="exportCSV()">CSV出力（結果）</button>
-        <button class="btn2" onclick="monthlyPDF()">月報PDF（結果）</button>
+      <div class="actions" style="margin-top:12px">
+        <button class="btn" id="btnMonthlySearch">検索</button>
+        <button class="btn secondary" id="btnMonthlyCsv">CSV出力（検索結果）</button>
       </div>
 
-      <div class="sep"></div>
+      <div class="divider"></div>
 
-      <div class="hint">
-        検索結果：<b id="count">0</b> 件
+      <div class="h2">③ 月報PDF</div>
+      <div class="note">
+        検索結果をもとに、月報PDF（OFAフォーマット）を生成します。<br>
+        PDFは日本語が文字化けしにくい方式で生成します（pdf.js側の実装に依存）。
       </div>
+      <button class="btn" id="btnMonthlyPdf">月報PDFを作成</button>
 
-      <div style="overflow:auto;margin-top:10px">
-        <table id="table">
-          <thead>
-            <tr>
-              <th>日付</th>
-              <th>氏名</th>
-              <th>拠点</th>
-              <th>点呼</th>
-              <th>開始ODO</th>
-              <th>帰着ODO</th>
-              <th>走行距離</th>
-              <th>案件</th>
-              <th>売上/日当</th>
-            </tr>
-          </thead>
-          <tbody></tbody>
-        </table>
-      </div>
-
-      <div class="hint" style="margin-top:10px">
-        ※ PDF/CSV は <b>日本語見出し</b> で出力します。<br>
-        ※ 走行距離は <b>出発点呼(開始ODO)</b> と <b>帰着点呼(帰着ODO)</b> を突合して計算します（同じ日・同じドライバーを基準）。
-      </div>
+      <div class="divider"></div>
+      <div class="small" id="adminStateInfo"></div>
+      <div id="monthlyList"></div>
     </div>
 
   </div>
 
-</main>
+  <script>
+    // ★このHTMLだけで「入れない」を直すための最小ロジック
+    // （admin.jsにも同等があるなら、admin.js側で扱ってOK）
+    const KEY_PASS = "ofa_admin_pass";
+    const KEY_LOGIN = "ofa_admin_logged_in";
+    const DEFAULT_PASS = "ofa-admin";
 
-<script>
-/* ---------------------------
-   0) 管理者ロック（localStorage）
---------------------------- */
-const KEY_PASS = "ofa_admin_pass";
-const DEFAULT_PASS = "ofa-admin";
-const KEY_LOGIN = "ofa_admin_logged_in";
+    const $ = (id)=>document.getElementById(id);
 
-function getSavedPass(){
-  return localStorage.getItem(KEY_PASS) || DEFAULT_PASS;
-}
-function setSavedPass(p){
-  localStorage.setItem(KEY_PASS, p);
-}
-function setLoggedIn(v){
-  localStorage.setItem(KEY_LOGIN, v ? "1" : "0");
-}
-function isLoggedIn(){
-  return localStorage.getItem(KEY_LOGIN) === "1";
-}
+    function getPass(){ return localStorage.getItem(KEY_PASS) || DEFAULT_PASS; }
+    function setPass(p){ localStorage.setItem(KEY_PASS, p); }
+    function setLogin(v){ localStorage.setItem(KEY_LOGIN, v ? "1" : "0"); }
+    function isLogin(){ return localStorage.getItem(KEY_LOGIN) === "1"; }
 
-function refreshUI(){
-  const ok = isLoggedIn();
-  document.getElementById("afterLogin").style.display = ok ? "" : "none";
-  document.getElementById("stateText").textContent = ok ? "ログイン済" : "未ログイン";
-  document.getElementById("stateText").className = ok ? "ok" : "ng";
-}
-refreshUI();
-
-function login(){
-  const inPass = (document.getElementById("adminPass").value || "").trim();
-  if(!inPass){ alert("管理者パスを入力してください"); return; }
-  const saved = getSavedPass();
-  if(inPass !== saved){
-    alert("管理者パスが違います");
-    return;
-  }
-  setLoggedIn(true);
-  document.getElementById("adminPass").value = "";
-  refreshUI();
-}
-
-function showReset(){
-  if(confirm("端末内の管理者パスを初期（ofa-admin）に戻します。よろしいですか？")){
-    setSavedPass(DEFAULT_PASS);
-    setLoggedIn(false);
-    alert("初期化しました。初期パス：ofa-admin");
-    refreshUI();
-  }
-}
-
-function resetPassHard(){
-  if(confirm("管理者パスを初期（ofa-admin）に戻します。ログインも解除します。よろしいですか？")){
-    setSavedPass(DEFAULT_PASS);
-    setLoggedIn(false);
-    alert("初期化しました。初期パス：ofa-admin");
-    refreshUI();
-  }
-}
-
-function changePass(){
-  const cur = (document.getElementById("curPass").value || "").trim();
-  const n1  = (document.getElementById("newPass").value || "").trim();
-  const n2  = (document.getElementById("newPass2").value || "").trim();
-
-  if(!cur || !n1 || !n2){ alert("全て入力してください"); return; }
-  if(cur !== getSavedPass()){ alert("現在パスが一致しません"); return; }
-  if(n1.length < 4){ alert("新パスは4文字以上にしてください"); return; }
-  if(n1 !== n2){ alert("新パス（確認）が一致しません"); return; }
-
-  setSavedPass(n1);
-  alert("管理者パスを変更しました");
-  document.getElementById("curPass").value = "";
-  document.getElementById("newPass").value = "";
-  document.getElementById("newPass2").value = "";
-}
-
-/* ---------------------------
-   1) 画面遷移
---------------------------- */
-function goDriver(){
-  // driverは /ofa-nippou/ のトップ index.html を想定
-  location.href = "../index.html";
-}
-
-/* ---------------------------
-   2) IndexedDB（ドライバー側と同じDB名/ストア名に合わせる）
-   ※ ここはあなたのドライバー版で使っている名前に「必ず合わせる」必要があります。
-   いまは汎用として:
-      DB: "ofa_nippou"
-      store: "records"
---------------------------- */
-const DB_NAME = "ofa_nippou";
-const STORE = "records";
-let lastResults = [];
-
-function openDB(){
-  return new Promise((resolve, reject)=>{
-    const req = indexedDB.open(DB_NAME, 1);
-    req.onupgradeneeded = (e)=>{
-      const db = e.target.result;
-      if(!db.objectStoreNames.contains(STORE)){
-        db.createObjectStore(STORE, { keyPath:"id" });
-      }
-    };
-    req.onsuccess = ()=> resolve(req.result);
-    req.onerror = ()=> reject(req.error);
-  });
-}
-
-async function getAll(){
-  const db = await openDB();
-  return new Promise((resolve, reject)=>{
-    const tx = db.transaction(STORE, "readonly");
-    const st = tx.objectStore(STORE);
-    const req = st.getAll();
-    req.onsuccess = ()=> resolve(req.result || []);
-    req.onerror = ()=> reject(req.error);
-  });
-}
-
-/* ---------------------------
-   3) 検索＆表示
-   - 日付範囲
-   - 拠点/氏名部分一致
-   - 走行距離：出発(開始ODO) と 帰着(帰着ODO) を突合
---------------------------- */
-function ymd(d){
-  const dt = new Date(d);
-  const y = dt.getFullYear();
-  const m = String(dt.getMonth()+1).padStart(2,"0");
-  const da= String(dt.getDate()).padStart(2,"0");
-  return `${y}-${m}-${da}`;
-}
-
-function inRange(dateStr, from, to){
-  const t = new Date(dateStr).getTime();
-  return t >= from && t <= to;
-}
-
-function norm(s){ return (s||"").toString().trim(); }
-
-function buildOdoMap(all){
-  // key: ymd + name + base
-  // value: { startOdo, endOdo }
-  const map = new Map();
-  for(const r of all){
-    const day = r.workDate || r.date || r.tenkoDate || (r.tenkoAt ? ymd(r.tenkoAt) : null);
-    if(!day) continue;
-    const key = `${day}__${norm(r.name)}__${norm(r.base)}`;
-    if(!map.has(key)) map.set(key, {start:null,end:null});
-    const o = map.get(key);
-
-    if(r.tenkoType === "出発" && r.odoStart != null && r.odoStart !== ""){
-      const v = Number(r.odoStart);
-      if(!Number.isNaN(v)) o.start = v;
-    }
-    if(r.tenkoType === "帰着" && r.odoEnd != null && r.odoEnd !== ""){
-      const v = Number(r.odoEnd);
-      if(!Number.isNaN(v)) o.end = v;
-    }
-  }
-  return map;
-}
-
-async function search(){
-  const from = document.getElementById("fromDate").value;
-  const to   = document.getElementById("toDate").value;
-  if(!from || !to){ alert("期間（開始/終了）を入力してください"); return; }
-
-  const fromT = new Date(from + "T00:00:00").getTime();
-  const toT   = new Date(to   + "T23:59:59").getTime();
-
-  const fBase = norm(document.getElementById("filterBase").value);
-  const fName = norm(document.getElementById("filterName").value);
-
-  const all = await getAll();
-  const odoMap = buildOdoMap(all);
-
-  const results = [];
-
-  for(const r of all){
-    const day = r.workDate || r.date || r.tenkoDate || (r.tenkoAt ? ymd(r.tenkoAt) : null);
-    if(!day) continue;
-    if(!inRange(day, fromT, toT)) continue;
-
-    const name = norm(r.name);
-    const base = norm(r.base);
-
-    if(fBase && !base.includes(fBase)) continue;
-    if(fName && !name.includes(fName)) continue;
-
-    const key = `${day}__${name}__${base}`;
-    const od = odoMap.get(key) || {start:null,end:null};
-    const dist = (od.start!=null && od.end!=null) ? (od.end - od.start) : "";
-
-    // 案件（複数案件対応を想定）
-    let jobs = "";
-    if(Array.isArray(r.jobs) && r.jobs.length){
-      jobs = r.jobs.map(j=>j.name||j.jobName||"").filter(Boolean).join(" / ");
-    }else{
-      jobs = norm(r.jobName || r.caseName || r.project || "");
+    function show(elId, on){ $(elId).classList.toggle("hidden", !on); }
+    function applyState(){
+      show("adminPanel", isLogin());
+      $("adminStateInfo").textContent = "保存パスキー：ofa_admin_pass / ログイン状態： " + (isLogin() ? "ON" : "OFF");
     }
 
-    // 売上/日当（オプション）
-    const pay = norm(r.dayPay || r.sales || r.amount || "");
-
-    results.push({
-      day,
-      name,
-      base,
-      tenkoType: norm(r.tenkoType || ""),
-      odoStart: od.start ?? "",
-      odoEnd: od.end ?? "",
-      distance: dist,
-      jobs,
-      pay
+    $("btnAdminLogin").addEventListener("click", ()=>{
+      const input = ($("a_pass").value || "").trim();
+      if(!input){ alert("管理者パスを入力してください"); return; }
+      if(input !== getPass()){ alert("管理者パスが違います"); return; }
+      $("a_pass").value = "";
+      setLogin(true);
+      applyState();
     });
-  }
 
-  // 日付順
-  results.sort((a,b)=> (a.day>b.day?1:-1));
+    $("btnOpenChange").addEventListener("click", ()=> show("changeArea", true));
+    $("btnCloseChange").addEventListener("click", ()=>{
+      show("changeArea", false);
+      $("cur_pass").value = "";
+      $("new_pass").value = "";
+      $("new_pass2").value = "";
+    });
 
-  lastResults = results;
-  renderTable(results);
-}
+    $("btnChangePass").addEventListener("click", ()=>{
+      const cur = ($("cur_pass").value || "").trim();
+      const n1  = ($("new_pass").value || "").trim();
+      const n2  = ($("new_pass2").value || "").trim();
 
-function renderTable(rows){
-  document.getElementById("count").textContent = String(rows.length);
-  const tb = document.querySelector("#table tbody");
-  tb.innerHTML = "";
-  for(const r of rows){
-    const tr = document.createElement("tr");
-    tr.innerHTML = `
-      <td>${r.day}</td>
-      <td>${escapeHtml(r.name)}</td>
-      <td>${escapeHtml(r.base)}</td>
-      <td>${escapeHtml(r.tenkoType)}</td>
-      <td>${r.odoStart!==""?r.odoStart:""}</td>
-      <td>${r.odoEnd!==""?r.odoEnd:""}</td>
-      <td>${r.distance!==""?r.distance+" km":""}</td>
-      <td>${escapeHtml(r.jobs)}</td>
-      <td>${escapeHtml(r.pay)}</td>
-    `;
-    tb.appendChild(tr);
-  }
-}
+      if(!cur || !n1 || !n2){ alert("全て入力してください"); return; }
+      if(cur !== getPass()){ alert("現在パスが一致しません"); return; }
+      if(n1.length < 4){ alert("新パスは4文字以上を推奨します"); return; }
+      if(n1 !== n2){ alert("新パス（確認）が一致しません"); return; }
 
-function escapeHtml(s){
-  return (s||"").toString()
-    .replaceAll("&","&amp;").replaceAll("<","&lt;")
-    .replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("'","&#039;");
-}
+      setPass(n1);
+      alert("管理者パスを変更しました");
+      show("changeArea", false);
+      $("cur_pass").value = "";
+      $("new_pass").value = "";
+      $("new_pass2").value = "";
+    });
 
-/* ---------------------------
-   4) CSV（日本語ヘッダ）
---------------------------- */
-function exportCSV(){
-  if(!lastResults.length){ alert("先に検索してください"); return; }
-  const headers = ["日付","氏名","拠点","点呼区分","開始ODO","帰着ODO","走行距離(km)","案件","売上/日当"];
-  const lines = [headers.join(",")];
+    $("btnResetAdmin").addEventListener("click", ()=>{
+      if(!confirm("管理者パスを初期（ofa-admin）に戻します。よろしいですか？")) return;
+      setPass(DEFAULT_PASS);
+      setLogin(false);
+      alert("初期化しました（初期パス：ofa-admin）");
+      applyState();
+    });
 
-  for(const r of lastResults){
-    const row = [
-      r.day, r.name, r.base, r.tenkoType,
-      r.odoStart, r.odoEnd, r.distance, r.jobs, r.pay
-    ].map(v => `"${String(v??"").replaceAll('"','""')}"`);
-    lines.push(row.join(","));
-  }
+    // 初期表示
+    applyState();
+  </script>
 
-  // UTF-8 BOM付きでExcel文字化けを避ける
-  const bom = "\uFEFF";
-  const blob = new Blob([bom + lines.join("\n")], {type:"text/csv;charset=utf-8;"});
-  const url = URL.createObjectURL(blob);
-
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = `OFA_月報_${document.getElementById("fromDate").value}_${document.getElementById("toDate").value}.csv`;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  URL.revokeObjectURL(url);
-}
-
-/* ---------------------------
-   5) 月報PDF
-   ※ ここは見た目をOFAっぽく作り込む場合、jspdf + autotable が便利
-   （driver側で既に使ってるなら同じCDNを入れて揃えるのが安全）
-   ここは「骨組み」を用意して、あなたの既存PDFロジックに寄せてください
---------------------------- */
-async function monthlyPDF(){
-  if(!lastResults.length){ alert("先に検索してください"); return; }
-
-  // ここでは「印刷(PDF)」を使う方式（日本語が確実）
-  // iPhoneでも文字化けしにくく、外部ライブラリ不要で壊れにくい
-  const w = window.open("", "_blank");
-  const from = document.getElementById("fromDate").value;
-  const to = document.getElementById("toDate").value;
-
-  const rows = lastResults.map(r=>`
-    <tr>
-      <td>${r.day}</td>
-      <td>${escapeHtml(r.name)}</td>
-      <td>${escapeHtml(r.base)}</td>
-      <td>${escapeHtml(r.tenkoType)}</td>
-      <td>${r.odoStart!==""?r.odoStart:""}</td>
-      <td>${r.odoEnd!==""?r.odoEnd:""}</td>
-      <td>${r.distance!==""?r.distance:""}</td>
-      <td>${escapeHtml(r.jobs)}</td>
-      <td>${escapeHtml(r.pay)}</td>
-    </tr>
-  `).join("");
-
-  w.document.write(`
-<!doctype html>
-<html lang="ja">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>OFA 月報 ${from} - ${to}</title>
-<style>
-  body{font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue",sans-serif;margin:0;background:#fff;color:#111;}
-  .topbar{padding:16px;background:#14c7c9;}
-  .topbar2{height:10px;background:#6a6cff;}
-  .wrap{padding:14px;}
-  .head{display:flex;align-items:center;gap:12px}
-  .logo{width:44px;height:44px;border-radius:12px;background:#fff;padding:6px;object-fit:contain}
-  h1{font-size:18px;margin:0}
-  .sub{font-size:12px;opacity:.9}
-  table{width:100%;border-collapse:collapse;margin-top:12px;font-size:12px}
-  th,td{border:1px solid #e5e7eb;padding:8px;vertical-align:top}
-  th{background:#f9fafb;text-align:left}
-  .note{margin-top:10px;font-size:12px;color:#374151}
-  @media print{
-    .noPrint{display:none}
-    body{background:#fff}
-  }
-</style>
-</head>
-<body>
-  <div class="topbar">
-    <div class="head">
-      <img class="logo" src="../logo.png" onerror="this.style.display='none'">
-      <div>
-        <h1>OFA 月報（期間：${from} 〜 ${to}）</h1>
-        <div class="sub">端末内データ（IndexedDB）集計</div>
-      </div>
-    </div>
-  </div>
-  <div class="topbar2"></div>
-
-  <div class="wrap">
-    <div class="noPrint" style="display:flex;gap:10px;flex-wrap:wrap">
-      <button onclick="window.print()" style="border:0;border-radius:12px;padding:12px 14px;font-weight:800;background:linear-gradient(90deg,#14c7c9,#6a6cff,#ff4fa7);color:#fff">PDFとして保存（印刷）</button>
-      <button onclick="window.close()" style="border:1px solid #e5e7eb;border-radius:12px;padding:12px 14px;font-weight:800;background:#fff">閉じる</button>
-    </div>
-
-    <table>
-      <thead>
-        <tr>
-          <th>日付</th><th>氏名</th><th>拠点</th><th>点呼</th>
-          <th>開始ODO</th><th>帰着ODO</th><th>走行距離</th>
-          <th>案件</th><th>売上/日当</th>
-        </tr>
-      </thead>
-      <tbody>${rows}</tbody>
-    </table>
-
-    <div class="note">
-      走行距離は「出発点呼の開始ODO」と「帰着点呼の帰着ODO」を同日・同ドライバーで突合して算出。<br>
-      印刷画面で「PDFとして保存」を選んでください。
-    </div>
-  </div>
-</body>
-</html>
-  `);
-  w.document.close();
-}
-
-/* ---------------------------
-   初期日付（今月）
---------------------------- */
-(function initDates(){
-  const now = new Date();
-  const y = now.getFullYear();
-  const m = now.getMonth();
-  const first = new Date(y, m, 1);
-  const last = new Date(y, m+1, 0);
-  document.getElementById("fromDate").value = first.toISOString().slice(0,10);
-  document.getElementById("toDate").value = last.toISOString().slice(0,10);
-})();
-</script>
-
+  <!-- あなたの既存JS（検索/PDF/CSV/DB）はこのまま使える -->
+  <script src="./js/db.js"></script>
+  <script src="./js/pdf.js"></script>
+  <script src="./js/csv.js"></script>
+  <script src="./js/admin.js"></script>
 </body>
 </html>
