@@ -1,87 +1,282 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <title>OFA 管理者（月報PDF・期間検索）</title>
-  <link rel="stylesheet" href="./style.css">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
+<title>OFA 点呼・日報</title>
+
+<link rel="stylesheet" href="./style.css">
+
+<style>
+body{
+  margin:0;
+  font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Noto Sans JP",sans-serif;
+  background:#fff;
+  color:#222;
+}
+.header{
+  display:flex;
+  align-items:center;
+  gap:12px;
+  padding:14px 16px;
+  border-bottom:1px solid #eee;
+}
+.logo{
+  font-weight:900;
+  font-size:20px;
+  color:#1ecad3;
+}
+.title{
+  font-weight:800;
+}
+.container{
+  max-width:720px;
+  margin:0 auto;
+  padding:16px;
+}
+.card{
+  border:1px solid #e5e7eb;
+  border-radius:14px;
+  padding:16px;
+  margin-bottom:20px;
+}
+.h2{
+  font-weight:900;
+  border-left:6px solid #1ecad3;
+  padding-left:10px;
+  margin-bottom:12px;
+}
+label{
+  font-weight:700;
+  display:block;
+  margin-top:12px;
+}
+input,select,textarea{
+  width:100%;
+  padding:10px;
+  margin-top:6px;
+  border:1px solid #ccc;
+  border-radius:10px;
+  font-size:15px;
+}
+textarea{min-height:80px}
+.row{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:12px;
+}
+@media(max-width:640px){
+  .row{grid-template-columns:1fr}
+}
+.btn{
+  width:100%;
+  padding:14px;
+  margin-top:16px;
+  border:none;
+  border-radius:12px;
+  font-weight:900;
+  color:#fff;
+  background:linear-gradient(90deg,#1ecad3,#8a5cff);
+}
+.btn.sub{
+  background:#eef2f7;
+  color:#222;
+}
+.scroll-box{
+  max-height:220px;
+  overflow-y:auto;
+  border:1px solid #ddd;
+  border-radius:10px;
+  padding:10px;
+}
+.scroll-box label{
+  font-weight:500;
+  display:block;
+  margin:6px 0;
+}
+.note{
+  font-size:13px;
+  color:#555;
+}
+hr{margin:24px 0;border:none;border-top:1px solid #eee}
+</style>
 </head>
+
 <body>
-  <div class="header">
-    <div class="logo">OFA</div>
-    <div class="titlewrap">
-      <div class="title">管理者（月報PDF・期間検索）</div>
-      <div class="subtitle">端末内データ（IndexedDB）を検索して月報PDF/CSV出力</div>
+
+<div class="header">
+  <div class="logo">OFA</div>
+  <div class="title">点呼・日報（ドライバー）</div>
+</div>
+
+<div class="container">
+
+<!-- ================= 基本情報 ================= -->
+<div class="card">
+  <div class="h2">① 基本情報（必須）</div>
+
+  <label>氏名（本名）</label>
+  <input id="name">
+
+  <label>拠点（47都道府県 / 自由記入）</label>
+  <input id="base" placeholder="例：鹿児島 / 東京都">
+
+  <label>車両番号</label>
+  <input id="carNo">
+
+  <label>運転免許証番号</label>
+  <input id="licenseNo">
+
+  <label>電話番号</label>
+  <input id="phone">
+
+  <label>メールアドレス</label>
+  <input id="email">
+
+  <label>免許証写真（PDF用・保存しません）</label>
+  <input type="file" id="licenseImg" accept="image/*">
+
+  <button class="btn" id="btnSaveProfile">基本情報を保存</button>
+</div>
+
+<!-- ================= 出発点呼 ================= -->
+<div class="card">
+  <div class="h2">② 出発点呼（業務開始前）</div>
+
+  <label>点呼日時</label>
+  <input type="datetime-local" id="dep_at">
+
+  <label>点呼方法</label>
+  <select id="dep_method">
+    <option value="">選択</option>
+    <option>対面</option>
+    <option>電話</option>
+    <option>アプリ</option>
+  </select>
+
+  <div class="row">
+    <div>
+      <label>睡眠時間（h）</label>
+      <input id="dep_sleep">
     </div>
-    <a href="./index.html"><button class="rightTopBtn">戻る</button></a>
+    <div>
+      <label>体温（℃）</label>
+      <input id="dep_temp">
+    </div>
   </div>
 
-  <div class="container">
-
-    <div class="card">
-      <div class="h2">① 管理者認証（簡易）</div>
-      <div class="note">
-        Firebaseが使えない場合のため、管理者は「端末内の管理者パス」でロックします。<br>
-        初期パスは「ofa-admin」。必ず変更して運用してください。
-      </div>
-
-      <label>管理者パス</label>
-      <input id="a_pass" type="password" placeholder="初期：ofa-admin">
-      <div class="actions" style="margin-top:12px">
-        <button class="btn" id="btnAdminLogin">ログイン</button>
-        <button class="btn secondary" id="btnChangePass">管理者パス変更</button>
-      </div>
-      <div class="small">※パスは端末内保存（localStorage）です。</div>
+  <div class="row">
+    <div>
+      <label>体調</label>
+      <select id="dep_condition">
+        <option>良好</option>
+        <option>注意</option>
+        <option>不良</option>
+      </select>
     </div>
-
-    <div class="card hidden" id="adminPanel">
-      <div class="h2">② 月報検索</div>
-
-      <div class="row">
-        <div>
-          <label>期間（開始）*</label>
-          <input type="date" id="m_from">
-        </div>
-        <div>
-          <label>期間（終了）*</label>
-          <input type="date" id="m_to">
-        </div>
-      </div>
-
-      <div class="row">
-        <div>
-          <label>拠点（部分一致）</label>
-          <input id="m_base" placeholder="例：鹿児島">
-        </div>
-        <div>
-          <label>氏名（部分一致）</label>
-          <input id="m_name" placeholder="例：森下">
-        </div>
-      </div>
-
-      <div class="actions" style="margin-top:12px">
-        <button class="btn" id="btnMonthlySearch">検索</button>
-        <button class="btn secondary" id="btnMonthlyCsv">CSV出力（検索結果）</button>
-      </div>
-
-      <div class="divider"></div>
-
-      <div class="h2">③ 月報PDF</div>
-      <div class="note">
-        検索結果をもとに、月報PDF（OFAフォーマット）を生成します。<br>
-        PDFは日本語表示で文字化けしない設定です。
-      </div>
-      <button class="btn" id="btnMonthlyPdf">月報PDFを作成</button>
-
-      <div class="divider"></div>
-      <div id="monthlyList"></div>
+    <div>
+      <label>疲労</label>
+      <select id="dep_fatigue">
+        <option>なし</option>
+        <option>あり</option>
+      </select>
     </div>
-
   </div>
 
-  <script src="./js/db.js"></script>
-  <script src="./js/pdf.js"></script>
-  <script src="./js/csv.js"></script>
-  <script src="./js/admin.js"></script>
+  <label>アルコール数値</label>
+  <input id="dep_alc">
+
+  <label>アルコール測定写真</label>
+  <input type="file" id="dep_alc_img" accept="image/*">
+
+  <label>出発ODO</label>
+  <input id="dep_odo">
+
+  <button class="btn" id="btnSaveDeparture">出発点呼を保存</button>
+</div>
+
+<!-- ================= 日常点検 ================= -->
+<div class="card">
+  <div class="h2">③ 日常点検（スクロール）</div>
+
+  <div class="scroll-box" id="dailyCheck">
+    <label><input type="checkbox" data-label="タイヤ空気圧"> タイヤ空気圧</label>
+    <label><input type="checkbox" data-label="ブレーキ"> ブレーキ</label>
+    <label><input type="checkbox" data-label="ライト"> ライト</label>
+    <label><input type="checkbox" data-label="ワイパー"> ワイパー</label>
+    <label><input type="checkbox" data-label="ミラー"> ミラー</label>
+    <label><input type="checkbox" data-label="オイル漏れ"> オイル漏れ</label>
+    <label><input type="checkbox" data-label="異音異臭"> 異音・異臭</label>
+    <label><input type="checkbox" data-label="積載状態"> 積載状態</label>
+  </div>
+
+  <label>点検メモ</label>
+  <textarea id="checkMemo"></textarea>
+</div>
+
+<!-- ================= 帰着点呼 ================= -->
+<div class="card">
+  <div class="h2">④ 帰着点呼（業務終了後）</div>
+
+  <label>点呼日時</label>
+  <input type="datetime-local" id="arr_at">
+
+  <label>点呼方法</label>
+  <select id="arr_method">
+    <option value="">選択</option>
+    <option>対面</option>
+    <option>電話</option>
+    <option>アプリ</option>
+  </select>
+
+  <label>アルコール数値</label>
+  <input id="arr_alc">
+
+  <label>アルコール測定写真</label>
+  <input type="file" id="arr_alc_img" accept="image/*">
+
+  <label>帰着ODO</label>
+  <input id="arr_odo">
+
+  <button class="btn" id="btnSaveArrival">帰着点呼を保存</button>
+</div>
+
+<!-- ================= 日報（任意） ================= -->
+<div class="card">
+  <div class="h2">⑤ 日報（任意）</div>
+
+  <label>稼働日</label>
+  <input type="date" id="daily_date">
+
+  <label>案件（メイン）</label>
+  <input id="daily_project">
+
+  <label>売上合計</label>
+  <input id="daily_total">
+
+  <label>メモ</label>
+  <textarea id="daily_memo"></textarea>
+
+  <button class="btn sub" id="btnSaveDaily">日報を保存（任意）</button>
+</div>
+
+<!-- ================= PDF ================= -->
+<div class="card">
+  <div class="h2">⑥ PDF出力</div>
+  <p class="note">
+    出発点呼＋帰着点呼＋日報（あれば）を1枚のPDFにします。<br>
+    端末内生成・アップロードなし。
+  </p>
+  <button class="btn" id="btnTodayPdf">今日のPDFを作成</button>
+</div>
+
+</div>
+
+<!-- JS -->
+<script src="./js/db.js"></script>
+<script src="./js/pdf.js"></script>
+<script src="./js/csv.js"></script>
+<script src="./js/main.js"></script>
+
 </body>
 </html>
