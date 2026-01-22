@@ -1,382 +1,402 @@
 // js/admin.js
 // 管理者（月報PDF・期間検索）
-// - 管理者パス：端末内 localStorage（初期：ofa-admin）
-// - 検索：IndexedDB（searchMonthly / searchRecords を利用）
-// - 出力：CSV（exportCsvSearchResult or buildTenkoCsv/buildDailyCsv）
-// - PDF：generateMonthlyPdf（js/pdf.js）
+// - 管理者パスは端末内（localStorage）だけ
+// - 月報検索：IndexedDB（tenko/daily）を期間/拠点/氏名でフィルタ
+// - CSV：検索結果をワンクリック出力
+// - 月報PDF：検索結果（グループ）からOFAフォーマットPDF生成
+// 依存：db.js / pdf.js / csv.js
 
-(function(){
-  const $ = (id)=>document.getElementById(id);
+(() => {
+  "use strict";
 
-  const LS_ADMIN_PASS_KEY = "ofa_admin_pass";
+  // ====== 設定（画面に表示しない） ======
+  const ADMIN_PASS_KEY = "OFA_ADMIN_PASS_V1";
+  // 初期パス（サイトには出さない・placeholderにも出さない）
+  // ※運用開始後は必ず管理者が変更する想定
   const DEFAULT_ADMIN_PASS = "ofa-admin";
 
-  // =========================
-  // util
-  // =========================
-  function toast(msg){
-    // admin画面にはtoastが無い場合があるのでalert fallback
-    const t = $("toast");
-    if(t){
-      t.textContent = msg;
-      t.style.display = "block";
-      clearTimeout(toast._tm);
-      toast._tm = setTimeout(()=>t.style.display="none", 2200);
-    }else{
-      alert(msg);
-    }
-  }
+  // ====== DOM ======
+  const $ = (id) => document.getElementById(id);
 
-  function getAdminPass(){
-    return localStorage.getItem(LS_ADMIN_PASS_KEY) || DEFAULT_ADMIN_PASS;
-  }
-
-  function setAdminPass(newPass){
-    localStorage.setItem(LS_ADMIN_PASS_KEY, newPass);
-  }
-
-  function isLoggedIn(){
-    return localStorage.getItem("ofa_admin_logged_in") === "1";
-  }
-
-  function setLoggedIn(v){
-    localStorage.setItem("ofa_admin_logged_in", v ? "1" : "0");
-  }
-
-  function normalizeDate(d){
-    if(!d) return "";
-    return String(d).slice(0,10);
-  }
-
-  function includesLike(hay, needle){
-    if(!needle) return true;
-    return String(hay || "").toLowerCase().includes(String(needle).toLowerCase());
-  }
-
-  function safeNum(n){
-    const x = Number(n);
-    return Number.isFinite(x) ? x : 0;
-  }
-
-  // =========================
-  // DOM refs
-  // =========================
-  const a_pass = $("a_pass");
-  const btnAdminLogin = $("btnAdminLogin");
-  const btnChangePass = $("btnChangePass");
+  const authCard = $("adminAuthCard");
   const adminPanel = $("adminPanel");
 
-  const m_from = $("m_from");
-  const m_to   = $("m_to");
-  const m_base = $("m_base");
-  const m_name = $("m_name");
+  const passInput = $("a_pass");
+  const btnAdminLogin = $("btnAdminLogin");
+  const btnChangePass = $("btnChangePass");
+
+  const mFrom = $("m_from");
+  const mTo = $("m_to");
+  const mBase = $("m_base");
+  const mName = $("m_name");
 
   const btnMonthlySearch = $("btnMonthlySearch");
-  const btnMonthlyCsv    = $("btnMonthlyCsv");
-  const btnMonthlyPdf    = $("btnMonthlyPdf");
-  const monthlyList      = $("monthlyList");
+  const btnMonthlyCsv = $("btnMonthlyCsv");
+  const btnMonthlyPdf = $("btnMonthlyPdf");
+  const monthlyList = $("monthlyList");
 
-  // 内部保持：最後に検索した結果
+  const btnDangerWipeAdmin = $("btnDangerWipeAdmin");
+
+  // ====== 状態 ======
   let lastGroups = [];
   let lastFilters = null;
 
-  // =========================
-  // Admin Auth
-  // =========================
-  function showAdminPanel(){
-    if(adminPanel) adminPanel.classList.remove("hidden");
-  }
-  function hideAdminPanel(){
-    if(adminPanel) adminPanel.classList.add("hidden");
+  // ====== 初期化 ======
+  function ensureDefaultAdminPass() {
+    // 初回だけ初期パスを内部セット（画面には出さない）
+    const cur = localStorage.getItem(ADMIN_PASS_KEY);
+    if (!cur) localStorage.setItem(ADMIN_PASS_KEY, DEFAULT_ADMIN_PASS);
   }
 
-  function adminLogin(){
-    const pass = (a_pass?.value || "").trim();
-    if(!pass){
-      toast("管理者パスを入力してください");
-      return;
-    }
-    const ok = (pass === getAdminPass());
-    if(!ok){
-      toast("管理者パスが違います");
-      return;
-    }
-    setLoggedIn(true);
-    toast("ログインしました");
-    showAdminPanel();
+  function isLoggedInAdmin() {
+    return sessionStorage.getItem("OFA_ADMIN_LOGGED_IN") === "1";
   }
 
-  async function changePass(){
-    const current = (a_pass?.value || "").trim();
-    if(!current){
-      toast("現在の管理者パスを入力してください");
-      return;
-    }
-    if(current !== getAdminPass()){
-      toast("現在の管理者パスが違います");
-      return;
-    }
-
-    const p1 = prompt("新しい管理者パスを入力（8文字以上推奨）");
-    if(!p1) return;
-    const p2 = prompt("確認のためもう一度入力");
-    if(!p2) return;
-    if(p1 !== p2){
-      toast("一致しません。やり直してください");
-      return;
-    }
-
-    setAdminPass(p1);
-    toast("管理者パスを変更しました（端末内保存）");
-    // ログイン維持
-    setLoggedIn(true);
-    showAdminPanel();
+  function setAdminLoggedIn(flag) {
+    sessionStorage.setItem("OFA_ADMIN_LOGGED_IN", flag ? "1" : "0");
   }
 
-  // =========================
-  // Search Filters
-  // =========================
-  function readFilters(){
-    const from = normalizeDate(m_from?.value || "");
-    const to   = normalizeDate(m_to?.value || "");
-    const base = (m_base?.value || "").trim();
-    const name = (m_name?.value || "").trim();
-
-    if(!from || !to){
-      toast("期間（開始/終了）は必須です");
-      return null;
+  function showAdminPanel(flag) {
+    if (flag) {
+      adminPanel.classList.remove("hidden");
+      // 認証カード自体は残してもいいが、混乱防止で隠す
+      authCard.classList.add("hidden");
+    } else {
+      adminPanel.classList.add("hidden");
+      authCard.classList.remove("hidden");
     }
-    if(from > to){
-      toast("期間が逆です（開始 <= 終了）");
-      return null;
-    }
-
-    return { from, to, base, name };
   }
 
-  // =========================
-  // Render search result
-  // =========================
-  function renderGroups(groups){
-    if(!monthlyList) return;
+  function todayStr() {
+    const d = new Date();
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, "0");
+    const dd = String(d.getDate()).padStart(2, "0");
+    return `${yyyy}-${mm}-${dd}`;
+  }
 
-    if(!groups || groups.length === 0){
-      monthlyList.innerHTML = `<div class="note">該当データがありません</div>`;
-      return;
+  function clampDateInputs() {
+    // 空なら当月（ざっくり）を入れる
+    if (!mTo.value) mTo.value = todayStr();
+    if (!mFrom.value) {
+      const d = new Date();
+      d.setDate(1);
+      const yyyy = d.getFullYear();
+      const mm = String(d.getMonth() + 1).padStart(2, "0");
+      const dd = String(d.getDate()).padStart(2, "0");
+      mFrom.value = `${yyyy}-${mm}-${dd}`;
     }
+  }
 
-    // グループごとに集計を軽く表示（PDFは generateMonthlyPdf 側で作る）
-    monthlyList.innerHTML = groups.map((g, idx)=>{
-      // 稼働日数：点呼の日付でカウント（出発/帰着どちらでも）
-      const days = new Set();
-      (g.tenko || []).forEach(t=>{
-        const d = (t.at || "").slice(0,10);
-        if(d) days.add(d);
-      });
+  function buildFiltersFromUI() {
+    clampDateInputs();
+    return {
+      from: mFrom.value,
+      to: mTo.value,
+      base: (mBase.value || "").trim(),
+      name: (mName.value || "").trim(),
+    };
+  }
 
-      // ODO差分：両方揃っているものだけ
-      const byDate = new Map();
-      (g.tenko || []).forEach(t=>{
-        const d = (t.at || "").slice(0,10);
-        if(!d) return;
-        if(!byDate.has(d)) byDate.set(d, {dep:null, arr:null});
-        if(t.type === "departure") byDate.get(d).dep = t;
-        if(t.type === "arrival")   byDate.get(d).arr = t;
-      });
+  // ====== 画面表示（検索結果） ======
+  function renderGroups(groups, filters) {
+    if (!monthlyList) return;
 
-      let km = 0;
-      for(const [d,pair] of byDate.entries()){
-        const dep = pair.dep?.odoStart;
-        const arr = pair.arr?.odoEnd;
-        const diff = safeNum(arr) - safeNum(dep);
-        if(diff > 0) km += diff;
-      }
-
-      const tenkoCount = (g.tenko || []).length;
-      const dailyCount = (g.daily || []).length;
-
-      return `
-        <div class="card" style="margin-top:14px">
-          <div style="font-weight:900;font-size:16px;margin-bottom:6px">${g.name} / ${g.base}</div>
-          <div class="small">
-            稼働日数：<b>${days.size}</b> 日　
-            走行距離合計：<b>${km}</b> km　
-            点呼：<b>${tenkoCount}</b> 件　
-            日報：<b>${dailyCount}</b> 件
-          </div>
-
-          <div class="divider" style="margin:12px 0"></div>
-
-          <div class="small" style="margin-bottom:10px">点呼（最新10件）</div>
-          <div style="border:1px solid #eee;border-radius:10px;overflow:hidden">
-            ${(g.tenko || []).slice().sort((a,b)=>String(b.at).localeCompare(String(a.at))).slice(0,10).map(t=>{
-              const d = (t.at||"").slice(0,10);
-              const tm = (t.at||"").slice(11,16);
-              const typeJ = (t.type==="departure") ? "出発" : "帰着";
-              const odo = (t.type==="departure") ? (t.odoStart||"") : (t.odoEnd||"");
-              const alc = (t.alcValue!=="" && t.alcValue!=null) ? ` / Alc:${t.alcValue}` : "";
-              return `
-                <div style="padding:10px 12px;border-top:1px solid #f1f1f1">
-                  <div style="font-weight:800">${d} ${tm} / ${typeJ} / ODO:${odo}${alc}</div>
-                  <div class="small">案件：${t.mainProject||""} / エリア：${t.loadArea||""} / 異常：${t.abnormal||""}</div>
-                </div>
-              `;
-            }).join("")}
-          </div>
+    if (!groups || groups.length === 0) {
+      monthlyList.innerHTML = `
+        <div class="emptyBox">
+          検索結果がありません。<br>
+          期間・拠点・氏名を見直してください。
         </div>
       `;
-    }).join("");
+      return;
+    }
+
+    // 集計（グループ単位の要約）
+    const html = groups
+      .map((g, idx) => {
+        const days = new Set();
+        for (const t of (g.tenko || [])) {
+          const d = String(t.at || "").slice(0, 10);
+          if (d) days.add(d);
+        }
+        for (const d of (g.daily || [])) {
+          const dd = String(d.date || "").slice(0, 10);
+          if (dd) days.add(dd);
+        }
+
+        // 走行距離：出発/帰着が揃った日のみ合算
+        let totalKm = 0;
+        const byDate = new Map();
+        for (const t of (g.tenko || [])) {
+          const day = String(t.at || "").slice(0, 10);
+          if (!day) continue;
+          if (!byDate.has(day)) byDate.set(day, { dep: null, arr: null });
+          if (t.type === "departure") byDate.get(day).dep = t;
+          if (t.type === "arrival") byDate.get(day).arr = t;
+        }
+        for (const [day, pair] of byDate.entries()) {
+          const dep = Number(pair.dep?.odoStart ?? NaN);
+          const arr = Number(pair.arr?.odoEnd ?? NaN);
+          if (Number.isFinite(dep) && Number.isFinite(arr)) {
+            const diff = arr - dep;
+            if (diff > 0) totalKm += diff;
+          }
+        }
+
+        const tenkoCount = (g.tenko || []).length;
+        const dailyCount = (g.daily || []).length;
+
+        return `
+          <div class="resultCard">
+            <div class="resultTop">
+              <div class="resultTitle">${escapeHtml(g.name || "-")} / ${escapeHtml(g.base || "-")}</div>
+              <div class="resultSub">期間：${escapeHtml(filters.from)} ～ ${escapeHtml(filters.to)}</div>
+            </div>
+
+            <div class="resultGrid">
+              <div class="kv"><span class="k">稼働日数</span><span class="v">${days.size}日</span></div>
+              <div class="kv"><span class="k">走行距離合計</span><span class="v">${totalKm}km</span></div>
+              <div class="kv"><span class="k">点呼</span><span class="v">${tenkoCount}件</span></div>
+              <div class="kv"><span class="k">日報</span><span class="v">${dailyCount}件</span></div>
+            </div>
+
+            <div class="resultActions">
+              <button class="btn mini" data-act="pdf_one" data-idx="${idx}">この人だけPDF</button>
+              <button class="btn mini secondary" data-act="csv_one" data-idx="${idx}">この人だけCSV</button>
+            </div>
+          </div>
+        `;
+      })
+      .join("");
+
+    monthlyList.innerHTML = `
+      <div class="resultSummary">
+        <div>対象：<b>${groups.length}</b> 名</div>
+        <div class="small">※「この人だけPDF/CSV」は端末内データのみで作成されます</div>
+      </div>
+      ${html}
+    `;
+
+    // ボタンイベント（委譲）
+    monthlyList.querySelectorAll("button[data-act]").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        const act = btn.getAttribute("data-act");
+        const idx = Number(btn.getAttribute("data-idx"));
+        const g = groups[idx];
+        if (!g) return;
+
+        if (act === "pdf_one") {
+          try {
+            await generateMonthlyPdf([g], filters);
+          } catch (e) {
+            alert("PDF作成に失敗しました：\n" + (e?.message || e));
+          }
+        }
+
+        if (act === "csv_one") {
+          try {
+            // 個人だけのCSV（tenko / daily 2本）
+            await exportCsvForOne(g, filters);
+          } catch (e) {
+            alert("CSV出力に失敗しました：\n" + (e?.message || e));
+          }
+        }
+      });
+    });
   }
 
-  // =========================
-  // Search main
-  // =========================
-  async function doMonthlySearch(){
-    if(!isLoggedIn()){
-      toast("先に管理者ログインしてください");
+  // 個人だけCSV（検索結果から生成）
+  async function exportCsvForOne(group, filters) {
+    // tenko/daily をそのままCSV化したいので csv.js の関数を再利用
+    // ただし csv.js は「searchRecords」を前提にしてるので、ここはローカルで組み立てる
+    if (!group) return;
+
+    const tenkoCsv = (typeof buildTenkoCsv === "function") ? buildTenkoCsv(group.tenko || []) : null;
+    const dailyCsv = (typeof buildDailyCsv === "function") ? buildDailyCsv(group.daily || []) : null;
+
+    if (!tenkoCsv || !dailyCsv) {
+      throw new Error("CSV関数が見つかりません（csv.js を確認してください）");
+    }
+
+    const nameKey = (group.name || "unknown").replace(/[\\/:*?"<>|]/g, "_");
+    const baseKey = (group.base || "base").replace(/[\\/:*?"<>|]/g, "_");
+    const dateKey = `${filters.from || "all"}_${filters.to || "all"}`;
+
+    if (typeof downloadText !== "function") {
+      throw new Error("downloadText が見つかりません（csv.js を確認してください）");
+    }
+
+    downloadText(`OFA_点呼_${nameKey}_${baseKey}_${dateKey}.csv`, tenkoCsv);
+    downloadText(`OFA_日報_${nameKey}_${baseKey}_${dateKey}.csv`, dailyCsv);
+  }
+
+  // HTMLエスケープ
+  function escapeHtml(str) {
+    return String(str ?? "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#039;");
+  }
+
+  // ====== 管理者認証 ======
+  function adminLogin() {
+    const input = (passInput.value || "").trim();
+    const saved = localStorage.getItem(ADMIN_PASS_KEY) || DEFAULT_ADMIN_PASS;
+
+    if (!input) {
+      alert("管理者パスを入力してください。");
+      return;
+    }
+    if (input !== saved) {
+      alert("管理者パスが違います。\n（パスはLINEで確認してください）");
       return;
     }
 
-    const filters = readFilters();
-    if(!filters) return;
+    setAdminLoggedIn(true);
+    showAdminPanel(true);
+  }
 
-    if(typeof searchMonthly !== "function"){
-      toast("searchMonthly が見つかりません（js/db.js の読み込みを確認）");
+  function changeAdminPass() {
+    const saved = localStorage.getItem(ADMIN_PASS_KEY) || DEFAULT_ADMIN_PASS;
+
+    const current = prompt("現在の管理者パスを入力してください");
+    if (current === null) return;
+    if ((current || "").trim() !== saved) {
+      alert("現在のパスが違います。");
       return;
     }
 
-    try{
+    const next = prompt("新しい管理者パスを入力してください（8文字以上推奨）");
+    if (next === null) return;
+    const newPass = (next || "").trim();
+    if (!newPass) {
+      alert("新しいパスが空です。");
+      return;
+    }
+    if (newPass.length < 4) {
+      alert("短すぎます。もう少し長いパスにしてください。");
+      return;
+    }
+
+    localStorage.setItem(ADMIN_PASS_KEY, newPass);
+    alert("管理者パスを変更しました。\n（LINEで共有するパスも更新してください）");
+    passInput.value = "";
+  }
+
+  // ====== 検索 ======
+  async function monthlySearch() {
+    const filters = buildFiltersFromUI();
+
+    if (!filters.from || !filters.to) {
+      alert("期間（開始/終了）は必須です。");
+      return;
+    }
+    if (filters.from > filters.to) {
+      alert("期間が不正です（開始が終了より後になっています）。");
+      return;
+    }
+
+    monthlyList.innerHTML = `<div class="loadingBox">検索中…</div>`;
+
+    try {
+      // db.js の searchMonthly を利用
       const groups = await searchMonthly(filters);
-
-      // 追加の部分一致フィルタ（念のため）
-      const filtered = (groups || []).filter(g=>{
-        if(!includesLike(g.base, filters.base)) return false;
-        if(!includesLike(g.name, filters.name)) return false;
-        return true;
-      });
-
-      lastGroups = filtered;
+      lastGroups = groups || [];
       lastFilters = filters;
 
-      renderGroups(filtered);
-      toast(`検索完了：${filtered.length} 件`);
-    }catch(e){
-      console.error(e);
-      toast("検索に失敗しました： " + (e?.message || e));
+      renderGroups(lastGroups, lastFilters);
+    } catch (e) {
+      monthlyList.innerHTML = `<div class="errorBox">検索に失敗：${escapeHtml(e?.message || e)}</div>`;
     }
   }
 
-  // =========================
-  // CSV export (search result)
-  // =========================
-  async function exportMonthlyCsv(){
-    if(!isLoggedIn()){
-      toast("先に管理者ログインしてください");
+  // ====== CSV（検索結果一括） ======
+  async function monthlyCsv() {
+    const filters = buildFiltersFromUI();
+
+    if (!filters.from || !filters.to) {
+      alert("期間（開始/終了）は必須です。");
       return;
     }
-    const filters = readFilters();
-    if(!filters) return;
-
-    // 推奨：js/csv.js の exportCsvSearchResult を使う（点呼CSV/日報CSVを別々に確実出力）
-    if(typeof exportCsvSearchResult === "function"){
-      try{
-        await exportCsvSearchResult(filters);
-        toast("CSVを出力しました（点呼/日報）");
-        return;
-      }catch(e){
-        console.error(e);
-        toast("CSV出力に失敗： " + (e?.message || e));
-        return;
-      }
-    }
-
-    // fallback：buildTenkoCsv/buildDailyCsv がある場合
-    if(typeof searchRecords !== "function" || typeof buildTenkoCsv !== "function" || typeof buildDailyCsv !== "function" || typeof downloadText !== "function"){
-      toast("CSV機能が不足しています（js/csv.js / js/db.js の読み込みを確認）");
+    if (filters.from > filters.to) {
+      alert("期間が不正です（開始が終了より後になっています）。");
       return;
     }
 
-    try{
-      const { tenkoHit, dailyHit } = await searchRecords(filters);
-      const key = `${filters.from}_${filters.to}`;
-      downloadText(`OFA_点呼_${key}.csv`, buildTenkoCsv(tenkoHit));
-      downloadText(`OFA_日報_${key}.csv`, buildDailyCsv(dailyHit));
-      toast("CSVを出力しました（点呼/日報）");
-    }catch(e){
-      console.error(e);
-      toast("CSV出力に失敗： " + (e?.message || e));
+    try {
+      // csv.js の exportCsvSearchResult を利用（点呼CSV + 日報CSV）
+      await exportCsvSearchResult(filters);
+      alert("CSVを出力しました（点呼 / 日報 の2ファイル）。");
+    } catch (e) {
+      alert("CSV出力に失敗しました：\n" + (e?.message || e));
     }
   }
 
-  // =========================
-  // Monthly PDF
-  // =========================
-  async function makeMonthlyPdf(){
-    if(!isLoggedIn()){
-      toast("先に管理者ログインしてください");
+  // ====== 月報PDF（一括） ======
+  async function monthlyPdf() {
+    if (!lastGroups || lastGroups.length === 0 || !lastFilters) {
+      alert("先に検索してください（検索結果からPDFを作成します）。");
       return;
     }
 
-    const filters = readFilters();
-    if(!filters) return;
-
-    if(typeof generateMonthlyPdf !== "function"){
-      toast("generateMonthlyPdf が見つかりません（js/pdf.js の読み込みを確認）");
-      return;
-    }
-
-    // まだ検索してない場合は検索してから
-    if(!lastGroups || lastGroups.length === 0 || !lastFilters ||
-       lastFilters.from !== filters.from || lastFilters.to !== filters.to ||
-       lastFilters.base !== filters.base || lastFilters.name !== filters.name){
-      await doMonthlySearch();
-    }
-
-    if(!lastGroups || lastGroups.length === 0){
-      toast("検索結果がありません。PDFを作成できません");
-      return;
-    }
-
-    try{
-      await generateMonthlyPdf(lastGroups, filters);
-      toast("月報PDFを作成しました");
-    }catch(e){
-      console.error(e);
-      toast("PDF作成に失敗： " + (e?.message || e));
+    try {
+      await generateMonthlyPdf(lastGroups, lastFilters);
+    } catch (e) {
+      alert("月報PDF作成に失敗しました：\n" + (e?.message || e));
     }
   }
 
-  // =========================
-  // init
-  // =========================
-  function init(){
-    // 既にログイン済みなら開く
-    if(isLoggedIn()){
-      showAdminPanel();
-    }else{
-      hideAdminPanel();
+  // ====== 端末データ全削除（管理者端末用） ======
+  async function wipeAllDeviceData() {
+    const ok = confirm(
+      "この端末の点呼/日報/基本情報（IndexedDB）を全削除します。\n本当に実行しますか？"
+    );
+    if (!ok) return;
+
+    try {
+      // IndexedDBを丸ごと削除
+      await new Promise((resolve, reject) => {
+        const req = indexedDB.deleteDatabase(OFA_DB_NAME);
+        req.onsuccess = () => resolve(true);
+        req.onerror = () => reject(req.error);
+        req.onblocked = () => reject(new Error("削除がブロックされました（タブを閉じて再実行）"));
+      });
+
+      alert("削除しました。ページを再読み込みします。");
+      location.reload();
+    } catch (e) {
+      alert("削除に失敗しました：\n" + (e?.message || e));
     }
-
-    btnAdminLogin && btnAdminLogin.addEventListener("click", adminLogin);
-    btnChangePass && btnChangePass.addEventListener("click", changePass);
-
-    btnMonthlySearch && btnMonthlySearch.addEventListener("click", doMonthlySearch);
-    btnMonthlyCsv && btnMonthlyCsv.addEventListener("click", exportMonthlyCsv);
-    btnMonthlyPdf && btnMonthlyPdf.addEventListener("click", makeMonthlyPdf);
-
-    // 初期日付：今月をセット（ユーザーが手入力で変更できる）
-    const d = new Date();
-    const y = d.getFullYear();
-    const m = d.getMonth();
-    const first = new Date(y, m, 1);
-    const last = new Date(y, m+1, 0);
-
-    const f = `${first.getFullYear()}-${String(first.getMonth()+1).padStart(2,"0")}-${String(first.getDate()).padStart(2,"0")}`;
-    const t = `${last.getFullYear()}-${String(last.getMonth()+1).padStart(2,"0")}-${String(last.getDate()).padStart(2,"0")}`;
-
-    if(m_from && !m_from.value) m_from.value = f;
-    if(m_to && !m_to.value) m_to.value = t;
   }
 
-  document.addEventListener("DOMContentLoaded", init);
+  // ====== 入口：実行 ======
+  function init() {
+    ensureDefaultAdminPass();
+
+    // もしURL直打ちでも「前回ログイン済み」なら通す
+    showAdminPanel(isLoggedInAdmin());
+
+    // 初期の期間
+    clampDateInputs();
+
+    // events
+    btnAdminLogin?.addEventListener("click", adminLogin);
+    btnChangePass?.addEventListener("click", changeAdminPass);
+
+    btnMonthlySearch?.addEventListener("click", monthlySearch);
+    btnMonthlyCsv?.addEventListener("click", monthlyCsv);
+    btnMonthlyPdf?.addEventListener("click", monthlyPdf);
+
+    btnDangerWipeAdmin?.addEventListener("click", wipeAllDeviceData);
+
+    // Enterでログイン
+    passInput?.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") adminLogin();
+    });
+  }
+
+  init();
 })();
