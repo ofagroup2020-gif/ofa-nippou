@@ -2,34 +2,42 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover" />
-  <title>OFA 管理者（月報：期間検索 / PDF / CSV）</title>
-  <link rel="stylesheet" href="./style.css" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>OFA 管理者（月報PDF・期間検索）</title>
+  <link rel="stylesheet" href="../style.css" />
 </head>
 
 <body>
+  <!-- Header -->
   <div class="header">
-    <div class="logo">OFA</div>
-    <div class="titlewrap">
-      <div class="title">管理者（月報：期間検索 / PDF / CSV）</div>
-      <div class="subtitle">端末内データ（IndexedDB）を検索して、月報PDF/CSVを出力</div>
+    <div class="logoWrap">
+      <!-- ロゴ画像があるなら差し替えOK（白背景向き） -->
+      <!-- 例）<img class="logoImg" src="../assets/ofa-logo.png" alt="OFA"> -->
+      <div class="logo">OFA</div>
     </div>
-    <a href="../index.html"><button class="rightTopBtn">ドライバーへ戻る</button></a>
+
+    <div class="titlewrap">
+      <div class="title">管理者（月報PDF・期間検索）</div>
+      <div class="subtitle">端末内データ（IndexedDB）から：期間検索 / 集計 / CSV / 月報PDF / 個別PDF</div>
+    </div>
+
+    <a href="../index.html" class="rightTopLink">
+      <button class="rightTopBtn">戻る</button>
+    </a>
   </div>
 
   <div class="container">
 
     <!-- ① Admin Auth -->
-    <div class="card" id="adminAuthCard">
-      <div class="h2">① 管理者認証</div>
+    <div class="card">
+      <div class="h2">① 管理者認証（簡易）</div>
       <div class="note">
-        管理者画面は「管理者パス」でロックします。<br>
-        パスは端末内（localStorage）に保存されます。<br>
-        ※パスワードはこのページには表示しません。
+        管理者ページは「端末内の管理者パス（localStorage）」で簡易ロックします。<br>
+        ※パスはLINEで共有・確認する運用のため、このページ内には記載しません。
       </div>
 
-      <label>管理者パス</label>
-      <input id="a_pass" type="password" placeholder="管理者パスを入力" />
+      <label for="a_pass">管理者パス</label>
+      <input id="a_pass" type="password" placeholder="管理者パスを入力" autocomplete="current-password" />
 
       <div class="actions" style="margin-top:12px">
         <button class="btn" id="btnAdminLogin">ログイン</button>
@@ -37,37 +45,36 @@
       </div>
 
       <div class="small">
-        ※ログインできない場合：過去に変更済みの可能性があります（端末内保存のため）
+        ※パス・ログイン状態は端末内保存（localStorage）です。<br>
+        ※ブラウザの「サイトデータ削除」をするとパス/ログインがリセットされます。
       </div>
     </div>
 
-    <!-- ② Admin Panel -->
+    <!-- Admin Panel (hidden until login) -->
     <div class="card hidden" id="adminPanel">
-      <div class="h2">② 月報検索（期間・拠点・氏名）</div>
-      <div class="note">
-        期間は必須です。拠点・氏名は部分一致検索。<br>
-        点呼（出発/帰着）と日報（任意）を合わせて集計し、月報PDF/CSVを出力できます。
-      </div>
+
+      <!-- ② Search -->
+      <div class="h2">② 期間検索（点呼・日報）</div>
 
       <div class="row">
         <div>
-          <label>期間（開始）<span class="req">*</span></label>
+          <label for="m_from">期間（開始）*</label>
           <input type="date" id="m_from" />
         </div>
         <div>
-          <label>期間（終了）<span class="req">*</span></label>
+          <label for="m_to">期間（終了）*</label>
           <input type="date" id="m_to" />
         </div>
       </div>
 
       <div class="row">
         <div>
-          <label>拠点（部分一致）</label>
-          <input id="m_base" placeholder="例：鹿児島 / 東京 / 福岡" />
+          <label for="m_base">拠点（部分一致）</label>
+          <input id="m_base" placeholder="例：鹿児島 / 福岡 / 東京" />
         </div>
         <div>
-          <label>氏名（部分一致）</label>
-          <input id="m_name" placeholder="例：森下" />
+          <label for="m_name">氏名（部分一致）</label>
+          <input id="m_name" placeholder="例：森下 / 田中" />
         </div>
       </div>
 
@@ -78,37 +85,41 @@
 
       <div class="divider"></div>
 
+      <!-- ③ Monthly PDF -->
       <div class="h2">③ 月報PDF（OFAフォーマット）</div>
       <div class="note">
-        検索結果をもとに「氏名×拠点」ごとに月報PDFを生成します。<br>
-        PDFは<strong>日本語が文字化けしない方式（HTML→canvas→PDF）</strong>です。
+        検索結果をもとに、管理者用の月報PDF（OFAフォーマット）を生成します。<br>
+        ※PDFは「HTML→画像化→PDF」の方式で、日本語文字化けしない構成です。
       </div>
 
       <button class="btn" id="btnMonthlyPdf">月報PDFを作成</button>
 
       <div class="divider"></div>
 
-      <div class="h2">④ 検索結果（プレビュー）</div>
+      <!-- ④ Results -->
+      <div class="h2">④ 検索結果</div>
+      <div class="note">
+        条件に一致したデータを「氏名 / 拠点」単位でまとめて表示します。<br>
+        稼働日数・走行距離（出発ODOと帰着ODOが揃った日のみ差分加算）などを集計します。
+      </div>
+
       <div id="monthlyList"></div>
 
       <div class="divider"></div>
 
-      <div class="h2">⑤ 端末内データ操作（注意）</div>
-      <div class="note">
-        これは<strong>この端末のIndexedDB</strong>だけに影響します（他端末には影響しません）。
+      <div class="small">
+        ✅ 端末内データ（IndexedDB）を使うため、サーバー送信はありません。<br>
+        ✅ データ件数が1000件超でも動く構成です。<br>
+        ✅ 「点呼は出発/帰着を分離」「日報・売上は任意（未入力でもOK）」の前提で集計します。
       </div>
-      <div class="actions">
-        <button class="btn secondary" id="btnReloadDb">再読み込み</button>
-        <button class="btn danger" id="btnWipeDb">この端末の全データ削除</button>
-      </div>
-    </div>
 
+    </div>
   </div>
 
-  <!-- Scripts: admin配下から参照（/admin/js/に配置） -->
-  <script src="./js/db.js"></script>
-  <script src="./js/pdf.js"></script>
-  <script src="./js/csv.js"></script>
-  <script src="./js/admin.js"></script>
+  <!-- JS -->
+  <script src="../js/db.js"></script>
+  <script src="../js/pdf.js"></script>
+  <script src="../js/csv.js"></script>
+  <script src="../js/admin.js"></script>
 </body>
 </html>
