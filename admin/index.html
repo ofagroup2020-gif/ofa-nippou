@@ -4,50 +4,52 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <title>OFA 管理者（月報PDF・期間検索）</title>
-  <link rel="stylesheet" href="../style.css" />
+
+  <!-- 共通CSS（直下の style.css を参照） -->
+  <link rel="stylesheet" href="../style.css?v=2026" />
 </head>
 
 <body>
+
   <div class="header">
     <div class="logo">OFA</div>
     <div class="titlewrap">
       <div class="title">管理者（月報PDF・期間検索）</div>
-      <div class="subtitle">端末内データ（IndexedDB）を検索して月報PDF / CSV 出力</div>
+      <div class="subtitle">端末内データ（IndexedDB）を検索して 月報PDF / CSV 出力</div>
     </div>
-    <a href="../index.html"><button class="rightTopBtn" type="button">戻る</button></a>
+    <button class="rightTopBtn" type="button" id="btnBack">戻る</button>
   </div>
 
   <div class="container">
 
-    <!-- 管理者認証 -->
-    <div class="card" id="adminAuthCard">
+    <!-- ① 管理者認証 -->
+    <div class="card" id="cardLogin">
       <div class="h2">① 管理者認証</div>
+
       <div class="note">
-        管理者画面は <b>端末内パス</b> で保護しています。<br />
-        パスワードは <b>LINEで共有</b> する運用（サイトには表示しません）。
+        管理者画面は <b>端末内パス</b> でロックします。<br>
+        パスワードは <b>社内LINE</b> で共有（このサイトには記載しません）。
       </div>
 
-      <label>管理者パス</label>
-      <input id="a_pass" type="password" autocomplete="current-password" />
+      <label>管理者パスワード</label>
+      <input id="a_pass" type="password" inputmode="text" autocomplete="current-password" placeholder="社内LINEで確認" />
 
       <div class="actions" style="margin-top:12px">
-        <button class="btn" id="btnAdminLogin" type="button">ログイン</button>
-        <button class="btn secondary" id="btnChangePass" type="button">管理者パス変更</button>
+        <button class="btn" type="button" id="btnAdminLogin">ログイン</button>
+        <button class="btn secondary" type="button" id="btnChangePass">管理者パス変更</button>
       </div>
 
       <div class="small">
-        ※ パスは端末内保存（localStorage）です。<br />
-        ※ 管理者端末を変える場合は、再度パスを入力してください。
+        ※ パスは <b>この端末内（localStorage）</b> に保存されます。<br>
+        ※ 端末を変えると再設定が必要です。
       </div>
 
       <div class="divider"></div>
 
-      <a class="linkBtn" href="https://lin.ee/7sO7SCQ" target="_blank" rel="noopener">
-        OFAメンバー専用LINEへ問い合わせ
-      </a>
+      <button class="btn secondary" type="button" id="btnOpenLine">OFAメンバー専用LINEへ問い合わせ</button>
     </div>
 
-    <!-- 管理者パネル -->
+    <!-- ② 管理者パネル -->
     <div class="card hidden" id="adminPanel">
       <div class="h2">② 月報検索</div>
 
@@ -64,57 +66,62 @@
 
       <div class="row">
         <div>
-          <label>拠点（部分一致）</label>
-          <input id="m_base" placeholder="例：鹿児島 / 東京 / 福岡" />
+          <label>拠点（部分一致 / 空欄で全件）</label>
+          <input id="m_base" placeholder="例：鹿児島 / 東京都" />
         </div>
         <div>
-          <label>氏名（部分一致）</label>
+          <label>氏名（部分一致 / 空欄で全件）</label>
           <input id="m_name" placeholder="例：森下" />
         </div>
       </div>
 
       <div class="actions" style="margin-top:12px">
-        <button class="btn" id="btnMonthlySearch" type="button">検索</button>
-        <button class="btn secondary" id="btnMonthlyCsv" type="button">CSV出力（検索結果）</button>
+        <button class="btn" type="button" id="btnMonthlySearch">検索</button>
+        <button class="btn secondary" type="button" id="btnMonthlyCsv">CSV出力（検索結果）</button>
       </div>
 
       <div class="divider"></div>
 
-      <div class="h2">③ 月報PDF（OFAフォーマット）</div>
+      <div class="h2">③ 月報PDF</div>
       <div class="note">
-        検索結果から月報PDFを作成します。<br />
-        PDFは <b>日本語が文字化けしない方式（HTML→canvas→PDF）</b> です。
+        検索結果をもとに <b>月報PDF（OFAフォーマット）</b> を生成します。<br>
+        文字化けは <b>HTML→画像→PDF</b> 方式で回避します。
       </div>
 
-      <button class="btn" id="btnMonthlyPdf" type="button">月報PDFを作成</button>
-
-      <div class="divider"></div>
-
-      <div class="h2">④ 検索結果</div>
-      <div id="monthlyList" class="listBox"></div>
-
-      <div class="divider"></div>
-
-      <div class="h2">⑤ 管理者メニュー</div>
-      <div class="note">
-        データは端末内（IndexedDB）です。<br />
-        管理者端末を変える場合は CSV でバックアップしてください。
+      <div class="actions">
+        <button class="btn" type="button" id="btnMonthlyPdf">月報PDFを作成</button>
+        <button class="btn secondary" type="button" id="btnExportBackup">バックアップ（JSON）</button>
       </div>
-      <button class="btn danger" id="btnDangerWipeAdmin" type="button">⚠ この端末のデータを全削除</button>
 
       <div class="divider"></div>
 
-      <a class="linkBtn" href="https://lin.ee/7sO7SCQ" target="_blank" rel="noopener">
-        OFAメンバー専用LINEへ問い合わせ
-      </a>
+      <div id="monthlySummary" class="resultSummary"></div>
+      <div id="monthlyList"></div>
+
+      <div class="divider"></div>
+
+      <button class="btn secondary" type="button" id="btnLogoutAdmin">ログアウト</button>
     </div>
 
+    <div class="safeBottom"></div>
   </div>
 
-  <!-- 必須JS（順番固定） -->
-  <script src="../js/db.js"></script>
-  <script src="../js/pdf.js"></script>
-  <script src="../js/csv.js"></script>
-  <script src="../js/admin.js"></script>
+  <!-- 依存JS（順番が重要） -->
+  <script src="../js/db.js?v=2026"></script>
+  <script src="../js/pdf.js?v=2026"></script>
+  <script src="../js/csv.js?v=2026"></script>
+  <script src="../js/admin.js?v=2026"></script>
+
+  <script>
+    // ここは「戻る」「LINE問い合わせ」だけ（admin.jsとは独立して保険で動かす）
+    document.getElementById("btnBack").addEventListener("click", () => {
+      location.href = "../index.html";
+    });
+
+    document.getElementById("btnOpenLine").addEventListener("click", () => {
+      location.href = "https://lin.ee/7sO7SCQ";
+    });
+  </script>
+
 </body>
 </html>
