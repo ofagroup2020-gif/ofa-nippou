@@ -6,90 +6,105 @@
   <title>OFA 管理者（月報PDF・期間検索）</title>
   <link rel="stylesheet" href="./style.css" />
 </head>
+
 <body>
   <div class="header">
     <div class="logo">OFA</div>
+
     <div class="titlewrap">
       <div class="title">管理者（月報PDF・期間検索）</div>
       <div class="subtitle">端末内データ（IndexedDB）を検索して月報PDF / CSV を出力</div>
     </div>
-    <a href="../index.html"><button class="rightTopBtn">戻る</button></a>
+
+    <!-- ✅ 戻るは admin/index.html → ../index.html が正解（ここ超重要） -->
+    <a href="../index.html"><button class="rightTopBtn" type="button">戻る</button></a>
   </div>
 
   <div class="container">
 
-    <!-- ① 管理者認証（簡易） -->
     <div class="card">
-      <div class="h2">① 管理者ログイン</div>
+      <div class="h2">① 管理者認証</div>
+
       <div class="note">
-        管理者パスは <b>LINEで共有</b>して運用してください。<br>
-        このページ内にはパスを一切表示しません（画面漏洩対策）。
+        管理者パスは <b>サイトに記載しません</b>（LINEで共有する運用）。<br>
+        この端末の保存パスで認証します（localStorage）。
       </div>
 
-      <label>管理者パス（LINEで確認）</label>
-      <input id="a_pass" type="password" placeholder="管理者パスを入力">
+      <label>管理者パス</label>
+      <input id="a_pass" type="password" placeholder="LINEで共有されたパスを入力" />
 
       <div class="actions" style="margin-top:12px">
-        <button class="btn" id="btnAdminLogin">ログイン</button>
-        <button class="btn secondary" id="btnChangePass">管理者パス変更</button>
+        <button class="btn" id="btnAdminLogin" type="button">ログイン</button>
+        <button class="btn secondary" id="btnChangePass" type="button">管理者パス変更</button>
       </div>
 
       <div class="small">
-        ※パスは端末内保存（localStorage）<br>
-        ※ログイン状態はブラウザを閉じるまで（sessionStorage）
+        ※管理者パスは端末内保存です（サーバー送信しません）<br>
+        ※別端末で使う場合は、その端末でも同じパスを設定してください
       </div>
     </div>
 
-    <!-- ② 管理者パネル -->
     <div class="card hidden" id="adminPanel">
-      <div class="h2">② 月報検索</div>
+      <div class="h2">② 月報検索（期間・拠点・氏名）</div>
+
+      <div class="note">
+        まず <b>期間（開始/終了）</b> を指定して検索してください。<br>
+        拠点・氏名は部分一致で絞り込みできます。
+      </div>
 
       <div class="row">
         <div>
           <label>期間（開始）*</label>
-          <input type="date" id="m_from">
+          <input type="date" id="m_from" />
         </div>
         <div>
           <label>期間（終了）*</label>
-          <input type="date" id="m_to">
+          <input type="date" id="m_to" />
         </div>
       </div>
 
       <div class="row">
         <div>
           <label>拠点（部分一致）</label>
-          <input id="m_base" placeholder="例：鹿児島 / 東京 / 福岡 など">
+          <input id="m_base" placeholder="例：鹿児島 / 東京 / 福岡" />
         </div>
         <div>
           <label>氏名（部分一致）</label>
-          <input id="m_name" placeholder="例：森下 など">
+          <input id="m_name" placeholder="例：森下" />
         </div>
       </div>
 
       <div class="actions" style="margin-top:12px">
-        <button class="btn" id="btnMonthlySearch">検索</button>
-        <button class="btn secondary" id="btnMonthlyCsv">CSV出力（検索結果）</button>
+        <button class="btn" id="btnMonthlySearch" type="button">検索</button>
+        <button class="btn secondary" id="btnMonthlyCsv" type="button">CSV出力（検索結果）</button>
       </div>
 
       <div class="divider"></div>
 
-      <div class="h2">③ 月報PDF</div>
+      <div class="h2">③ 月報PDF（OFAフォーマット）</div>
       <div class="note">
-        検索結果をもとに、月報PDF（OFAフォーマット）を作成します。<br>
-        PDFは <b>日本語文字化け対策済み</b>（HTML→canvas→PDF）です。
+        検索結果をもとに月報PDFを作成します。<br>
+        PDFは <b>日本語文字化けしない方式</b>（HTML→canvas→PDF）で生成します。
       </div>
 
-      <button class="btn" id="btnMonthlyPdf">月報PDFを作成（検索結果まとめ）</button>
+      <button class="btn" id="btnMonthlyPdf" type="button">月報PDFを作成</button>
 
       <div class="divider"></div>
 
       <div class="h2">④ 検索結果</div>
-      <div id="monthlyList" class="histList"></div>
+      <div id="monthlyList" class="note">まだ検索していません</div>
+    </div>
+
+    <div class="small" style="margin-top:10px">
+      © OFA GROUP / 管理者ページ（端末内データのみ・アップロード無し）
     </div>
 
   </div>
 
-  <!-- scripts -->
+  <!-- ✅ 重要：この4つは adminフォルダから見た相対パスで OK -->
+  <!-- /admin/js/db.js → /admin/js/db.js として読み込むなら、admin内にjsを複製してもOK。
+       ただし、君の構成が「ルートの /js/ に共通を置く」なら ../js/ にする必要がある。
+       今回は “adminフォルダ内に js を置く構成” に固定する。 -->
   <script src="./js/db.js"></script>
   <script src="./js/pdf.js"></script>
   <script src="./js/csv.js"></script>
