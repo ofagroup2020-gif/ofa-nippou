@@ -4,40 +4,30 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <title>OFA 管理者（月報PDF・期間検索）</title>
-  <link rel="stylesheet" href="../style.css" />
+  <link rel="stylesheet" href="./style.css" />
 </head>
-
 <body>
-  <!-- Header -->
   <div class="header">
-    <div class="logoWrap">
-      <!-- ロゴ画像があるなら差し替えOK（白背景向き） -->
-      <!-- 例）<img class="logoImg" src="../assets/ofa-logo.png" alt="OFA"> -->
-      <div class="logo">OFA</div>
-    </div>
-
+    <div class="logo">OFA</div>
     <div class="titlewrap">
       <div class="title">管理者（月報PDF・期間検索）</div>
-      <div class="subtitle">端末内データ（IndexedDB）から：期間検索 / 集計 / CSV / 月報PDF / 個別PDF</div>
+      <div class="subtitle">端末内データ（IndexedDB）を検索して月報PDF / CSV を出力</div>
     </div>
-
-    <a href="../index.html" class="rightTopLink">
-      <button class="rightTopBtn">戻る</button>
-    </a>
+    <a href="../index.html"><button class="rightTopBtn">戻る</button></a>
   </div>
 
   <div class="container">
 
-    <!-- ① Admin Auth -->
+    <!-- ① 管理者認証（簡易） -->
     <div class="card">
-      <div class="h2">① 管理者認証（簡易）</div>
+      <div class="h2">① 管理者ログイン</div>
       <div class="note">
-        管理者ページは「端末内の管理者パス（localStorage）」で簡易ロックします。<br>
-        ※パスはLINEで共有・確認する運用のため、このページ内には記載しません。
+        管理者パスは <b>LINEで共有</b>して運用してください。<br>
+        このページ内にはパスを一切表示しません（画面漏洩対策）。
       </div>
 
-      <label for="a_pass">管理者パス</label>
-      <input id="a_pass" type="password" placeholder="管理者パスを入力" autocomplete="current-password" />
+      <label>管理者パス（LINEで確認）</label>
+      <input id="a_pass" type="password" placeholder="管理者パスを入力">
 
       <div class="actions" style="margin-top:12px">
         <button class="btn" id="btnAdminLogin">ログイン</button>
@@ -45,36 +35,34 @@
       </div>
 
       <div class="small">
-        ※パス・ログイン状態は端末内保存（localStorage）です。<br>
-        ※ブラウザの「サイトデータ削除」をするとパス/ログインがリセットされます。
+        ※パスは端末内保存（localStorage）<br>
+        ※ログイン状態はブラウザを閉じるまで（sessionStorage）
       </div>
     </div>
 
-    <!-- Admin Panel (hidden until login) -->
+    <!-- ② 管理者パネル -->
     <div class="card hidden" id="adminPanel">
-
-      <!-- ② Search -->
-      <div class="h2">② 期間検索（点呼・日報）</div>
+      <div class="h2">② 月報検索</div>
 
       <div class="row">
         <div>
-          <label for="m_from">期間（開始）*</label>
-          <input type="date" id="m_from" />
+          <label>期間（開始）*</label>
+          <input type="date" id="m_from">
         </div>
         <div>
-          <label for="m_to">期間（終了）*</label>
-          <input type="date" id="m_to" />
+          <label>期間（終了）*</label>
+          <input type="date" id="m_to">
         </div>
       </div>
 
       <div class="row">
         <div>
-          <label for="m_base">拠点（部分一致）</label>
-          <input id="m_base" placeholder="例：鹿児島 / 福岡 / 東京" />
+          <label>拠点（部分一致）</label>
+          <input id="m_base" placeholder="例：鹿児島 / 東京 / 福岡 など">
         </div>
         <div>
-          <label for="m_name">氏名（部分一致）</label>
-          <input id="m_name" placeholder="例：森下 / 田中" />
+          <label>氏名（部分一致）</label>
+          <input id="m_name" placeholder="例：森下 など">
         </div>
       </div>
 
@@ -85,41 +73,26 @@
 
       <div class="divider"></div>
 
-      <!-- ③ Monthly PDF -->
-      <div class="h2">③ 月報PDF（OFAフォーマット）</div>
+      <div class="h2">③ 月報PDF</div>
       <div class="note">
-        検索結果をもとに、管理者用の月報PDF（OFAフォーマット）を生成します。<br>
-        ※PDFは「HTML→画像化→PDF」の方式で、日本語文字化けしない構成です。
+        検索結果をもとに、月報PDF（OFAフォーマット）を作成します。<br>
+        PDFは <b>日本語文字化け対策済み</b>（HTML→canvas→PDF）です。
       </div>
 
-      <button class="btn" id="btnMonthlyPdf">月報PDFを作成</button>
+      <button class="btn" id="btnMonthlyPdf">月報PDFを作成（検索結果まとめ）</button>
 
       <div class="divider"></div>
 
-      <!-- ④ Results -->
       <div class="h2">④ 検索結果</div>
-      <div class="note">
-        条件に一致したデータを「氏名 / 拠点」単位でまとめて表示します。<br>
-        稼働日数・走行距離（出発ODOと帰着ODOが揃った日のみ差分加算）などを集計します。
-      </div>
-
-      <div id="monthlyList"></div>
-
-      <div class="divider"></div>
-
-      <div class="small">
-        ✅ 端末内データ（IndexedDB）を使うため、サーバー送信はありません。<br>
-        ✅ データ件数が1000件超でも動く構成です。<br>
-        ✅ 「点呼は出発/帰着を分離」「日報・売上は任意（未入力でもOK）」の前提で集計します。
-      </div>
-
+      <div id="monthlyList" class="histList"></div>
     </div>
+
   </div>
 
-  <!-- JS -->
-  <script src="../js/db.js"></script>
-  <script src="../js/pdf.js"></script>
-  <script src="../js/csv.js"></script>
-  <script src="../js/admin.js"></script>
+  <!-- scripts -->
+  <script src="./js/db.js"></script>
+  <script src="./js/pdf.js"></script>
+  <script src="./js/csv.js"></script>
+  <script src="./js/admin.js"></script>
 </body>
 </html>
