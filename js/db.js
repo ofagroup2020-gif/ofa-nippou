@@ -147,3 +147,7 @@ async function searchMonthly(filters){
 
   return Array.from(groups.values());
 }
+// ===== グローバル公開（Chrome対策）=====
+window.searchRecords = searchRecords;
+window.searchMonthly = searchMonthly;
+window.idbGetAll = idbGetAll;
