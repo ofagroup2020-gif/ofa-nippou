@@ -1,760 +1,610 @@
-/* /ofa-nippou/js/app.js
-   OFA 点呼/日報 ドライバー用
-   - DOMContentLoadedで確実にイベント登録（Chrome対策）
-   - クリックが効かない問題（null要素・古いJS掴み）を防止
-   - IndexedDB(db.js) を使用
+/* /js/app.js
+   OFA 点呼/日報（ドライバー）
+   - ボタン反応の確実化（DOMContentLoaded）
+   - 履歴見やすく（点呼/日報をカード化）
+   - 個別削除対応
 */
 
-(function () {
+(() => {
   "use strict";
 
-  // ===== helpers =====
+  // ===== DB 定義（db.jsと合わせる） =====
+  const OFA_DB_NAME = "ofa_nippou_db";
+  const OFA_DB_VER  = 1;
+
+  const STORE_PROFILE = "profile";
+  const STORE_TENKO   = "tenko";
+  const STORE_DAILY   = "daily";
+
+  // ===== ユーティリティ =====
   const $ = (id) => document.getElementById(id);
 
-  function toast(msg) {
-    // iOS Safari / Chrome どちらでも見える最低限
-    try {
-      alert(msg);
-    } catch (e) {
-      console.log(msg);
-    }
+  const esc = (s) => String(s ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+
+  const pad2 = (n) => String(n).padStart(2, "0");
+
+  function toLocalInputValue(d = new Date()) {
+    const yyyy = d.getFullYear();
+    const mm = pad2(d.getMonth() + 1);
+    const dd = pad2(d.getDate());
+    const hh = pad2(d.getHours());
+    const mi = pad2(d.getMinutes());
+    return `${yyyy}-${mm}-${dd}T${hh}:${mi}`;
   }
 
-  function num(v) {
-    const x = Number(v);
-    return Number.isFinite(x) ? x : 0;
+  function parseDateLike(x) {
+    if (!x) return null;
+    // datetime-local: "2026-01-24T03:25"
+    // date: "2026-01-24"
+    // ISO: etc
+    const d = new Date(x);
+    if (Number.isNaN(d.getTime())) return null;
+    return d;
   }
 
-  function trim(v) {
-    return String(v ?? "").trim();
-  }
-
-  function nowDateKey() {
-    // YYYY-MM-DD
-    const d = new Date();
-    const y = d.getFullYear();
-    const m = String(d.getMonth() + 1).padStart(2, "0");
-    const dd = String(d.getDate()).padStart(2, "0");
-    return `${y}-${m}-${dd}`;
-  }
-
-  function normalizeDate(d) {
+  function fmtYMD(d) {
+    if (!(d instanceof Date)) d = parseDateLike(d);
     if (!d) return "";
-    return String(d).slice(0, 10);
+    return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
   }
 
-  function toISODateTimeLocal(v) {
-    // datetime-local -> keep "YYYY-MM-DDTHH:mm"
-    if (!v) return "";
-    return String(v).slice(0, 16);
+  function fmtYMDHM(d) {
+    if (!(d instanceof Date)) d = parseDateLike(d);
+    if (!d) return "";
+    return `${fmtYMD(d)} ${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
   }
 
-  // ===== checklist master =====
-  const CHECK_ITEMS = [
-    "タイヤ（空気圧・溝）",
-    "ホイールナットの緩み",
-    "ブレーキの効き",
-    "ライト（前照灯）",
-    "ウインカー",
-    "ハザード",
-    "ブレーキランプ",
-    "ワイパー",
-    "ウォッシャー液",
-    "ミラー",
-    "クラクション",
-    "シートベルト",
-    "バックカメラ/ドラレコ",
-    "積載物の固定",
-    "荷台・扉の施錠",
-    "車内整理（足元）",
-    "燃料残量",
-    "警告灯（メーター）",
-    "オイル漏れ",
-    "クーラント漏れ",
-    "異音・異臭",
-  ];
+  function uid() {
+    return `${Date.now()}_${Math.random().toString(16).slice(2)}`;
+  }
 
-  function buildChecklistUI() {
-    const box = $("checkScroll");
-    if (!box) return;
+  function numOrNull(v) {
+    const n = Number(String(v ?? "").replaceAll(",", "").trim());
+    return Number.isFinite(n) ? n : null;
+  }
 
-    box.innerHTML = "";
-    CHECK_ITEMS.forEach((label, idx) => {
-      const row = document.createElement("div");
-      row.className = "checkRow";
+  // ===== IndexedDB（db.jsが無い/違っても動く保険） =====
+  function idbOpen() {
+    return new Promise((resolve, reject) => {
+      const req = indexedDB.open(OFA_DB_NAME, OFA_DB_VER);
+      req.onupgradeneeded = () => {
+        const db = req.result;
 
-      const item = document.createElement("div");
-      item.className = "checkCol item";
-      item.textContent = label;
-
-      const ok = document.createElement("div");
-      ok.className = "checkCol ok";
-
-      const ng = document.createElement("div");
-      ng.className = "checkCol ng";
-
-      const name = `chk_${idx}`;
-      ok.innerHTML = `
-        <label class="radioWrap">
-          <input type="radio" name="${name}" value="OK">
-          <span>OK</span>
-        </label>
-      `;
-      ng.innerHTML = `
-        <label class="radioWrap">
-          <input type="radio" name="${name}" value="NG">
-          <span>NG</span>
-        </label>
-      `;
-
-      row.appendChild(item);
-      row.appendChild(ok);
-      row.appendChild(ng);
-      box.appendChild(row);
+        if (!db.objectStoreNames.contains(STORE_PROFILE)) {
+          db.createObjectStore(STORE_PROFILE, { keyPath: "id" }); // id="me"
+        }
+        if (!db.objectStoreNames.contains(STORE_TENKO)) {
+          const st = db.createObjectStore(STORE_TENKO, { keyPath: "id" });
+          st.createIndex("by_at", "at", { unique: false });
+          st.createIndex("by_name", "name", { unique: false });
+          st.createIndex("by_base", "base", { unique: false });
+          st.createIndex("by_type", "type", { unique: false });
+        }
+        if (!db.objectStoreNames.contains(STORE_DAILY)) {
+          const sd = db.createObjectStore(STORE_DAILY, { keyPath: "id" });
+          sd.createIndex("by_date", "date", { unique: false });
+          sd.createIndex("by_name", "name", { unique: false });
+          sd.createIndex("by_base", "base", { unique: false });
+        }
+      };
+      req.onsuccess = () => resolve(req.result);
+      req.onerror = () => reject(req.error);
     });
   }
 
-  function readChecklist() {
-    const list = [];
-    CHECK_ITEMS.forEach((label, idx) => {
-      const name = `chk_${idx}`;
-      const picked = document.querySelector(`input[name="${name}"]:checked`);
-      const v = picked ? picked.value : "";
-      list.push({ label, ok: v === "OK" });
-    });
-    return list;
-  }
-
-  function setChecklist(list) {
-    if (!Array.isArray(list)) return;
-    list.forEach((x, idx) => {
-      const name = `chk_${idx}`;
-      const v = x && x.ok ? "OK" : "NG";
-      const el = document.querySelector(`input[name="${name}"][value="${v}"]`);
-      if (el) el.checked = true;
+  async function idbPut(store, value) {
+    const db = await idbOpen();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(store, "readwrite");
+      tx.oncomplete = () => resolve(true);
+      tx.onerror = () => reject(tx.error);
+      tx.objectStore(store).put(value);
     });
   }
 
-  // ===== profile =====
-  async function saveProfile() {
-    const name = trim($("p_name")?.value);
-    const base = trim($("p_base")?.value);
-    const carNo = trim($("p_carNo")?.value);
-    const licenseNo = trim($("p_licenseNo")?.value);
-    const phone = trim($("p_phone")?.value);
-    const email = trim($("p_email")?.value);
+  async function idbGet(store, key) {
+    const db = await idbOpen();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(store, "readonly");
+      const req = tx.objectStore(store).get(key);
+      req.onsuccess = () => resolve(req.result ?? null);
+      req.onerror = () => reject(req.error);
+    });
+  }
 
-    if (!name || !base || !carNo || !licenseNo || !phone || !email) {
-      toast("基本情報が未入力です（*必須をすべて入力してください）");
-      return;
-    }
+  async function idbGetAll(store) {
+    const db = await idbOpen();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(store, "readonly");
+      const req = tx.objectStore(store).getAll();
+      req.onsuccess = () => resolve(req.result ?? []);
+      req.onerror = () => reject(req.error);
+    });
+  }
 
-    const profile = {
+  async function idbDelete(store, key) {
+    const db = await idbOpen();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(store, "readwrite");
+      tx.oncomplete = () => resolve(true);
+      tx.onerror = () => reject(tx.error);
+      tx.objectStore(store).delete(key);
+    });
+  }
+
+  async function idbClear(store) {
+    const db = await idbOpen();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(store, "readwrite");
+      tx.oncomplete = () => resolve(true);
+      tx.onerror = () => reject(tx.error);
+      tx.objectStore(store).clear();
+    });
+  }
+
+  // ===== db.jsが提供している関数を優先して使う（存在すれば） =====
+  const DB = {
+    saveProfile: async (obj) => {
+      // db.js側に関数があればそっち
+      if (typeof window.saveProfile === "function") return window.saveProfile(obj);
+      if (typeof window.dbSaveProfile === "function") return window.dbSaveProfile(obj);
+      // 保険（直叩き）
+      return idbPut(STORE_PROFILE, obj);
+    },
+    loadProfile: async () => {
+      if (typeof window.loadProfile === "function") return window.loadProfile();
+      if (typeof window.dbLoadProfile === "function") return window.dbLoadProfile();
+      return idbGet(STORE_PROFILE, "me");
+    },
+
+    addTenko: async (obj) => {
+      if (typeof window.addTenko === "function") return window.addTenko(obj);
+      if (typeof window.dbAddTenko === "function") return window.dbAddTenko(obj);
+      return idbPut(STORE_TENKO, obj);
+    },
+    addDaily: async (obj) => {
+      if (typeof window.addDaily === "function") return window.addDaily(obj);
+      if (typeof window.dbAddDaily === "function") return window.dbAddDaily(obj);
+      return idbPut(STORE_DAILY, obj);
+    },
+
+    getTenkoAll: async () => {
+      if (typeof window.getTenkoAll === "function") return window.getTenkoAll();
+      if (typeof window.dbGetTenkoAll === "function") return window.dbGetTenkoAll();
+      return idbGetAll(STORE_TENKO);
+    },
+    getDailyAll: async () => {
+      if (typeof window.getDailyAll === "function") return window.getDailyAll();
+      if (typeof window.dbGetDailyAll === "function") return window.dbGetDailyAll();
+      return idbGetAll(STORE_DAILY);
+    },
+
+    deleteTenko: async (id) => {
+      if (typeof window.deleteTenko === "function") return window.deleteTenko(id);
+      if (typeof window.dbDeleteTenko === "function") return window.dbDeleteTenko(id);
+      return idbDelete(STORE_TENKO, id);
+    },
+    deleteDaily: async (id) => {
+      if (typeof window.deleteDaily === "function") return window.deleteDaily(id);
+      if (typeof window.dbDeleteDaily === "function") return window.dbDeleteDaily(id);
+      return idbDelete(STORE_DAILY, id);
+    },
+
+    clearAll: async () => {
+      if (typeof window.clearAll === "function") return window.clearAll();
+      if (typeof window.dbClearAll === "function") return window.dbClearAll();
+      await idbClear(STORE_TENKO);
+      await idbClear(STORE_DAILY);
+      // profileは残す運用が多いので消さない（必要なら追加で消してOK）
+      return true;
+    },
+  };
+
+  // ===== UI（状態チップ） =====
+  function setDot(id, ok) {
+    const el = $(id);
+    if (!el) return;
+    el.classList.toggle("ok", !!ok);
+    el.classList.toggle("ng", !ok);
+  }
+
+  function setText(id, text) {
+    const el = $(id);
+    if (el) el.textContent = text;
+  }
+
+  // ===== 基本情報 =====
+  function readProfileForm() {
+    return {
       id: "me",
-      name,
-      base,
-      carNo,
-      licenseNo,
-      phone,
-      email,
-      updatedAt: new Date().toISOString(),
+      name: ($("p_name")?.value ?? "").trim(),
+      base: ($("p_base")?.value ?? "").trim(),
+      carNo: ($("p_carNo")?.value ?? "").trim(),
+      licenseNo: ($("p_licenseNo")?.value ?? "").trim(),
+      phone: ($("p_phone")?.value ?? "").trim(),
+      email: ($("p_email")?.value ?? "").trim(),
+      updatedAt: Date.now(),
     };
-
-    try {
-      await idbPut("profile", profile);
-      setProfileState(true, "保存済み");
-      toast("基本情報を保存しました");
-    } catch (e) {
-      console.error(e);
-      toast("保存に失敗しました（IndexedDBが使えない可能性）");
-    }
   }
 
-  async function loadProfile() {
+  function fillProfileForm(p) {
+    if (!p) return;
+    if ($("p_name")) $("p_name").value = p.name ?? "";
+    if ($("p_base")) $("p_base").value = p.base ?? "";
+    if ($("p_carNo")) $("p_carNo").value = p.carNo ?? "";
+    if ($("p_licenseNo")) $("p_licenseNo").value = p.licenseNo ?? "";
+    if ($("p_phone")) $("p_phone").value = p.phone ?? "";
+    if ($("p_email")) $("p_email").value = p.email ?? "";
+  }
+
+  function validateProfile(p) {
+    const miss = [];
+    if (!p.name) miss.push("氏名");
+    if (!p.base) miss.push("拠点");
+    if (!p.carNo) miss.push("車両番号");
+    if (!p.licenseNo) miss.push("免許証番号");
+    if (!p.phone) miss.push("電話番号");
+    if (!p.email) miss.push("メールアドレス");
+    return miss;
+  }
+
+  async function onSaveProfile() {
     try {
-      const p = await idbGet("profile", "me");
-      if (!p) {
-        setProfileState(false, "未保存");
-        toast("まだ保存がありません");
+      const p = readProfileForm();
+      const miss = validateProfile(p);
+      if (miss.length) {
+        alert(`未入力があります：${miss.join(" / ")}`);
         return;
       }
-      $("p_name").value = p.name || "";
-      $("p_base").value = p.base || "";
-      $("p_carNo").value = p.carNo || "";
-      $("p_licenseNo").value = p.licenseNo || "";
-      $("p_phone").value = p.phone || "";
-      $("p_email").value = p.email || "";
-      setProfileState(true, "保存済み（読み込み完了）");
-      toast("基本情報を読み込みました");
+      await DB.saveProfile(p);
+      setDot("dotProfile", true);
+      setText("profileState", "保存済み");
+      alert("基本情報を保存しました");
+      await reloadHistory(); // ついでに更新
     } catch (e) {
       console.error(e);
-      toast("読み込みに失敗しました");
+      alert("保存に失敗しました。ブラウザの設定（プライベート/制限）を確認してください。");
     }
   }
 
-  function setProfileState(ok, text) {
-    const dot = $("dotProfile");
-    const st = $("profileState");
-    if (dot) {
-      dot.classList.toggle("ok", !!ok);
-      dot.classList.toggle("ng", !ok);
+  async function onLoadProfile() {
+    try {
+      const p = await DB.loadProfile();
+      if (!p) {
+        setDot("dotProfile", false);
+        setText("profileState", "未保存");
+        alert("まだ保存がありません");
+        return;
+      }
+      fillProfileForm(p);
+      setDot("dotProfile", true);
+      setText("profileState", "保存済み");
+      alert("基本情報を読み込みました");
+    } catch (e) {
+      console.error(e);
+      alert("読み込みに失敗しました");
     }
-    if (st) st.textContent = text || (ok ? "保存済み" : "未保存");
   }
 
-  // ===== tenko (dep/arr) =====
-  async function getProfileOrFail() {
-    const p = await idbGet("profile", "me");
-    if (!p) {
-      toast("先に① 基本情報を保存してください");
-      throw new Error("no profile");
-    }
-    return p;
-  }
-
-  function buildCommonTenkoPayload(profile, type) {
+  // ===== 点呼（出発/帰着） =====
+  function readDep() {
+    const at = $("d_at")?.value;
     return {
-      id: "", // later
-      type, // departure / arrival
-      name: profile.name,
-      base: profile.base,
-      carNo: profile.carNo,
-      licenseNo: profile.licenseNo,
-      phone: profile.phone,
-      email: profile.email,
+      id: uid(),
+      type: "dep",
+      at: at || toLocalInputValue(new Date()),
+      name: ($("p_name")?.value ?? "").trim(),
+      base: ($("p_base")?.value ?? "").trim(),
+      sleep: numOrNull($("d_sleep")?.value),
+      temp: numOrNull($("d_temp")?.value),
+      method: ($("d_method")?.value ?? "").trim(),
+      condition: ($("d_condition")?.value ?? "").trim(),
+      fatigue: ($("d_fatigue")?.value ?? "").trim(),
+      med: ($("d_med")?.value ?? "").trim(),
+      medDetail: ($("d_medDetail")?.value ?? "").trim(),
+      drink: ($("d_drink")?.value ?? "").trim(),
+      alcState: ($("d_alcState")?.value ?? "").trim(),
+      alcValue: numOrNull($("d_alcValue")?.value) ?? 0,
+      alcJudge: ($("d_alcJudge")?.value ?? "").trim(),
+      projectMain: ($("d_projectMain")?.value ?? "").trim(),
+      area: ($("d_area")?.value ?? "").trim(),
+      danger: ($("d_danger")?.value ?? "").trim(),
+      odoStart: numOrNull($("d_odoStart")?.value),
+      abnormal: ($("d_abnormal")?.value ?? "").trim(),
+      abnormalDetail: ($("d_abnormalDetail")?.value ?? "").trim(),
+      createdAt: Date.now(),
     };
   }
 
-  async function saveDeparture() {
-    const profile = await getProfileOrFail();
-
-    const at = toISODateTimeLocal($("d_at")?.value);
-    const method = trim($("d_method")?.value);
-    const sleep = trim($("d_sleep")?.value);
-    const temp = trim($("d_temp")?.value);
-    const condition = trim($("d_condition")?.value);
-    const fatigue = trim($("d_fatigue")?.value);
-    const med = trim($("d_med")?.value);
-    const medDetail = trim($("d_medDetail")?.value);
-
-    const drink = trim($("d_drink")?.value);
-    const alcState = trim($("d_alcState")?.value);
-    const alcValue = trim($("d_alcValue")?.value);
-    const alcJudge = trim($("d_alcJudge")?.value);
-
-    const mainProject = trim($("d_projectMain")?.value);
-    const area = trim($("d_area")?.value);
-    const danger = trim($("d_danger")?.value);
-
-    const odoStart = trim($("d_odoStart")?.value);
-    const abnormal = trim($("d_abnormal")?.value);
-    const abnormalDetail = trim($("d_abnormalDetail")?.value);
-
-    if (!at || !method || !sleep || !temp || !condition || !fatigue || !med || !drink || !alcState || !alcValue || !alcJudge || !mainProject || !area || !danger || !odoStart || !abnormal) {
-      toast("出発点呼：必須項目が未入力です（*）");
-      return;
-    }
-    if (abnormal === "あり" && !abnormalDetail) {
-      toast("異常ありの場合は「異常内容」を入力してください");
-      return;
-    }
-
-    const checklist = readChecklist();
-    const checkMemo = trim($("checkMemo")?.value);
-
-    const dateKey = normalizeDate(at);
-    const id = `dep_${dateKey}_${Date.now()}`;
-
-    const payload = {
-      ...buildCommonTenkoPayload(profile, "departure"),
-      id,
-      at,
-      method,
-      sleep,
-      temp,
-      condition,
-      fatigue,
-      med,
-      medDetail,
-      drink,
-      alcState,
-      alcValue,
-      alcJudge,
-      mainProject,
-      area,
-      danger,
-      odoStart,
-      abnormal,
-      abnormalDetail,
-      checklist,
-      checkMemo,
-      createdAt: new Date().toISOString(),
-    };
-
-    try {
-      await idbPut("tenko", payload);
-      toast("出発点呼を保存しました");
-      await reloadHistory();
-    } catch (e) {
-      console.error(e);
-      toast("保存に失敗しました");
-    }
-  }
-
-  async function saveArrival() {
-    const profile = await getProfileOrFail();
-
-    const at = toISODateTimeLocal($("a_at")?.value);
-    const method = trim($("a_method")?.value);
-    const breakMin = trim($("a_breakMin")?.value);
-    const temp = trim($("a_temp")?.value);
-    const condition = trim($("a_condition")?.value);
-    const fatigue = trim($("a_fatigue")?.value);
-    const med = trim($("a_med")?.value);
-    const medDetail = trim($("a_medDetail")?.value);
-
-    const alcState = trim($("a_alcState")?.value);
-    const alcValue = trim($("a_alcValue")?.value);
-    const alcJudge = trim($("a_alcJudge")?.value);
-
-    const odoEnd = trim($("a_odoEnd")?.value);
-    const abnormal = trim($("a_abnormal")?.value);
-    const abnormalDetail = trim($("a_abnormalDetail")?.value);
-
-    if (!at || !method || !breakMin || !temp || !condition || !fatigue || !med || !alcState || !alcValue || !alcJudge || !odoEnd || !abnormal) {
-      toast("帰着点呼：必須項目が未入力です（*）");
-      return;
-    }
-    if (abnormal === "あり" && !abnormalDetail) {
-      toast("異常ありの場合は「異常内容」を入力してください");
-      return;
-    }
-
-    const checklist = readChecklist();
-    const checkMemo = trim($("checkMemo")?.value);
-
-    const dateKey = normalizeDate(at);
-    const id = `arr_${dateKey}_${Date.now()}`;
-
-    const payload = {
-      ...buildCommonTenkoPayload(profile, "arrival"),
-      id,
-      at,
-      method,
-      breakMin,
-      temp,
-      condition,
-      fatigue,
-      med,
-      medDetail,
-      alcState,
-      alcValue,
-      alcJudge,
-      odoEnd,
-      abnormal,
-      abnormalDetail,
-      checklist,
-      checkMemo,
-      createdAt: new Date().toISOString(),
-    };
-
-    try {
-      await idbPut("tenko", payload);
-      toast("帰着点呼を保存しました");
-      await reloadHistory();
-      updateOdoChip(); // 最新から計算
-    } catch (e) {
-      console.error(e);
-      toast("保存に失敗しました");
-    }
-  }
-
-  function clearDeparture() {
-    ["d_at","d_method","d_sleep","d_temp","d_condition","d_fatigue","d_med","d_medDetail","d_drink","d_alcState","d_alcValue","d_alcJudge","d_projectMain","d_area","d_danger","d_odoStart","d_abnormal","d_abnormalDetail"].forEach(id=>{
-      const el = $(id);
-      if (!el) return;
-      if (el.tagName === "SELECT") el.value = "";
-      else el.value = "";
-    });
-    toast("出発点呼をクリアしました");
-  }
-
-  function clearArrival() {
-    ["a_at","a_method","a_breakMin","a_temp","a_condition","a_fatigue","a_med","a_medDetail","a_alcState","a_alcValue","a_alcJudge","a_odoEnd","a_abnormal","a_abnormalDetail"].forEach(id=>{
-      const el = $(id);
-      if (!el) return;
-      if (el.tagName === "SELECT") el.value = "";
-      else el.value = "";
-    });
-    toast("帰着点呼をクリアしました");
-  }
-
-  // ===== daily report =====
-  function calcDaily(profile, odoDiff) {
-    const r_date = $("r_date")?.value || "";
-    const mainProject = $("d_projectMain")?.value || ""; // 出発側のメイン案件を優先
-    const memo = trim($("r_memo")?.value);
-
-    const payBase = num($("r_payBase")?.value);
-    const incentive = num($("r_incentive")?.value);
-    const fuel = num($("r_fuel")?.value);
-    const highway = num($("r_highway")?.value);
-    const parking = num($("r_parking")?.value);
-    const otherCost = num($("r_otherCost")?.value);
-
-    const salesTotal = payBase + incentive;
-    const profit = salesTotal - (fuel + highway + parking + otherCost);
-
-    const projects = readProjects();
-
+  function readArr() {
+    const at = $("a_at")?.value;
     return {
-      id: `daily_${normalizeDate(r_date || nowDateKey())}_${Date.now()}`,
-      name: profile.name,
-      base: profile.base,
-      date: normalizeDate(r_date || nowDateKey()),
-      mainProject: trim(mainProject),
-      odoDiff: num(odoDiff),
-      payBase,
-      incentive,
-      fuel,
-      highway,
-      parking,
-      otherCost,
-      salesTotal,
-      profit,
-      memo,
-      projects,
-      createdAt: new Date().toISOString(),
+      id: uid(),
+      type: "arr",
+      at: at || toLocalInputValue(new Date()),
+      name: ($("p_name")?.value ?? "").trim(),
+      base: ($("p_base")?.value ?? "").trim(),
+      breakMin: numOrNull($("a_breakMin")?.value),
+      temp: numOrNull($("a_temp")?.value),
+      method: ($("a_method")?.value ?? "").trim(),
+      condition: ($("a_condition")?.value ?? "").trim(),
+      fatigue: ($("a_fatigue")?.value ?? "").trim(),
+      med: ($("a_med")?.value ?? "").trim(),
+      medDetail: ($("a_medDetail")?.value ?? "").trim(),
+      alcState: ($("a_alcState")?.value ?? "").trim(),
+      alcValue: numOrNull($("a_alcValue")?.value) ?? 0,
+      alcJudge: ($("a_alcJudge")?.value ?? "").trim(),
+      odoEnd: numOrNull($("a_odoEnd")?.value),
+      abnormal: ($("a_abnormal")?.value ?? "").trim(),
+      abnormalDetail: ($("a_abnormalDetail")?.value ?? "").trim(),
+      createdAt: Date.now(),
     };
   }
 
-  // ===== multi projects =====
-  function readProjects() {
-    const box = $("projectsBox");
-    if (!box) return [];
-    const rows = Array.from(box.querySelectorAll(".projRow"));
-    return rows.map((r) => {
-      const name = r.querySelector(".projName")?.value ?? "";
-      const amount = r.querySelector(".projAmount")?.value ?? "";
-      const memo = r.querySelector(".projMemo")?.value ?? "";
-      return { name: trim(name), amount: num(amount), memo: trim(memo) };
-    }).filter(x => x.name || x.amount || x.memo);
+  function validateTenkoCommon(t) {
+    const miss = [];
+    if (!t.name) miss.push("氏名（基本情報）");
+    if (!t.base) miss.push("拠点（基本情報）");
+    if (!t.at) miss.push("点呼日時");
+    if (!t.method) miss.push("点呼実施方法");
+    if (!t.condition) miss.push("体調");
+    if (!t.fatigue) miss.push("疲労");
+    if (!t.med) miss.push("服薬");
+    if (!t.alcState) miss.push("酒気帯び");
+    if (!t.alcJudge) miss.push("判定");
+    if (t.abnormal === "あり" && !t.abnormalDetail) miss.push("異常内容");
+    return miss;
   }
 
-  function addProjectRow(prefill) {
-    const box = $("projectsBox");
-    if (!box) return;
-
-    const row = document.createElement("div");
-    row.className = "projRow";
-    row.style.marginBottom = "10px";
-    row.innerHTML = `
-      <div class="row">
-        <div>
-          <label>案件名（任意）</label>
-          <input class="projName" placeholder="例：企業便A" value="${prefill?.name ?? ""}">
-        </div>
-        <div>
-          <label>金額（任意）</label>
-          <input class="projAmount" inputmode="decimal" placeholder="例：5000" value="${prefill?.amount ?? ""}">
-        </div>
-      </div>
-      <label>メモ（任意）</label>
-      <input class="projMemo" placeholder="任意" value="${prefill?.memo ?? ""}">
-      <div class="actions" style="margin-top:8px">
-        <button class="btn secondary btnRemoveProj" type="button">この案件を削除</button>
-      </div>
-      <div class="divider"></div>
-    `;
-
-    row.querySelector(".btnRemoveProj").addEventListener("click", () => {
-      row.remove();
-    });
-
-    box.appendChild(row);
-  }
-
-  // ===== odo chip calc =====
-  async function updateOdoChip() {
-    const tenko = await idbGetAll("tenko");
-    if (!tenko || tenko.length === 0) {
-      setOdoState(false, "走行距離：未計算");
-      return;
-    }
-
-    // 最新日の dep+arr を探して差分計算
-    const byDate = new Map(); // date -> {dep, arr}
-    tenko.forEach(t => {
-      const d = normalizeDate(t.at);
-      if (!d) return;
-      if (!byDate.has(d)) byDate.set(d, { dep: null, arr: null });
-      if (t.type === "departure") byDate.get(d).dep = t;
-      if (t.type === "arrival") byDate.get(d).arr = t;
-    });
-
-    const dates = Array.from(byDate.keys()).sort(); // asc
-    const latest = dates[dates.length - 1];
-    const pair = byDate.get(latest);
-    const dep = pair?.dep?.odoStart;
-    const arr = pair?.arr?.odoEnd;
-    const diff = num(arr) - num(dep);
-
-    if (diff > 0) setOdoState(true, `走行距離：${diff} km（${latest}）`);
-    else setOdoState(false, `走行距離：未計算（${latest}）`);
-  }
-
-  function setOdoState(ok, text) {
-    const dot = $("dotOdo");
-    const st = $("odoState");
-    if (dot) {
-      dot.classList.toggle("ok", !!ok);
-      dot.classList.toggle("ng", !ok);
-    }
-    if (st) st.textContent = text || (ok ? "走行距離：OK" : "走行距離：未計算");
-  }
-
-  // ===== export =====
-  async function makeTodayPdf() {
+  async function onSaveDep() {
     try {
-      const profile = await getProfileOrFail();
+      const t = readDep();
+      const miss = validateTenkoCommon(t);
+      if (!t.sleep && t.sleep !== 0) miss.push("睡眠時間");
+      if (!t.temp && t.temp !== 0) miss.push("体温");
+      if (!t.projectMain) miss.push("稼働案件（メイン）");
+      if (!t.area) miss.push("積込拠点/エリア");
+      if (!t.danger) miss.push("危険物・高額品");
+      if (!t.odoStart && t.odoStart !== 0) miss.push("出発ODO");
 
-      // 今日の日付で dep/arr を探す（無ければ最新）
-      const tenko = await idbGetAll("tenko");
-      const dailyAll = await idbGetAll("daily");
-
-      const today = nowDateKey();
-
-      const pickTenko = (dateKey) => {
-        const dep = tenko
-          .filter(t => t.type === "departure" && normalizeDate(t.at) === dateKey && t.name === profile.name && t.base === profile.base)
-          .sort((a,b)=> String(b.at).localeCompare(String(a.at)))[0] || null;
-        const arr = tenko
-          .filter(t => t.type === "arrival" && normalizeDate(t.at) === dateKey && t.name === profile.name && t.base === profile.base)
-          .sort((a,b)=> String(b.at).localeCompare(String(a.at)))[0] || null;
-        return { dep, arr };
-      };
-
-      let { dep, arr } = pickTenko(today);
-
-      // fallback: 最新日
-      if (!dep && !arr) {
-        const dates = Array.from(new Set(tenko.map(t => normalizeDate(t.at)).filter(Boolean))).sort();
-        const latest = dates[dates.length - 1];
-        if (latest) ({ dep, arr } = pickTenko(latest));
+      if (miss.length) {
+        alert(`未入力があります：\n${miss.join("\n")}`);
+        return;
       }
 
-      const odoDiff = Math.max(0, num(arr?.odoEnd) - num(dep?.odoStart));
-
-      // 日報は r_date指定があればそれ、なければ今日
-      const wantedDailyDate = normalizeDate($("r_date")?.value || today);
-      const daily = dailyAll
-        .filter(d => normalizeDate(d.date) === wantedDailyDate && d.name === profile.name && d.base === profile.base)
-        .sort((a,b)=> String(b.createdAt).localeCompare(String(a.createdAt)))[0] || null;
-
-      const files = {
-        licenseImg: $("f_licenseImg")?.files?.[0] || null,
-        alcDepImg: $("f_alcDepImg")?.files?.[0] || null,
-        alcArrImg: $("f_alcArrImg")?.files?.[0] || null,
-      };
-
-      await generateTodayPdf({
-        profile,
-        dep,
-        arr,
-        daily,
-        odoDiff,
-        files,
-      });
-
+      await DB.addTenko(t);
+      alert("出発点呼を保存しました");
+      await reloadHistory();
     } catch (e) {
       console.error(e);
-      // getProfileOrFail が投げるので alertはそっちで出る
+      alert("保存に失敗しました");
     }
   }
 
-  async function makeAllCsv() {
+  async function onSaveArr() {
     try {
-      const tenko = await idbGetAll("tenko");
-      const daily = await idbGetAll("daily");
+      const t = readArr();
+      const miss = validateTenkoCommon(t);
+      if (!t.breakMin && t.breakMin !== 0) miss.push("休憩時間");
+      if (!t.temp && t.temp !== 0) miss.push("体温");
+      if (!t.odoEnd && t.odoEnd !== 0) miss.push("帰着ODO");
 
-      // 既存のcsv.jsの関数を流用
-      const tenkoCsv = buildTenkoCsv(tenko || []);
-      const dailyCsv = buildDailyCsv(daily || []);
+      if (miss.length) {
+        alert(`未入力があります：\n${miss.join("\n")}`);
+        return;
+      }
 
-      downloadText(`OFA_点呼_ALL.csv`, tenkoCsv);
-      downloadText(`OFA_日報_ALL.csv`, dailyCsv);
-
-      toast("CSVを出力しました（2ファイル）");
+      await DB.addTenko(t);
+      alert("帰着点呼を保存しました");
+      await reloadHistory();
+      await updateOdoState();
     } catch (e) {
       console.error(e);
-      toast("CSV出力に失敗しました");
+      alert("保存に失敗しました");
     }
   }
 
-  // ===== history =====
+  function clearDep() {
+    ["d_at","d_method","d_sleep","d_temp","d_condition","d_fatigue","d_med","d_medDetail","d_drink","d_alcState","d_alcValue","d_alcJudge","d_projectMain","d_area","d_danger","d_odoStart","d_abnormal","d_abnormalDetail"]
+      .forEach(id => { if ($(id)) $(id).value = ""; });
+    alert("出発点呼をクリアしました");
+  }
+
+  function clearArr() {
+    ["a_at","a_method","a_breakMin","a_temp","a_condition","a_fatigue","a_med","a_medDetail","a_alcState","a_alcValue","a_alcJudge","a_odoEnd","a_abnormal","a_abnormalDetail"]
+      .forEach(id => { if ($(id)) $(id).value = ""; });
+    alert("帰着点呼をクリアしました");
+  }
+
+  // ===== 日報（今回は“履歴表示・削除”が主。登録は既存運用があればそれを尊重） =====
+  // ※あなたの既存日報保存ロジックが別にある場合でも、
+  //   ここは壊さず、履歴読み出し/削除だけ確実に動かす。
+
+  // ===== 履歴：見やすく＋個別削除 =====
+  function buildHistoryHtml(tenko, daily) {
+    const tenkoSorted = [...tenko].sort((a,b) => (parseDateLike(b.at)?.getTime() ?? 0) - (parseDateLike(a.at)?.getTime() ?? 0));
+    const dailySorted = [...daily].sort((a,b) => (parseDateLike(b.date)?.getTime() ?? 0) - (parseDateLike(a.date)?.getTime() ?? 0));
+
+    const tenkoItems = tenkoSorted.map(t => {
+      const when = fmtYMDHM(t.at);
+      const typeLabel = t.type === "arr" ? "帰着" : "出発";
+      const alc = (t.alcValue ?? 0);
+      const abn = (t.abnormal ?? "");
+      return `
+        <div class="histCard">
+          <div class="histTop">
+            <div class="histTitle">点呼：${esc(when)} / ${esc(typeLabel)}</div>
+            <button class="histDel" data-kind="tenko" data-id="${esc(t.id)}">削除</button>
+          </div>
+          <div class="histMeta">${esc(t.name)} / ${esc(t.base)} / alc:${esc(alc)} / ${esc(abn || "なし")}</div>
+        </div>
+      `;
+    }).join("");
+
+    const dailyItems = dailySorted.map(d => {
+      const day = fmtYMD(d.date);
+      const sales = d.sales ?? d.uriage ?? d.total ?? "";
+      const profit = d.profit ?? d.rieki ?? "";
+      const km = d.km ?? d.distance ?? "";
+      return `
+        <div class="histCard">
+          <div class="histTop">
+            <div class="histTitle">日報：${esc(day)}</div>
+            <button class="histDel" data-kind="daily" data-id="${esc(d.id)}">削除</button>
+          </div>
+          <div class="histMeta">${esc(d.name)} / ${esc(d.base)}</div>
+          <div class="histMeta small">売上:${esc(sales)} 利益:${esc(profit)} 走行:${esc(km)}</div>
+        </div>
+      `;
+    }).join("");
+
+    const emptyTenko = tenkoItems ? "" : `<div class="small">点呼履歴：まだありません</div>`;
+    const emptyDaily = dailyItems ? "" : `<div class="small">日報履歴：まだありません</div>`;
+
+    return `
+      <div class="histSection">
+        <div class="histSectionTitle">点呼履歴</div>
+        ${emptyTenko}
+        ${tenkoItems}
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="histSection">
+        <div class="histSectionTitle">日報履歴</div>
+        ${emptyDaily}
+        ${dailyItems}
+      </div>
+
+      <style>
+        .histSectionTitle{font-weight:900;margin:6px 0 10px 0}
+        .histCard{border:1px solid rgba(0,0,0,.08); border-radius:14px; padding:10px; margin:8px 0; background:#fff}
+        .histTop{display:flex; align-items:center; justify-content:space-between; gap:10px}
+        .histTitle{font-weight:800; font-size:14px}
+        .histMeta{font-size:13px; opacity:.85; margin-top:4px; line-height:1.4}
+        .histMeta.small{font-size:12px; opacity:.7}
+        .histDel{border:none; padding:8px 10px; border-radius:12px; background:rgba(0,0,0,.08); font-weight:800}
+      </style>
+    `;
+  }
+
   async function reloadHistory() {
     const box = $("historyBox");
     if (!box) return;
 
-    const tenko = await idbGetAll("tenko");
-    const daily = await idbGetAll("daily");
+    try {
+      const [tenko, daily] = await Promise.all([DB.getTenkoAll(), DB.getDailyAll()]);
+      box.innerHTML = buildHistoryHtml(tenko, daily);
 
-    // newest first
-    tenko.sort((a,b)=> String(b.at).localeCompare(String(a.at)));
-    daily.sort((a,b)=> String(b.date).localeCompare(String(a.date)));
+      // 個別削除（イベント委譲）
+      box.onclick = async (ev) => {
+        const btn = ev.target?.closest?.(".histDel");
+        if (!btn) return;
+        const kind = btn.getAttribute("data-kind");
+        const id = btn.getAttribute("data-id");
+        if (!id) return;
 
-    const html = [];
+        if (!confirm("この1件を削除しますか？")) return;
 
-    html.push(`<div class="note"><b>点呼</b>：${tenko.length}件 / <b>日報</b>：${daily.length}件</div>`);
+        try {
+          if (kind === "tenko") await DB.deleteTenko(id);
+          if (kind === "daily") await DB.deleteDaily(id);
+          await reloadHistory();
+        } catch (e) {
+          console.error(e);
+          alert("削除に失敗しました");
+        }
+      };
 
-    if (tenko.length > 0) {
-      html.push(`<div class="h2" style="margin-top:10px">点呼履歴</div>`);
-      tenko.slice(0, 50).forEach(t => {
-        html.push(`
-          <div class="item">
-            <span class="k">${normalizeDate(t.at)} ${(t.at||"").slice(11,16)} / ${t.type==="departure"?"出発":"帰着"}</span><br>
-            <span class="v">${t.name} / ${t.base} / alc:${t.alcValue||""} / ${t.abnormal||""}</span>
-          </div>
-        `);
-      });
-      if (tenko.length > 50) html.push(`<div class="small">※表示は最新50件まで（保存は全件）</div>`);
+      await updateOdoState(tenko);
+    } catch (e) {
+      console.error(e);
+      box.innerHTML = `<div class="small">履歴の読み込みに失敗しました（IndexedDB権限/制限を確認）</div>`;
     }
-
-    if (daily.length > 0) {
-      html.push(`<div class="h2" style="margin-top:14px">日報履歴</div>`);
-      daily.slice(0, 50).forEach(d => {
-        html.push(`
-          <div class="item">
-            <span class="k">${normalizeDate(d.date)} / ${d.name} / ${d.base}</span><br>
-            <span class="v">売上:${d.salesTotal||0} 利益:${d.profit||0} 走行:${d.odoDiff||0}km</span>
-          </div>
-        `);
-      });
-      if (daily.length > 50) html.push(`<div class="small">※表示は最新50件まで（保存は全件）</div>`);
-    }
-
-    box.innerHTML = html.join("");
-
-    await updateOdoChip();
   }
 
-  async function clearAll() {
-    if (!confirm("端末内データを全削除します。よろしいですか？")) return;
+  async function updateOdoState(tenkoOpt) {
     try {
-      const tenko = await idbGetAll("tenko");
-      const daily = await idbGetAll("daily");
-      const p = await idbGet("profile", "me");
+      const tenko = tenkoOpt ?? await DB.getTenkoAll();
+      // 最新の出発ODOと帰着ODOを見て距離を表示（同日/同人の厳密突合は管理側で）
+      const dep = [...tenko].filter(x => x.type === "dep" && x.odoStart != null)
+        .sort((a,b) => (parseDateLike(b.at)?.getTime() ?? 0) - (parseDateLike(a.at)?.getTime() ?? 0))[0];
+      const arr = [...tenko].filter(x => x.type === "arr" && x.odoEnd != null)
+        .sort((a,b) => (parseDateLike(b.at)?.getTime() ?? 0) - (parseDateLike(a.at)?.getTime() ?? 0))[0];
 
-      // delete all records
-      for (const t of tenko) await idbDelete("tenko", t.id);
-      for (const d of daily) await idbDelete("daily", d.id);
-      if (p) await idbDelete("profile", "me");
+      if (!dep || !arr) {
+        setDot("dotOdo", false);
+        setText("odoState", "走行距離：未計算");
+        return;
+      }
 
-      toast("全削除しました");
-      setProfileState(false, "未保存");
+      const dist = (arr.odoEnd ?? 0) - (dep.odoStart ?? 0);
+      setDot("dotOdo", Number.isFinite(dist) && dist >= 0);
+      setText("odoState", `走行距離：${Number.isFinite(dist) ? dist : "-"} km（直近）`);
+    } catch {
+      // ignore
+    }
+  }
+
+  async function onClearAll() {
+    if (!confirm("点呼/日報の履歴を全削除します。よろしいですか？")) return;
+    try {
+      await DB.clearAll();
+      alert("全削除しました");
       await reloadHistory();
     } catch (e) {
       console.error(e);
-      toast("削除に失敗しました");
+      alert("全削除に失敗しました");
     }
   }
 
-  // ===== save daily (optional) =====
-  async function saveDailyOptional() {
-    const profile = await getProfileOrFail();
-
-    // odoDiff: 最新日の dep/arr から拾う（なければ0）
-    const tenko = await idbGetAll("tenko");
-    const dates = Array.from(new Set(tenko.map(t => normalizeDate(t.at)).filter(Boolean))).sort();
-    const latest = dates[dates.length - 1] || nowDateKey();
-
-    const dep = tenko
-      .filter(t => t.type==="departure" && normalizeDate(t.at)===latest && t.name===profile.name && t.base===profile.base)
-      .sort((a,b)=> String(b.at).localeCompare(String(a.at)))[0] || null;
-
-    const arr = tenko
-      .filter(t => t.type==="arrival" && normalizeDate(t.at)===latest && t.name===profile.name && t.base===profile.base)
-      .sort((a,b)=> String(b.at).localeCompare(String(a.at)))[0] || null;
-
-    const odoDiff = Math.max(0, num(arr?.odoEnd) - num(dep?.odoStart));
-    const daily = calcDaily(profile, odoDiff);
-
-    try {
-      await idbPut("daily", daily);
-      toast("日報を保存しました（任意）");
-      await reloadHistory();
-    } catch (e) {
-      console.error(e);
-      toast("日報保存に失敗しました");
-    }
+  // ===== 初期化 =====
+  function bindOnce(id, fn) {
+    const el = $(id);
+    if (!el) return;
+    el.addEventListener("click", (e) => {
+      e.preventDefault();
+      fn();
+    }, { passive: false });
   }
 
-  // ===== init events (IMPORTANT for Chrome) =====
-  function bindEvents() {
-    // profile
-    const btnSaveProfile = $("btnSaveProfile");
-    const btnLoadProfile = $("btnLoadProfile");
+  document.addEventListener("DOMContentLoaded", async () => {
+    // ボタン
 
-    if (btnSaveProfile) btnSaveProfile.addEventListener("click", saveProfile, { passive: true });
-    if (btnLoadProfile) btnLoadProfile.addEventListener("click", loadProfile, { passive: true });
+    bindOnce("btnSaveProfile", onSaveProfile);
+    bindOnce("btnLoadProfile", onLoadProfile);
 
-    // dep/arr
-    const btnSaveDep = $("btnSaveDep");
-    const btnClearDep = $("btnClearDep");
-    const btnSaveArr = $("btnSaveArr");
-    const btnClearArr = $("btnClearArr");
+    bindOnce("btnSaveDep", onSaveDep);
+    bindOnce("btnClearDep", clearDep);
 
-    if (btnSaveDep) btnSaveDep.addEventListener("click", () => saveDeparture().catch(()=>{}));
-    if (btnClearDep) btnClearDep.addEventListener("click", clearDeparture);
+    bindOnce("btnSaveArr", onSaveArr);
+    bindOnce("btnClearArr", clearArr);
 
-    if (btnSaveArr) btnSaveArr.addEventListener("click", () => saveArrival().catch(()=>{}));
-    if (btnClearArr) btnClearArr.addEventListener("click", clearArrival);
-
-    // projects
-    const btnAddProject = $("btnAddProject");
-    if (btnAddProject) btnAddProject.addEventListener("click", () => addProjectRow());
-
-    // export
-    const btnMakePdf = $("btnMakePdf");
-    const btnMakeCsv = $("btnMakeCsv");
-
-    if (btnMakePdf) btnMakePdf.addEventListener("click", () => makeTodayPdf().catch(()=>{}));
-    if (btnMakeCsv) btnMakeCsv.addEventListener("click", () => makeAllCsv().catch(()=>{}));
-
-    // history
-    const btnReloadHistory = $("btnReloadHistory");
-    const btnClearAll = $("btnClearAll");
-
-    if (btnReloadHistory) btnReloadHistory.addEventListener("click", () => reloadHistory().catch(()=>{}));
-    if (btnClearAll) btnClearAll.addEventListener("click", () => clearAll().catch(()=>{}));
-
-    // 追加：日報を自動保存したい場合のフック（ボタンが無いなら無視）
-    const btnSaveDaily = $("btnSaveDaily");
-    if (btnSaveDaily) btnSaveDaily.addEventListener("click", () => saveDailyOptional().catch(()=>{}));
-  }
-
-  async function boot() {
-    buildChecklistUI();
-    bindEvents();
+    bindOnce("btnReloadHistory", reloadHistory);
+    bindOnce("btnClearAll", onClearAll);
 
     // 初期状態
+    if ($("d_at") && !$("d_at").value) $("d_at").value = toLocalInputValue(new Date());
+    if ($("a_at") && !$("a_at").value) $("a_at").value = toLocalInputValue(new Date());
+
+    // プロファイル状態だけ反映
     try {
-      const p = await idbGet("profile", "me");
-      if (p) setProfileState(true, "保存済み");
-      else setProfileState(false, "未保存");
-    } catch (e) {
-      console.error(e);
-      setProfileState(false, "未保存");
-    }
+      const p = await DB.loadProfile();
+      if (p) {
+        setDot("dotProfile", true);
+        setText("profileState", "保存済み");
+      } else {
+        setDot("dotProfile", false);
+        setText("profileState", "未保存");
+      }
+    } catch {}
 
     await reloadHistory();
-  }
-
-  // Chrome対策：必ずDOM準備後にboot
-  if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", boot);
-  } else {
-    boot();
-  }
+  });
 
 })();
