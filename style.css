@@ -92,7 +92,7 @@ body{
 .container{
   max-width: 840px;
   margin: 0 auto;
-  padding: 14px 12px 80px;
+  padding: 14px 12px 110px;
 }
 
 .card{
@@ -183,6 +183,14 @@ textarea{
   gap:10px;
   flex-wrap:wrap;
 }
+
+/* 旧HTML互換（inlineクラスが来ても崩れない） */
+.inline{
+  width:auto !important;
+  flex:1;
+  min-width: 140px;
+}
+
 .btn{
   width:100%;
   border:none;
@@ -193,6 +201,7 @@ textarea{
   color: var(--btnText);
   background: var(--btnGrad);
   cursor:pointer;
+  -webkit-tap-highlight-color: transparent;
 }
 .btn:active{ transform: translateY(1px); }
 
@@ -210,7 +219,11 @@ textarea{
   padding: 8px 10px;
   font-weight: 900;
   font-size: 12px;
+  cursor:pointer;
+  -webkit-tap-highlight-color: transparent;
 }
+.miniBtn:active{ transform: translateY(1px); }
+
 .miniBtn.danger{
   border-color: rgba(239,68,68,.35);
   color: #b91c1c;
@@ -242,7 +255,8 @@ textarea{
 .dot.ok{ background: var(--ok); }
 .dot.warn{ background: var(--warn); }
 
-/* ====== checklist (scroll) ====== */
+/* ====== checklist (scroll) ======
+   ★ 統一：HTMLは checkHeader を使用する（checkHeadは廃止・互換で残す） */
 .checkWrap{
   border: 1px solid #d7dde7;
   border-radius: 14px;
@@ -250,6 +264,24 @@ textarea{
   background:#fff;
 }
 
+/* 統一クラス */
+.checkHeader{
+  display:grid;
+  grid-template-columns: 1fr 70px 70px;
+  gap:0;
+  background:#f7fbff;
+  border-bottom:1px solid var(--line);
+  font-weight:900;
+  font-size:12px;
+}
+.checkHeader div{
+  padding: 10px 10px;
+}
+.checkHeader .c{
+  text-align:center;
+}
+
+/* 旧互換（万が一 checkHead が残っててもOK） */
 .checkHead{
   display:grid;
   grid-template-columns: 1fr 70px 70px;
@@ -259,12 +291,8 @@ textarea{
   font-weight:900;
   font-size:12px;
 }
-.checkHead div{
-  padding: 10px 10px;
-}
-.checkHead .c{
-  text-align:center;
-}
+.checkHead div{ padding:10px 10px; }
+.checkHead .c{ text-align:center; }
 
 .checkScroll{
   max-height: 280px;
@@ -298,7 +326,9 @@ textarea{
   accent-color: var(--g2);
 }
 
-/* ====== history ====== */
+/* ====== history ======
+   統一：historyItem を正として、histItem も互換で対応 */
+.historyItem,
 .histItem{
   border:1px solid #e8edf5;
   border-radius: 14px;
@@ -306,22 +336,43 @@ textarea{
   margin: 10px 0;
   background:#fff;
 }
+
+.historyItem{
+  cursor:pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.historyItem:active{
+  transform: translateY(1px);
+}
+
+.historyTop,
 .histTop{
   display:flex;
   align-items:center;
   justify-content:space-between;
   gap:10px;
 }
+
+.historyTitle,
 .histTitle{
   font-weight: 900;
   font-size: 13px;
 }
+
+.historyBody,
 .histBody{
   margin-top:6px;
   font-size: 12px;
   color: #334155;
   line-height:1.5;
   word-break: break-word;
+}
+
+/* 履歴の右側アクション（削除など） */
+.historyActions{
+  display:flex;
+  gap:8px;
+  align-items:center;
 }
 
 /* ====== projects (daily optional) ====== */
@@ -346,6 +397,21 @@ textarea{
   font-size: 15px;
   font-weight: 900;
   color:#111;
+}
+
+/* ====== floating help ====== */
+.floatingHelp{
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 12px;
+  background: rgba(255,255,255,.92);
+  backdrop-filter: blur(10px);
+  border-top: 1px solid var(--line);
+}
+.floatingHelp .btn{
+  width:100%;
 }
 
 /* ====== utilities ====== */
