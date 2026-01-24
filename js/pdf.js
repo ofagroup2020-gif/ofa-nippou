@@ -1,18 +1,13 @@
-// js/pdf.js
-// OFA PDF生成（文字化け対策）
-// 方針：HTML → html2canvas → jsPDF
-// ・日本語OK
-// ・ロゴ/カラー/表レイアウト
-// ・出発/帰着 分離
-// ・日報は任意（未入力でもOK）
-// ・月報（検索結果）対応（複数ページ）
+// /admin/js/pdf.js
+// 月報PDF（管理者）: OFAフォーマット / 日本語文字化け対策（HTML→canvas→PDF）
+// 2026-01-24: dep/arr / departure/arrival 両対応（互換）
+// - tenko.type: "dep"|"arr" または "departure"|"arrival" を吸収
+// - odo: dep→odoStart / arr→odoEnd
+// - 日報: salesTotal / profit / costTotal(無ければ推定) など吸収
 
-// ------------------------------
-// 外部ライブラリの動的ロード
-// ------------------------------
 async function loadScriptOnce(src){
   if(document.querySelector(`script[data-src="${src}"]`)) return;
-  await new Promise((resolve, reject)=>{
+  await new Promise((resolve, reject) => {
     const s = document.createElement("script");
     s.src = src;
     s.async = true;
@@ -28,146 +23,259 @@ async function ensurePdfLibs(){
   await loadScriptOnce("https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js");
 }
 
-// ------------------------------
-// Utils
-// ------------------------------
-function fmtDateTime(v){
-  if(!v) return "";
-  return String(v).replace("T"," ").slice(0,16);
+function normalizeDate(d){
+  if(!d) return "";
+  return String(d).slice(0,10);
 }
+
 function safeNum(n){
   const x = Number(n);
   return Number.isFinite(x) ? x : 0;
 }
 
-async function fileToDataUrl(file){
-  if(!file) return "";
-  return new Promise((resolve, reject)=>{
-    const fr = new FileReader();
-    fr.onload = ()=> resolve(fr.result);
-    fr.onerror = reject;
-    fr.readAsDataURL(file);
+function tenkoKind(t){
+  const ty = (t?.type || "").toLowerCase();
+  if(ty === "dep" || ty === "departure") return "dep";
+  if(ty === "arr" || ty === "arrival") return "arr";
+  // フォールバック：文字が入ってたら判定
+  if(String(t?.type||"").includes("出")) return "dep";
+  if(String(t?.type||"").includes("帰")) return "arr";
+  return "dep";
+}
+
+function pickSalesTotal(d){
+  return safeNum(d.salesTotal ?? d.sales ?? d.uriage ?? d.total ?? (safeNum(d.payBase)+safeNum(d.incentive)));
+}
+function pickProfit(d){
+  return safeNum(d.profit ?? d.rieki ?? (pickSalesTotal(d) - pickCostTotal(d)));
+}
+function pickCostTotal(d){
+  // costTotalが無い場合は燃料等から推定
+  const direct = d.costTotal ?? d.cost ?? null;
+  if(direct !== null && direct !== undefined && direct !== "") return safeNum(direct);
+  return safeNum(d.fuel) + safeNum(d.highway) + safeNum(d.parking) + safeNum(d.otherCost);
+}
+function pickKm(d){
+  return safeNum(d.km ?? d.distance ?? d.runKm ?? d.odoDiff ?? 0);
+}
+
+function calcMonthlySummary(group, filters){
+  const days = new Set();
+  (group.tenko || []).forEach(t=>{
+    const d = normalizeDate(t.at);
+    if(d) days.add(d);
   });
+  (group.daily || []).forEach(d=>{
+    const dd = normalizeDate(d.date || d.at || d.createdAt || d.updatedAt);
+    if(dd) days.add(dd);
+  });
+
+  // 走行距離合計（dep+arrペアで計算）
+  const byDate = new Map();
+  (group.tenko || []).forEach(t=>{
+    const d = normalizeDate(t.at);
+    if(!d) return;
+    if(!byDate.has(d)) byDate.set(d,{dep:null,arr:null});
+    const k = tenkoKind(t);
+    if(k === "dep") byDate.get(d).dep = t;
+    if(k === "arr") byDate.get(d).arr = t;
+  });
+
+  let totalKm = 0;
+  let missingDep = [];
+  let missingArr = [];
+
+  for(const [d,pair] of byDate){
+    if(pair.dep && pair.arr){
+      const dep = safeNum(pair.dep.odoStart);
+      const arr = safeNum(pair.arr.odoEnd);
+      const diff = arr - dep;
+      if(diff > 0) totalKm += diff;
+    }else{
+      if(!pair.dep) missingDep.push(d);
+      if(!pair.arr) missingArr.push(d);
+    }
+  }
+
+  // 日報集計
+  let totalPay = 0;
+  let totalCost = 0;
+  let totalProfit = 0;
+
+  (group.daily || []).forEach(d=>{
+    const sales = pickSalesTotal(d);
+    const cost  = pickCostTotal(d);
+    const profit = pickProfit(d);
+
+    totalPay    += sales;
+    totalCost   += cost;
+    totalProfit += profit;
+  });
+
+  return {
+    periodFrom: filters.from || filters.start || "",
+    periodTo: filters.to || filters.end || "",
+    workDays: days.size,
+    totalKm,
+    tenkoCount: (group.tenko || []).length,
+    dailyCount: (group.daily || []).length,
+    totalPay,
+    totalCost,
+    totalProfit,
+    missingDep,
+    missingArr,
+  };
 }
 
-function esc(s){
-  return String(s ?? "")
-    .replaceAll("&","&amp;")
-    .replaceAll("<","&lt;")
-    .replaceAll(">","&gt;")
-    .replaceAll('"',"&quot;")
-    .replaceAll("'","&#039;");
-}
-
-function ymdFromAny(v){
-  if(!v) return "";
-  // "2026-01-24T03:25" / "2026-01-24"
-  return String(v).slice(0,10);
-}
-
-function byAtAsc(a,b){
-  const da = new Date(a?.at || a?.date || 0).getTime();
-  const db = new Date(b?.at || b?.date || 0).getTime();
-  return da - db;
-}
-
-// ------------------------------
-// PDF用HTML生成（単日）
-// ------------------------------
-function buildOfaPdfHtml({profile, dep, arr, daily, odoDiff, images}){
+function buildMonthlyHtml(group, filters){
   const headerGrad = `linear-gradient(90deg,#20d3c2,#4a90ff,#9b5cff,#ff4d8d)`;
+  const sum = calcMonthlySummary(group, filters);
 
-  const imgBlock = (title, dataUrl)=>{
-    if(!dataUrl) return "";
+  const tenko = (group.tenko || []).slice().sort((a,b)=> new Date(a.at||0)-new Date(b.at||0));
+  const daily = (group.daily || []).slice().sort((a,b)=> new Date((a.date||a.createdAt)||0)-new Date((b.date||b.createdAt)||0));
+
+  // 点呼行
+  const tenkoRows = tenko.map(t=>{
+    const d = normalizeDate(t.at);
+    const tm = (t.at || "").slice(11,16);
+    const k = tenkoKind(t);
+    const kind = (k === "dep") ? "出発" : "帰着";
+    const odo = (k === "dep") ? (t.odoStart || "") : (t.odoEnd || "");
     return `
-      <div style="margin-top:8px">
-        <div style="font-weight:700;margin-bottom:4px">${title}</div>
-        <img src="${dataUrl}" style="width:100%;max-height:260px;object-fit:contain;border:1px solid #e5eaf2;border-radius:10px">
-      </div>
+      <tr>
+        <td class="td">${d}</td>
+        <td class="td">${kind}</td>
+        <td class="td">${tm}</td>
+        <td class="td">${t.method || ""}</td>
+        <td class="td">${t.alcValue ?? ""}</td>
+        <td class="td">${t.alcJudge || ""}</td>
+        <td class="td">${odo}</td>
+        <td class="td">${t.abnormal || ""}</td>
+      </tr>
     `;
-  };
+  }).join("");
 
-  const checklistText = (list, ok)=>{
-    if(!Array.isArray(list)) return "";
-    return list.filter(x=>x.ok===ok).map(x=>x.label).join(" / ");
-  };
+  // 日報行
+  const dailyRows = daily.map(d=>{
+    const dt = normalizeDate(d.date || d.at || d.createdAt || d.updatedAt);
+    const sales = pickSalesTotal(d);
+    const cost  = pickCostTotal(d);
+    const profit = pickProfit(d);
+    const km = pickKm(d);
+    return `
+      <tr>
+        <td class="td">${dt}</td>
+        <td class="td">${d.mainProject || ""}</td>
+        <td class="td">${km || ""}</td>
+        <td class="td">${sales || ""}</td>
+        <td class="td">${cost || ""}</td>
+        <td class="td">${profit || ""}</td>
+        <td class="td">${(d.memo || "").slice(0,40)}</td>
+      </tr>
+    `;
+  }).join("");
 
-  const depRow = dep ? `
-    <tr><th colspan="4" style="background:#e9fbff">出発点呼（業務開始前）</th></tr>
-    <tr><th>日時</th><td>${fmtDateTime(dep.at)}</td><th>方法</th><td>${esc(dep.method||"")}</td></tr>
-    <tr><th>睡眠(h)</th><td>${esc(dep.sleep||"")}</td><th>体温</th><td>${esc(dep.temp||"")}</td></tr>
-    <tr><th>体調</th><td>${esc(dep.condition||"")}</td><th>疲労</th><td>${esc(dep.fatigue||"")}</td></tr>
-    <tr><th>アルコール</th><td>${esc(dep.alcValue||"")}</td><th>判定</th><td>${esc(dep.alcJudge||"")}</td></tr>
-    <tr><th>出発ODO</th><td>${esc(dep.odoStart||"")}</td><th>異常</th><td>${esc(dep.abnormal||"")}</td></tr>
-    <tr><th>異常内容</th><td colspan="3">${esc(dep.abnormalDetail||"")}</td></tr>
-  ` : `
-    <tr><th colspan="4" style="background:#e9fbff">出発点呼</th></tr>
-    <tr><td colspan="4">未入力</td></tr>
-  `;
-
-  const arrRow = arr ? `
-    <tr><th colspan="4" style="background:#fff2f8">帰着点呼（業務終了後）</th></tr>
-    <tr><th>日時</th><td>${fmtDateTime(arr.at)}</td><th>方法</th><td>${esc(arr.method||"")}</td></tr>
-    <tr><th>休憩(分)</th><td>${esc(arr.breakMin||"")}</td><th>体温</th><td>${esc(arr.temp||"")}</td></tr>
-    <tr><th>体調</th><td>${esc(arr.condition||"")}</td><th>疲労</th><td>${esc(arr.fatigue||"")}</td></tr>
-    <tr><th>アルコール</th><td>${esc(arr.alcValue||"")}</td><th>判定</th><td>${esc(arr.alcJudge||"")}</td></tr>
-    <tr><th>帰着ODO</th><td>${esc(arr.odoEnd||"")}</td><th>異常</th><td>${esc(arr.abnormal||"")}</td></tr>
-    <tr><th>異常内容</th><td colspan="3">${esc(arr.abnormalDetail||"")}</td></tr>
-  ` : `
-    <tr><th colspan="4" style="background:#fff2f8">帰着点呼</th></tr>
-    <tr><td colspan="4">未入力</td></tr>
-  `;
-
-  const dailyRow = daily ? `
-    <tr><th colspan="4" style="background:#f7fbff">日報（任意）</th></tr>
-    <tr><th>稼働日</th><td>${esc(daily.date||"")}</td><th>案件</th><td>${esc(daily.mainProject||"")}</td></tr>
-    <tr><th>売上</th><td>${esc(daily.salesTotal||0)}</td><th>概算利益</th><td>${esc(daily.profit||0)}</td></tr>
-    <tr><th>メモ</th><td colspan="3">${esc(daily.memo||"")}</td></tr>
-  ` : `
-    <tr><th colspan="4" style="background:#f7fbff">日報（任意）</th></tr>
-    <tr><td colspan="4">未入力</td></tr>
+  const missingBlock = `
+    <div class="box">
+      <div class="h3">点呼未実施日（検出）</div>
+      <div class="p">
+        出発が無い日：<b>${sum.missingDep.length}</b> 日
+        ${sum.missingDep.length ? `<div class="mini">${sum.missingDep.join(" / ")}</div>` : ""}
+      </div>
+      <div class="p" style="margin-top:8px">
+        帰着が無い日：<b>${sum.missingArr.length}</b> 日
+        ${sum.missingArr.length ? `<div class="mini">${sum.missingArr.join(" / ")}</div>` : ""}
+      </div>
+    </div>
   `;
 
   return `
-  <div id="ofaPdfRoot" style="width:794px;background:#fff;font-family:-apple-system,BlinkMacSystemFont,'Hiragino Kaku Gothic ProN','Noto Sans JP','Helvetica Neue',Arial,sans-serif;color:#222;padding:18px">
-    <div style="border-radius:18px;overflow:hidden;border:1px solid #e5eaf2">
-      <div style="padding:14px;background:${headerGrad};color:#fff;display:flex;justify-content:space-between">
-        <div style="font-weight:900">OFA GROUP</div>
-        <div style="font-weight:700">点呼・日報</div>
+  <div id="ofaPdfRoot" style="width:794px;background:#fff;font-family:'Noto Sans JP',-apple-system,BlinkMacSystemFont,'Hiragino Kaku Gothic ProN','Helvetica Neue',Arial,sans-serif;color:#111;padding:16px">
+    <div style="border:1px solid #e9eef5;border-radius:18px;overflow:hidden">
+      <div style="background:${headerGrad};padding:14px;color:#fff;display:flex;justify-content:space-between;align-items:center">
+        <div style="font-weight:900;font-size:18px">OFA GROUP</div>
+        <div style="text-align:right">
+          <div style="font-weight:900;font-size:14px">月報（管理者）</div>
+          <div style="font-weight:700;font-size:12px;opacity:.95">期間：${sum.periodFrom} ～ ${sum.periodTo}</div>
+        </div>
       </div>
 
       <div style="padding:14px">
-        <table style="width:100%;border-collapse:collapse;font-size:13px">
-          <tr><th style="width:25%">氏名</th><td>${esc(profile.name||"")}</td><th>拠点</th><td>${esc(profile.base||"")}</td></tr>
-          <tr><th>車両</th><td>${esc(profile.carNo||"")}</td><th>免許</th><td>${esc(profile.licenseNo||"")}</td></tr>
-          <tr><th>電話</th><td>${esc(profile.phone||"")}</td><th>メール</th><td>${esc(profile.email||"")}</td></tr>
+        <div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap">
+          <div style="font-weight:900;font-size:16px">${group.name} / ${group.base}</div>
+          <div style="font-size:12px;color:#555">生成：${new Date().toLocaleString()}</div>
+        </div>
 
-          ${depRow}
-          ${arrRow}
+        <style>
+          .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:10px}
+          .box{border:1px solid #e9eef5;border-radius:14px;padding:12px;background:#f7fbff}
+          .h3{font-weight:900;margin:0 0 8px 0;font-size:13px}
+          .p{margin:0;font-size:12px;color:#222}
+          .mini{margin-top:6px;font-size:11px;color:#666;line-height:1.4;word-break:break-word}
+          .sumline{display:flex;gap:10px;flex-wrap:wrap;font-size:13px}
+          .sumline div{background:#fff;border:1px solid #e9eef5;border-radius:12px;padding:10px 12px}
+          .tbl{width:100%;border-collapse:collapse;font-size:12px;margin-top:8px}
+          .th{background:#f0fbff;border:1px solid #e9eef5;padding:8px;text-align:left}
+          .td{border:1px solid #e9eef5;padding:8px;vertical-align:top}
+          .secTitle{font-weight:900;margin-top:14px;font-size:13px}
+        </style>
 
+        <div class="sumline" style="margin-top:10px">
+          <div><b>稼働日数</b>：${sum.workDays} 日</div>
+          <div><b>走行距離合計</b>：${sum.totalKm} km</div>
+          <div><b>点呼件数</b>：${sum.tenkoCount}</div>
+          <div><b>日報件数</b>：${sum.dailyCount}</div>
+          <div><b>売上合計</b>：${sum.totalPay}</div>
+          <div><b>経費合計</b>：${sum.totalCost}</div>
+          <div><b>概算利益</b>：${sum.totalProfit}</div>
+        </div>
+
+        <div class="grid">
+          ${missingBlock}
+          <div class="box">
+            <div class="h3">メモ</div>
+            <p class="p">※日報の売上・経費は「任意入力」です。入力がある分のみ集計します。</p>
+            <p class="p" style="margin-top:6px">※点呼は「出発」「帰着」で別入力。ODO差分は両方揃った日だけ計算します。</p>
+          </div>
+          <div class="box">
+            <div class="h3">出力について</div>
+            <p class="p">・このPDFは端末内データ（IndexedDB）から生成</p>
+            <p class="p">・CSVは別ボタンでワンクリック出力</p>
+          </div>
+        </div>
+
+        <div class="secTitle">点呼一覧</div>
+        <table class="tbl">
           <tr>
-            <th>走行距離</th>
-            <td>${esc(odoDiff)} km</td>
-            <th>点検NG</th>
-            <td>${esc(checklistText(dep?.checklist || arr?.checklist, false) || "なし")}</td>
+            <th class="th">日付</th>
+            <th class="th">区分</th>
+            <th class="th">時刻</th>
+            <th class="th">方法</th>
+            <th class="th">アルコール</th>
+            <th class="th">判定</th>
+            <th class="th">ODO</th>
+            <th class="th">異常</th>
           </tr>
-          <tr>
-            <th>点検OK</th>
-            <td colspan="3">${esc(checklistText(dep?.checklist || arr?.checklist, true))}</td>
-          </tr>
-
-          ${dailyRow}
+          ${tenkoRows || `<tr><td class="td" colspan="8">点呼データがありません</td></tr>`}
         </table>
 
-        <div style="display:flex;gap:12px;margin-top:12px">
-          <div style="flex:1">${imgBlock("免許証", images.licenseDataUrl)}</div>
-          <div style="flex:1">${imgBlock("アルコール（出発）", images.alcDepDataUrl)}</div>
-          <div style="flex:1">${imgBlock("アルコール（帰着）", images.alcArrDataUrl)}</div>
-        </div>
+        <div class="secTitle">日報一覧（任意入力）</div>
+        <table class="tbl">
+          <tr>
+            <th class="th">稼働日</th>
+            <th class="th">案件</th>
+            <th class="th">走行距離</th>
+            <th class="th">売上</th>
+            <th class="th">経費</th>
+            <th class="th">利益</th>
+            <th class="th">メモ</th>
+          </tr>
+          ${dailyRows || `<tr><td class="td" colspan="7">日報データがありません</td></tr>`}
+        </table>
 
-        <div style="margin-top:12px;font-size:11px;color:#666;display:flex;justify-content:space-between">
+        <div style="margin-top:14px;border-top:1px solid #e9eef5;padding-top:10px;font-size:11px;color:#666;display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap">
           <div>© OFA GROUP</div>
-          <div>端末内生成PDF</div>
+          <div>※端末内で生成（アップロードなし）</div>
         </div>
       </div>
     </div>
@@ -175,264 +283,55 @@ function buildOfaPdfHtml({profile, dep, arr, daily, odoDiff, images}){
   `;
 }
 
-// ------------------------------
-// PDF出力（単日）
-// ------------------------------
-async function generateTodayPdf({profile, dep, arr, daily, odoDiff, files}){
-  await ensurePdfLibs();
-
-  const images = {
-    licenseDataUrl: await fileToDataUrl(files.licenseImg),
-    alcDepDataUrl:  await fileToDataUrl(files.alcDepImg),
-    alcArrDataUrl:  await fileToDataUrl(files.alcArrImg),
-  };
-
-  const html = buildOfaPdfHtml({profile, dep, arr, daily, odoDiff, images});
-
+async function addHtmlPageToPdf(pdf, html){
   const holder = document.createElement("div");
   holder.style.position = "fixed";
   holder.style.left = "-10000px";
+  holder.style.top = "0";
   holder.innerHTML = html;
   document.body.appendChild(holder);
 
-  const canvas = await html2canvas(holder.firstElementChild, {scale:2, backgroundColor:"#fff"});
+  const root = holder.querySelector("#ofaPdfRoot");
+  const canvas = await html2canvas(root, { scale:2, backgroundColor:"#ffffff" });
   const imgData = canvas.toDataURL("image/png");
 
-  const { jsPDF } = window.jspdf;
-  const pdf = new jsPDF("p","pt","a4");
-
-  const pageW = 595; // A4 pt
-  const pageH = 842;
-  const imgH = canvas.height * (pageW / canvas.width);
-
-  // 1ページで足りない場合にも一応対応
-  let y = 0;
-  let remaining = imgH;
-  while(remaining > 0){
-    pdf.addImage(imgData, "PNG", 0, y, pageW, imgH);
-    remaining -= pageH;
-    if(remaining > 0){
-      pdf.addPage();
-      y -= pageH; // 上にずらして描画（見えてる範囲が次ページになる）
-    }
-  }
-
-  document.body.removeChild(holder);
-
-  const key = (daily?.date || dep?.at || arr?.at || "").slice(0,10) || "today";
-  pdf.save(`OFA_${key}_点呼日報.pdf`);
-}
-
-// expose（単日）
-window.generateTodayPdf = generateTodayPdf;
-
-// =====================================================
-// 月報PDF（検索結果）
-// =====================================================
-
-// 月報用HTML（tenko/dailyの一覧）
-function buildMonthlyPdfHtml({filters, tenko, daily, title}){
-  const headerGrad = `linear-gradient(90deg,#20d3c2,#4a90ff,#9b5cff,#ff4d8d)`;
-
-  const f = filters || {};
-  const period = `${esc(f.start||"")} 〜 ${esc(f.end||"")}`;
-  const base = esc(f.base||"");
-  const name = esc(f.name||"");
-
-  const tenkoSorted = (Array.isArray(tenko)?tenko:[]).slice().sort(byAtAsc);
-  const dailySorted = (Array.isArray(daily)?daily:[]).slice().sort(byAtAsc);
-
-  const tenkoRows = tenkoSorted.map(t=>{
-    const dt = esc(fmtDateTime(t.at));
-    const type = t.type === "arr" ? "帰着" : "出発";
-    const alc = esc((t.alcValue ?? 0));
-    const abn = esc(t.abnormal || "なし");
-    return `
-      <tr>
-        <td>${dt}</td>
-        <td>${esc(t.name||"")}</td>
-        <td>${esc(t.base||"")}</td>
-        <td style="text-align:center">${type}</td>
-        <td style="text-align:right">${alc}</td>
-        <td>${abn}</td>
-      </tr>
-    `;
-  }).join("");
-
-  // 日報はあなたの保存形式が複数パターンあり得るので、よくあるキーを吸収
-  const dailyRows = dailySorted.map(r=>{
-    const dt = esc(ymdFromAny(r.date || r.at || r.createdAt || r.updatedAt));
-    const sales = r.salesTotal ?? r.sales ?? r.uriage ?? r.total ?? "";
-    const profit = r.profit ?? r.rieki ?? "";
-    const km = r.km ?? r.distance ?? r.runKm ?? "";
-    const memo = r.memo ?? r.r_memo ?? "";
-    return `
-      <tr>
-        <td>${dt}</td>
-        <td>${esc(r.name||"")}</td>
-        <td>${esc(r.base||"")}</td>
-        <td style="text-align:right">${esc(sales)}</td>
-        <td style="text-align:right">${esc(profit)}</td>
-        <td style="text-align:right">${esc(km)}</td>
-        <td>${esc(memo)}</td>
-      </tr>
-    `;
-  }).join("");
-
-  // サマリ
-  const tenkoCount = tenkoSorted.length;
-  const dailyCount = dailySorted.length;
-
-  // 日報合計（数値っぽい時だけ足す）
-  const sumSales = dailySorted.reduce((acc,r)=> acc + safeNum(r.salesTotal ?? r.sales ?? r.uriage ?? r.total), 0);
-  const sumProfit = dailySorted.reduce((acc,r)=> acc + safeNum(r.profit ?? r.rieki), 0);
-  const sumKm = dailySorted.reduce((acc,r)=> acc + safeNum(r.km ?? r.distance ?? r.runKm), 0);
-
-  return `
-  <div id="ofaMonthlyRoot" style="width:794px;background:#fff;font-family:-apple-system,BlinkMacSystemFont,'Hiragino Kaku Gothic ProN','Noto Sans JP','Helvetica Neue',Arial,sans-serif;color:#222;padding:18px">
-    <div style="border-radius:18px;overflow:hidden;border:1px solid #e5eaf2">
-      <div style="padding:14px;background:${headerGrad};color:#fff;display:flex;justify-content:space-between;align-items:center">
-        <div style="font-weight:900">OFA GROUP</div>
-        <div style="font-weight:800">${esc(title || "月報")}</div>
-      </div>
-
-      <div style="padding:14px">
-        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px">
-          <div style="background:#f3f6ff;border:1px solid #e5eaf2;border-radius:12px;padding:8px 10px;font-weight:700">期間：${period}</div>
-          <div style="background:#f3f6ff;border:1px solid #e5eaf2;border-radius:12px;padding:8px 10px;font-weight:700">拠点：${base || "-"}</div>
-          <div style="background:#f3f6ff;border:1px solid #e5eaf2;border-radius:12px;padding:8px 10px;font-weight:700">氏名：${name || "-"}</div>
-        </div>
-
-        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px">
-          <div style="background:#fff;border:1px solid #e5eaf2;border-radius:12px;padding:8px 10px">
-            <div style="font-weight:900">点呼件数</div>
-            <div style="font-size:18px;font-weight:900">${tenkoCount}</div>
-          </div>
-          <div style="background:#fff;border:1px solid #e5eaf2;border-radius:12px;padding:8px 10px">
-            <div style="font-weight:900">日報件数</div>
-            <div style="font-size:18px;font-weight:900">${dailyCount}</div>
-          </div>
-          <div style="background:#fff;border:1px solid #e5eaf2;border-radius:12px;padding:8px 10px">
-            <div style="font-weight:900">売上合計</div>
-            <div style="font-size:18px;font-weight:900">${sumSales}</div>
-          </div>
-          <div style="background:#fff;border:1px solid #e5eaf2;border-radius:12px;padding:8px 10px">
-            <div style="font-weight:900">利益合計</div>
-            <div style="font-size:18px;font-weight:900">${sumProfit}</div>
-          </div>
-          <div style="background:#fff;border:1px solid #e5eaf2;border-radius:12px;padding:8px 10px">
-            <div style="font-weight:900">走行合計(km)</div>
-            <div style="font-size:18px;font-weight:900">${sumKm}</div>
-          </div>
-        </div>
-
-        <div style="font-weight:900;margin:12px 0 8px 0">点呼一覧</div>
-        <div style="overflow:hidden;border:1px solid #e5eaf2;border-radius:14px">
-          <table style="width:100%;border-collapse:collapse;font-size:12px">
-            <thead>
-              <tr style="background:#e9fbff">
-                <th style="padding:8px;text-align:left">日時</th>
-                <th style="padding:8px;text-align:left">氏名</th>
-                <th style="padding:8px;text-align:left">拠点</th>
-                <th style="padding:8px;text-align:center">区分</th>
-                <th style="padding:8px;text-align:right">アルコール</th>
-                <th style="padding:8px;text-align:left">異常</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${tenkoRows || `<tr><td colspan="6" style="padding:10px;opacity:.7">該当なし</td></tr>`}
-            </tbody>
-          </table>
-        </div>
-
-        <div style="font-weight:900;margin:16px 0 8px 0">日報一覧</div>
-        <div style="overflow:hidden;border:1px solid #e5eaf2;border-radius:14px">
-          <table style="width:100%;border-collapse:collapse;font-size:12px">
-            <thead>
-              <tr style="background:#f7fbff">
-                <th style="padding:8px;text-align:left">日付</th>
-                <th style="padding:8px;text-align:left">氏名</th>
-                <th style="padding:8px;text-align:left">拠点</th>
-                <th style="padding:8px;text-align:right">売上</th>
-                <th style="padding:8px;text-align:right">利益</th>
-                <th style="padding:8px;text-align:right">走行</th>
-                <th style="padding:8px;text-align:left">メモ</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${dailyRows || `<tr><td colspan="7" style="padding:10px;opacity:.7">該当なし</td></tr>`}
-            </tbody>
-          </table>
-        </div>
-
-        <div style="margin-top:12px;font-size:11px;color:#666;display:flex;justify-content:space-between">
-          <div>© OFA GROUP</div>
-          <div>端末内生成PDF（検索結果）</div>
-        </div>
-      </div>
-    </div>
-  </div>
-  `;
-}
-
-// HTML→PDF（複数ページ対応）
-async function makePdfFromHtml(html, filename){
-  await ensurePdfLibs();
-
-  const holder = document.createElement("div");
-  holder.style.position = "fixed";
-  holder.style.left = "-10000px";
-  holder.innerHTML = html;
-  document.body.appendChild(holder);
-
-  const root = holder.firstElementChild;
-
-  const canvas = await html2canvas(root, {scale:2, backgroundColor:"#fff"});
-  const imgData = canvas.toDataURL("image/png");
-
-  const { jsPDF } = window.jspdf;
-  const pdf = new jsPDF("p","pt","a4");
-
-  const pageW = 595;
-  const pageH = 842;
-
+  const pageW = 595, pageH = 842;
   const imgW = pageW;
-  const imgH = canvas.height * (imgW / canvas.width);
+  const imgH = (canvas.height * imgW) / canvas.width;
 
-  let y = 0;
-  let remaining = imgH;
-
-  while(remaining > 0){
-    pdf.addImage(imgData, "PNG", 0, y, imgW, imgH);
-    remaining -= pageH;
-    if(remaining > 0){
-      pdf.addPage();
-      y -= pageH;
+  if(imgH <= pageH){
+    pdf.addImage(imgData, "PNG", 0, 0, imgW, imgH);
+  }else{
+    let remain = imgH;
+    let pos = 0;
+    while(remain > 0){
+      pdf.addImage(imgData, "PNG", 0, pos, imgW, imgH);
+      remain -= pageH;
+      pos -= pageH;
+      if(remain > 0) pdf.addPage();
     }
   }
 
   document.body.removeChild(holder);
-
-  pdf.save(filename || "OFA.pdf");
 }
 
-async function createMonthlyPdf({tenko, daily, filters, title}){
-  // title は admin 側から来る（例：OFA_月報_開始_終了_拠点_氏名）
-  const html = buildMonthlyPdfHtml({
-    tenko: Array.isArray(tenko)?tenko:[],
-    daily: Array.isArray(daily)?daily:[],
-    filters: filters || {},
-    title: title || "月報"
-  });
+async function generateMonthlyPdf(groups, filters){
+  await ensurePdfLibs();
+  const { jsPDF } = window.jspdf;
+  const pdf = new jsPDF("p", "pt", "a4");
 
-  const f = filters || {};
-  const start = (f.start||"").replaceAll("-","");
-  const end   = (f.end||"").replaceAll("-","");
-  const file = `${title || "OFA_月報"}_${start}_${end}.pdf`;
+  let first = true;
+  for(const g of groups){
+    if(!first) pdf.addPage();
+    first = false;
 
-  await makePdfFromHtml(html, file);
+    const html = buildMonthlyHtml(g, filters);
+    await addHtmlPageToPdf(pdf, html);
+  }
+
+  const key = `${(filters.from||filters.start||"all")}_${(filters.to||filters.end||"all")}`;
+  pdf.save(`OFA_月報_${key}.pdf`);
 }
 
-// expose（月報＋汎用）
-window.makePdfFromHtml = makePdfFromHtml;
-window.createMonthlyPdf = createMonthlyPdf;
+// expose
+window.generateMonthlyPdf = generateMonthlyPdf;
