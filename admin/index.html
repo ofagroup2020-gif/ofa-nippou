@@ -28,7 +28,7 @@
     <div class="card">
       <div class="h2">① 管理者認証</div>
       <div class="note">
-        管理者パスは <strong>サイトに記載しません</strong>（LINEで共有運用）。<br/>
+        管理者パスは <strong>サイトに記載しません</strong>（LINEで共有する運用）。<br/>
         この端末の保存パスで認証します（localStorage）。
       </div>
 
@@ -49,13 +49,13 @@
       <div class="note" id="adminState">未ログイン</div>
     </div>
 
-    <!-- ② 検索 -->
+    <!-- ② 月報検索 -->
     <div class="card" id="adminPanel" style="display:none">
-      <div class="h2">② 検索（期間必須 / 拠点・氏名・電話で絞り込み）</div>
+      <div class="h2">② 月報検索（期間・拠点・氏名・電話）</div>
       <div class="note">
-        期間（開始/終了）は<strong>必須</strong>。<br/>
-        絞り込みは <strong>拠点 / 氏名 / 電話 のどれか1つでもOK</strong>（部分一致）。<br/>
-        ※未入力なら「全ドライバー」を集計します。
+        まず <strong>期間（開始/終了）</strong> を指定して検索してください。<br/>
+        <strong>氏名 または 電話番号</strong> のどちらかが入っていれば検索できます（両方でもOK）。<br/>
+        拠点は部分一致で絞り込みできます。
       </div>
 
       <label>期間（開始）*</label>
@@ -64,19 +64,14 @@
       <label>期間（終了）*</label>
       <input id="q_end" type="date" />
 
-      <div class="row">
-        <div>
-          <label>拠点（部分一致）</label>
-          <input id="q_base" placeholder="例：鹿児島" />
-        </div>
-        <div>
-          <label>氏名（部分一致）</label>
-          <input id="q_name" placeholder="例：森下" />
-        </div>
-      </div>
+      <label>拠点（部分一致）</label>
+      <input id="q_base" placeholder="例：鹿児島" />
+
+      <label>氏名（部分一致）</label>
+      <input id="q_name" placeholder="例：森下" />
 
       <label>電話番号（部分一致）</label>
-      <input id="q_phone" placeholder="例：090" inputmode="tel" />
+      <input id="q_phone" inputmode="tel" placeholder="例：090-1234" />
 
       <div class="actions" style="margin-top:12px">
         <button class="btn" id="btnSearch">検索</button>
@@ -86,9 +81,9 @@
       <div class="divider"></div>
 
       <!-- ③ 月報PDF -->
-      <div class="h2" style="margin-top:0;">③ 月報PDF（検索結果→ドライバー別）</div>
+      <div class="h2" style="margin-top:0;">③ 月報PDF（OFAフォーマット）</div>
       <div class="note">
-        検索結果を「ドライバー単位」でまとめてPDF作成します（1人=1ページ）。<br/>
+        検索結果をもとに月報PDFを作成します。<br/>
         PDFは 日本語文字化けしない方式（HTML→canvas→PDF）で生成します。
       </div>
       <button class="btn" id="btnMonthlyPdf">月報PDFを作成</button>
@@ -96,15 +91,9 @@
       <div class="divider"></div>
 
       <!-- ④ 結果 -->
-      <div class="h2" style="margin-top:0;">④ 検索結果（ドライバー別）</div>
+      <div class="h2" style="margin-top:0;">④ 検索結果</div>
       <div class="note" id="resultSummary">まだ検索していません</div>
       <div id="resultBox"></div>
-
-      <div class="divider"></div>
-
-      <div class="note">
-        <b>使い方：</b>一覧の行をタップすると、そのドライバーで再検索（絞り込み）します。
-      </div>
     </div>
 
     <div class="small" style="opacity:.7;margin-top:18px">
@@ -113,9 +102,9 @@
   </div>
 
   <!-- deps（必ずこの順。v=でキャッシュ殺し） -->
-  <script src="../js/db.js?v=20260124"></script>
-  <script src="../js/pdf.js?v=20260124"></script>
-  <script src="../js/csv.js?v=20260124"></script>
+  <script src="../js/db.js?v=20260125"></script>
+  <script src="../js/pdf.js?v=20260125"></script>
+  <script src="../js/csv.js?v=20260125"></script>
 
   <script>
     (function(){
@@ -129,7 +118,7 @@
 
       const state = {
         loggedIn: false,
-        lastSearch: null, // { tenko:[], daily:[], filters:{...}, groups:[...] }
+        lastSearch: null, // { tenko:[], daily:[], filters:{...} }
       };
 
       function safeGetLS(key){
@@ -138,16 +127,13 @@
       function safeSetLS(key, val){
         try { localStorage.setItem(key, val); return true; } catch { return false; }
       }
-
       function getSavedPass(){
         return safeGetLS(PASS_KEY) || DEFAULT_PASS;
       }
 
       function setLoggedIn(v){
         state.loggedIn = !!v;
-        if (v) safeSetLS(LOGIN_KEY, "1");
-        else safeSetLS(LOGIN_KEY, "0");
-
+        safeSetLS(LOGIN_KEY, v ? "1" : "0");
         $("adminPanel").style.display = v ? "block" : "none";
         $("adminState").textContent = v ? "ログイン済み" : "未ログイン";
       }
@@ -165,7 +151,7 @@
         if (!$("q_start").value) $("q_start").value = first;
       }
 
-      // ===== IndexedDB（直叩き） =====
+      // ===== IndexedDB直読み（db.js差異でも動くように） =====
       const OFA_DB_NAME = "ofa_nippou_db";
       const OFA_DB_VER  = 1;
       const STORE_TENKO = "tenko";
@@ -208,121 +194,53 @@
         return String(hay || "").includes(String(needle));
       }
 
-      function safeNum(n){
-        const x = Number(n);
-        return Number.isFinite(x) ? x : 0;
-      }
-
       function normalizePhone(s){
-        return String(s || "").replaceAll("-", "").replaceAll(" ", "");
+        return String(s||"").replaceAll("-","").replaceAll(" ","");
       }
 
-      // ===== グルーピング（ドライバー単位） =====
-      function buildGroups(tenko, daily){
-        const map = new Map();
+      function renderResults(tenko, daily){
+        const summary = `検索結果：点呼 ${tenko.length} 件 / 日報 ${daily.length} 件`;
+        $("resultSummary").textContent = summary;
 
-        function keyOf(o){
-          const name = (o.name || "").trim();
-          const base = (o.base || "").trim();
-          const phone = normalizePhone(o.phone || "");
-          // phone優先（電話が一番ブレない）
-          return (phone ? `P:${phone}` : `N:${name}|B:${base}`);
-        }
-
-        function ensure(o){
-          const key = keyOf(o);
-          if(!map.has(key)){
-            map.set(key, {
-              key,
-              name: (o.name || "").trim(),
-              base: (o.base || "").trim(),
-              phone: (o.phone || "").trim(),
-              tenko: [],
-              daily: [],
-            });
-          }
-          return map.get(key);
-        }
-
-        tenko.forEach(t=> ensure(t).tenko.push(t));
-        daily.forEach(d=> ensure(d).daily.push(d));
-
-        // 集計追加
-        const groups = Array.from(map.values()).map(g=>{
-          const sales = g.daily.reduce((acc,r)=> acc + safeNum(r.salesTotal ?? r.sales ?? r.uriage ?? r.total), 0);
-          const profit = g.daily.reduce((acc,r)=> acc + safeNum(r.profit ?? r.rieki), 0);
-          return {
-            ...g,
-            sales,
-            profit,
-            tenkoCount: g.tenko.length,
-            dailyCount: g.daily.length,
-          };
-        });
-
-        // 件数多い順に並べる（見やすい）
-        groups.sort((a,b)=> (b.dailyCount + b.tenkoCount) - (a.dailyCount + a.tenkoCount));
-        return groups;
-      }
-
-      function renderGroups(groups){
-        $("resultSummary").textContent = `ドライバー ${groups.length} 人（タップでその人だけ絞り込み）`;
-
-        if(!groups.length){
-          $("resultBox").innerHTML = `<div class="note" style="opacity:.8">該当なし</div>`;
-          return;
-        }
-
-        const rows = groups.map(g=>{
-          const name = g.name || "（氏名なし）";
-          const base = g.base || "（拠点なし）";
-          const phone = g.phone || "（電話なし）";
-
-          return `
-            <div class="histItem" data-k="${g.key}" style="cursor:pointer">
-              <div class="histTop">
-                <div>
-                  <div class="histTitle">${name} / ${base}</div>
-                  <div class="histBody" style="margin-top:4px;opacity:.85">${phone}</div>
-                  <div class="histBody" style="margin-top:6px;opacity:.8">
-                    点呼 ${g.tenkoCount} 件 / 日報 ${g.dailyCount} 件
-                    ／ 売上 ${g.sales} ／ 利益 ${g.profit}
-                  </div>
-                </div>
-                <div style="display:flex;gap:8px;align-items:center">
-                  <button class="miniBtn" data-act="pick" data-name="${name}" data-base="${base}" data-phone="${phone}">絞込</button>
-                </div>
-              </div>
-            </div>
-          `;
+        const rowsTenko = tenko.map(t=>{
+          const dt = (t.at||"").replace("T"," ").slice(0,16);
+          const type = (t.type === "arr" || t.type === "arrival") ? "帰着" : "出発";
+          const phone = t.phone || "";
+          return `<tr>
+            <td style="padding:8px 6px">${dt}</td>
+            <td style="padding:8px 6px">${(t.name||"")}</td>
+            <td style="padding:8px 6px">${(t.base||"")}</td>
+            <td style="padding:8px 6px">${phone}</td>
+            <td style="padding:8px 6px">${type}</td>
+            <td style="padding:8px 6px">${(t.alcValue ?? 0)}</td>
+            <td style="padding:8px 6px">${(t.abnormal||"なし")}</td>
+          </tr>`;
         }).join("");
 
-        $("resultBox").innerHTML = rows;
-
-        // タップで絞り込み（氏名/電話をセットして再検索）
-        $("resultBox").querySelectorAll(".histItem").forEach(item=>{
-          item.addEventListener("click", async ()=>{
-            const btn = item.querySelector('[data-act="pick"]');
-            if(!btn) return;
-            $("q_name").value = btn.dataset.name === "（氏名なし）" ? "" : btn.dataset.name;
-            $("q_base").value = btn.dataset.base === "（拠点なし）" ? "" : btn.dataset.base;
-            $("q_phone").value = btn.dataset.phone === "（電話なし）" ? "" : btn.dataset.phone;
-            await window.searchMonthly();
-          }, {passive:true});
-        });
-
-        $("resultBox").querySelectorAll('[data-act="pick"]').forEach(btn=>{
-          btn.addEventListener("click", async (e)=>{
-            e.preventDefault(); e.stopPropagation();
-            $("q_name").value = btn.dataset.name === "（氏名なし）" ? "" : btn.dataset.name;
-            $("q_base").value = btn.dataset.base === "（拠点なし）" ? "" : btn.dataset.base;
-            $("q_phone").value = btn.dataset.phone === "（電話なし）" ? "" : btn.dataset.phone;
-            await window.searchMonthly();
-          }, {passive:false});
-        });
+        const wrap = `
+          <div style="overflow:auto">
+            <table style="width:100%;border-collapse:collapse;font-size:12px">
+              <thead>
+                <tr style="text-align:left;opacity:.85;background:#f7fbff">
+                  <th style="padding:8px 6px">日付</th>
+                  <th style="padding:8px 6px">氏名</th>
+                  <th style="padding:8px 6px">拠点</th>
+                  <th style="padding:8px 6px">電話</th>
+                  <th style="padding:8px 6px">区分</th>
+                  <th style="padding:8px 6px">アルコール</th>
+                  <th style="padding:8px 6px">異常</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${rowsTenko || `<tr><td colspan="7" style="padding:10px;opacity:.7">点呼の該当なし</td></tr>`}
+              </tbody>
+            </table>
+          </div>
+        `;
+        $("resultBox").innerHTML = wrap;
       }
 
-      // ★ window.searchMonthly（必ず存在）
+      // ===== 検索（windowに必ず生やす） =====
       window.searchMonthly = async function searchMonthly(){
         if (!state.loggedIn) {
           alert("先にログインしてください");
@@ -332,13 +250,19 @@
         const start = $("q_start").value;
         const end   = $("q_end").value;
         if (!start || !end) {
-          alert("期間（開始/終了）は必須です");
+          alert("期間（開始/終了）を入力してください");
           return null;
         }
 
         const base  = $("q_base").value.trim();
         const name  = $("q_name").value.trim();
         const phone = $("q_phone").value.trim();
+
+        // ★ ここが要望：名前 or 電話どちらか必須
+        if(!name && !phone){
+          alert("氏名 または 電話番号 のどちらかを入力してください");
+          return null;
+        }
 
         const d0 = toDate00(start);
         const d1 = toDate2359(end);
@@ -359,13 +283,11 @@
           if (!includesPartial(t.base, base)) return false;
           if (!includesPartial(t.name, name)) return false;
 
-          // phoneはハイフン無し比較
-          if (phoneN){
-            const tp = normalizePhone(t.phone || "");
-            if (!tp.includes(phoneN)) return false;
-          }
+          // 電話はハイフン無しで部分一致
+          if (phoneN && !normalizePhone(t.phone).includes(phoneN)) return false;
+
           return true;
-        });
+        }).sort((a,b)=> (parseAnyDate(a.at)?.getTime()||0) - (parseAnyDate(b.at)?.getTime()||0));
 
         const daily = dailyAll.filter(r=>{
           const dt = toDate00(r.date) || parseAnyDate(r.createdAt || r.updatedAt || "");
@@ -374,21 +296,13 @@
 
           if (!includesPartial(r.base, base)) return false;
           if (!includesPartial(r.name, name)) return false;
+          if (phoneN && !normalizePhone(r.phone).includes(phoneN)) return false;
 
-          if (phoneN){
-            const rp = normalizePhone(r.phone || "");
-            if (!rp.includes(phoneN)) return false;
-          }
           return true;
-        });
+        }).sort((a,b)=> (toDate00(a.date)?.getTime()||0) - (toDate00(b.date)?.getTime()||0));
 
-        const filters = { start, end, base, name, phone };
-
-        const groups = buildGroups(tenko, daily);
-
-        state.lastSearch = { tenko, daily, filters, groups };
-        renderGroups(groups);
-
+        state.lastSearch = { tenko, daily, filters:{start,end,base,name,phone} };
+        renderResults(tenko, daily);
         return state.lastSearch;
       };
 
@@ -396,32 +310,47 @@
         if (!state.loggedIn) { alert("先にログインしてください"); return; }
         if (!state.lastSearch) { alert("先に検索してください"); return; }
 
-        const { groups, filters } = state.lastSearch;
-        if (!groups.length){ alert("検索結果が0件なのでPDFを作れません"); return; }
+        const { tenko, daily, filters } = state.lastSearch;
+        if (!tenko.length && !daily.length) { alert("検索結果が0件なので月報PDFを作れません"); return; }
 
-        // pdf.js 側の generateMonthlyPdf を呼ぶ（admin/js/pdf.jsを使う運用でもOK）
-        if (typeof window.generateMonthlyPdf === "function") {
-          // generateMonthlyPdf(groups, {from,to})
-          await window.generateMonthlyPdf(groups, { from: filters.start, to: filters.end });
-          return;
-        }
+        const title = `OFA_月報_${filters.start}_${filters.end}_${filters.base||"ALL"}_${filters.name||"NAME"}_${filters.phone||"TEL"}`;
 
-        // もし driver側 pdf.js（createMonthlyPdf）しか無い場合
         if (typeof window.createMonthlyPdf === "function") {
-          // 1人ずつ createMonthlyPdf を呼んでPDFは分割保存になるので注意
-          for(const g of groups){
-            await window.createMonthlyPdf({ tenko: g.tenko, daily: g.daily, filters, title: `OFA_月報_${g.base||"ALL"}_${g.name||"ALL"}` });
-          }
+          await window.createMonthlyPdf({ tenko, daily, filters, title });
+          return;
+        }
+        if (typeof window.makePdfFromHtml === "function") {
+          const html = `
+            <div style="font-family:sans-serif;padding:16px">
+              <h2 style="margin:0 0 6px 0">OFA 月報</h2>
+              <div style="opacity:.8;margin-bottom:10px">
+                期間：${filters.start} 〜 ${filters.end} / 拠点：${filters.base||"-"} / 氏名：${filters.name||"-"} / 電話：${filters.phone||"-"}
+              </div>
+              <h3>点呼（${tenko.length}件）</h3>
+              <pre style="white-space:pre-wrap">${JSON.stringify(tenko, null, 2)}</pre>
+              <h3>日報（${daily.length}件）</h3>
+              <pre style="white-space:pre-wrap">${JSON.stringify(daily, null, 2)}</pre>
+            </div>
+          `;
+          await window.makePdfFromHtml(html, title + ".pdf");
           return;
         }
 
-        alert("PDF機能が見つかりません（pdf.js）");
+        const w = window.open("", "_blank");
+        w.document.write(`<html><head><meta charset="utf-8"><title>${title}</title></head><body>`);
+        w.document.write(`<h2>OFA 月報</h2>`);
+        w.document.write(`<div>期間：${filters.start} 〜 ${filters.end} / 拠点：${filters.base||"-"} / 氏名：${filters.name||"-"} / 電話：${filters.phone||"-"}</div>`);
+        w.document.write(`<h3>点呼（${tenko.length}件）</h3><pre>${JSON.stringify(tenko, null, 2)}</pre>`);
+        w.document.write(`<h3>日報（${daily.length}件）</h3><pre>${JSON.stringify(daily, null, 2)}</pre>`);
+        w.document.write(`</body></html>`);
+        w.document.close();
+        w.focus();
+        w.print();
       };
 
       window.exportMonthlyCsv = async function exportMonthlyCsv(){
         if (!state.loggedIn) { alert("先にログインしてください"); return; }
         if (!state.lastSearch) { alert("先に検索してください"); return; }
-
         const { tenko, daily, filters } = state.lastSearch;
 
         if (typeof window.exportCsvFromMonthly === "function") {
@@ -429,7 +358,6 @@
           return;
         }
 
-        // fallback: json
         const blob = new Blob([JSON.stringify({filters, tenko, daily}, null, 2)], {type:"application/json"});
         const a = document.createElement("a");
         a.href = URL.createObjectURL(blob);
@@ -441,7 +369,6 @@
       document.addEventListener("DOMContentLoaded", ()=>{
         ensureDates();
 
-        // ログイン復帰
         const was = safeGetLS(LOGIN_KEY) === "1";
         if (was) setLoggedIn(true);
 
