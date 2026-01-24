@@ -1,20 +1,155 @@
-// /js/app.js
-// OFA 点呼/日報（ドライバー）
-// - IndexedDB保存
-// - 履歴カード：見やすく、タップでその日のPDF出力（過去日OK）
-// - 個別削除 / 全削除
-// - Chrome/Safari安定（DOMContentLoadedで束縛、passive:false）
+// js/app.js
+// OFA 点呼/日報 Driver UI 制御（統一版）
+// 依存: window.OFA_DB（db.js）, window.generateTodayPdf（pdf.js）, window.exportCsv（csv.js）※存在すれば
 
-(() => {
+(function(){
   "use strict";
 
-  // =============================
-  // DOM utils
-  // =============================
-  const $ = (id) => document.getElementById(id);
+  const $ = (id)=> document.getElementById(id);
+
+  // ====== element ids ======
+  const EL = {
+    // profile
+    p_name: "p_name",
+    p_base: "p_base",
+    p_carNo: "p_carNo",
+    p_licenseNo: "p_licenseNo",
+    p_phone: "p_phone",
+    p_email: "p_email",
+    f_licenseImg: "f_licenseImg",
+    btnSaveProfile: "btnSaveProfile",
+    btnLoadProfile: "btnLoadProfile",
+    dotProfile: "dotProfile",
+    profileState: "profileState",
+
+    // departure
+    d_at: "d_at",
+    d_method: "d_method",
+    d_sleep: "d_sleep",
+    d_temp: "d_temp",
+    d_condition: "d_condition",
+    d_fatigue: "d_fatigue",
+    d_med: "d_med",
+    d_medDetail: "d_medDetail",
+    d_drink: "d_drink",
+    d_alcState: "d_alcState",
+    d_alcValue: "d_alcValue",
+    d_alcJudge: "d_alcJudge",
+    f_alcDepImg: "f_alcDepImg",
+    d_projectMain: "d_projectMain",
+    d_area: "d_area",
+    d_danger: "d_danger",
+    d_odoStart: "d_odoStart",
+    d_abnormal: "d_abnormal",
+    d_abnormalDetail: "d_abnormalDetail",
+    f_abnDepImg: "f_abnDepImg",
+    btnSaveDep: "btnSaveDep",
+    btnClearDep: "btnClearDep",
+
+    // arrival
+    a_at: "a_at",
+    a_method: "a_method",
+    a_breakMin: "a_breakMin",
+    a_temp: "a_temp",
+    a_condition: "a_condition",
+    a_fatigue: "a_fatigue",
+    a_med: "a_med",
+    a_medDetail: "a_medDetail",
+    a_alcState: "a_alcState",
+    a_alcValue: "a_alcValue",
+    a_alcJudge: "a_alcJudge",
+    f_alcArrImg: "f_alcArrImg",
+    a_odoEnd: "a_odoEnd",
+    a_abnormal: "a_abnormal",
+    a_abnormalDetail: "a_abnormalDetail",
+    f_abnArrImg: "f_abnArrImg",
+    btnSaveArr: "btnSaveArr",
+    btnClearArr: "btnClearArr",
+    dotOdo: "dotOdo",
+    odoState: "odoState",
+
+    // check
+    checkScroll: "checkScroll",
+    checkMemo: "checkMemo",
+    f_checkImg: "f_checkImg",
+
+    // daily (optional)
+    r_date: "r_date",
+    r_start: "r_start",
+    r_end: "r_end",
+    r_break: "r_break",
+    r_count: "r_count",
+    r_absent: "r_absent",
+    r_redel: "r_redel",
+    r_return: "r_return",
+    r_claim: "r_claim",
+    r_claimDetail: "r_claimDetail",
+    r_payBase: "r_payBase",
+    r_incentive: "r_incentive",
+    r_fuel: "r_fuel",
+    r_highway: "r_highway",
+    r_parking: "r_parking",
+    r_otherCost: "r_otherCost",
+    r_memo: "r_memo",
+    f_dailyImg: "f_dailyImg",
+
+    projectsBox: "projectsBox",
+    btnAddProject: "btnAddProject",
+
+    // output
+    btnMakePdf: "btnMakePdf",
+    btnMakeCsv: "btnMakeCsv",
+
+    // history
+    btnReloadHistory: "btnReloadHistory",
+    btnClearAll: "btnClearAll",
+    historyBox: "historyBox",
+  };
+
+  // ====== checklist master ======
+  const CHECK_ITEMS = [
+    "ブレーキ（踏みしろ/効き）",
+    "タイヤ（空気圧/亀裂/溝）",
+    "ライト（前後/ウインカー/ハザード）",
+    "ワイパー/ウォッシャー",
+    "ミラー（視界）",
+    "警音器（ホーン）",
+    "方向指示器",
+    "計器（スピード/警告灯）",
+    "エンジンオイル",
+    "冷却水",
+    "バッテリー",
+    "燃料漏れ",
+    "荷台/扉（開閉）",
+    "積載状態（固定）",
+    "安全装備（消火器/三角停止板）",
+  ];
+
+  // ====== state ======
+  const state = {
+    profile: null,
+    lastHistory: { tenko: [], daily: [] },
+    // 画像は端末保存しない（PDF生成時のみ参照）
+    files: {
+      licenseImg: null,
+      alcDepImg: null,
+      alcArrImg: null,
+      dailyImg: null,
+      checkImg: null,
+      abnDepImg: null,
+      abnArrImg: null,
+    }
+  };
 
   function toast(msg){
-    alert(msg); // まずは確実な alert（必要なら後でtoast UIに差し替えOK）
+    alert(msg); // まずは確実に。必要なら後で非blocking UIへ
+  }
+
+  function setDotOk(dotId, ok){
+    const el = $(dotId);
+    if(!el) return;
+    el.classList.remove("ok","warn");
+    if(ok) el.classList.add("ok");
   }
 
   function fmtDateTime(v){
@@ -22,694 +157,736 @@
     return String(v).replace("T"," ").slice(0,16);
   }
 
-  function ymdFromAny(v){
-    if(!v) return "";
-    return String(v).slice(0,10);
-  }
-
-  function safeNum(n){
-    const x = Number(n);
-    return Number.isFinite(x) ? x : 0;
-  }
-
-  function esc(s){
-    return String(s ?? "")
-      .replaceAll("&","&amp;")
-      .replaceAll("<","&lt;")
-      .replaceAll(">","&gt;")
-      .replaceAll('"',"&quot;")
-      .replaceAll("'","&#039;");
-  }
-
-  function todayYMD(){
+  function todayYmd(){
     const d = new Date();
-    const y = d.getFullYear();
-    const m = String(d.getMonth()+1).padStart(2,"0");
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth()+1).padStart(2,"0");
     const dd = String(d.getDate()).padStart(2,"0");
-    return `${y}-${m}-${dd}`;
+    return `${yyyy}-${mm}-${dd}`;
   }
 
-  function setDot(id, ok){
-    const el = $(id);
-    if(!el) return;
-    el.classList.remove("ok","warn");
-    if(ok) el.classList.add("ok");
+  function defaultDateTimeLocal(){
+    const d = new Date();
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth()+1).padStart(2,"0");
+    const dd = String(d.getDate()).padStart(2,"0");
+    const hh = String(d.getHours()).padStart(2,"0");
+    const mi = String(d.getMinutes()).padStart(2,"0");
+    return `${yyyy}-${mm}-${dd}T${hh}:${mi}`;
   }
 
-  // =============================
-  // IndexedDB fallback (直叩き)
-  // =============================
-  const OFA_DB_NAME = "ofa_nippou_db";
-  const OFA_DB_VER  = 1;
-  const STORE_PROFILE = "profile";
-  const STORE_TENKO   = "tenko";
-  const STORE_DAILY   = "daily";
-
-  function idbOpen(){
-    return new Promise((resolve, reject)=>{
-      const req = indexedDB.open(OFA_DB_NAME, OFA_DB_VER);
-      req.onsuccess = ()=> resolve(req.result);
-      req.onerror = ()=> reject(req.error);
-    });
-  }
-
-  async function idbGet(store, key){
-    const db = await idbOpen();
-    return new Promise((resolve, reject)=>{
-      const tx = db.transaction(store, "readonly");
-      const req = tx.objectStore(store).get(key);
-      req.onsuccess = ()=> resolve(req.result || null);
-      req.onerror = ()=> reject(req.error);
-    });
-  }
-
-  async function idbPut(store, value){
-    const db = await idbOpen();
-    return new Promise((resolve, reject)=>{
-      const tx = db.transaction(store, "readwrite");
-      const req = tx.objectStore(store).put(value);
-      req.onsuccess = ()=> resolve(true);
-      req.onerror = ()=> reject(req.error);
-    });
-  }
-
-  async function idbAll(store){
-    const db = await idbOpen();
-    return new Promise((resolve, reject)=>{
-      const tx = db.transaction(store, "readonly");
-      const req = tx.objectStore(store).getAll();
-      req.onsuccess = ()=> resolve(req.result || []);
-      req.onerror = ()=> reject(req.error);
-    });
-  }
-
-  async function idbDelete(store, key){
-    const db = await idbOpen();
-    return new Promise((resolve, reject)=>{
-      const tx = db.transaction(store, "readwrite");
-      const req = tx.objectStore(store).delete(key);
-      req.onsuccess = ()=> resolve(true);
-      req.onerror = ()=> reject(req.error);
-    });
-  }
-
-  async function idbClear(store){
-    const db = await idbOpen();
-    return new Promise((resolve, reject)=>{
-      const tx = db.transaction(store, "readwrite");
-      const req = tx.objectStore(store).clear();
-      req.onsuccess = ()=> resolve(true);
-      req.onerror = ()=> reject(req.error);
-    });
-  }
-
-  // =============================
-  // db.js 互換呼び出し（あれば優先）
-  // =============================
-  const DB = {
-    async getProfile(){
-      // db.jsがある場合はそちら（キー名が違う可能性あり）
-      if (typeof window.dbGetProfile === "function") return await window.dbGetProfile();
-      if (typeof window.dbGet === "function") {
-        // よくある: dbGet(store, key)
-        try { return await window.dbGet("profile", "main"); } catch {}
-      }
-      // 直叩き（profile storeに key="main" を想定）
-      return await idbGet(STORE_PROFILE, "main");
-    },
-    async saveProfile(profile){
-      if (typeof window.dbSaveProfile === "function") return await window.dbSaveProfile(profile);
-      if (typeof window.dbPut === "function") {
-        try { return await window.dbPut("profile", profile); } catch {}
-      }
-      return await idbPut(STORE_PROFILE, profile);
-    },
-
-    async putTenko(row){
-      if (typeof window.dbPutTenko === "function") return await window.dbPutTenko(row);
-      if (typeof window.dbPut === "function") {
-        try { return await window.dbPut("tenko", row); } catch {}
-      }
-      return await idbPut(STORE_TENKO, row);
-    },
-    async putDaily(row){
-      if (typeof window.dbPutDaily === "function") return await window.dbPutDaily(row);
-      if (typeof window.dbPut === "function") {
-        try { return await window.dbPut("daily", row); } catch {}
-      }
-      return await idbPut(STORE_DAILY, row);
-    },
-
-    async allTenko(){
-      if (typeof window.dbAllTenko === "function") return await window.dbAllTenko();
-      if (typeof window.dbGetAll === "function") {
-        try { return await window.dbGetAll("tenko"); } catch {}
-      }
-      return await idbAll(STORE_TENKO);
-    },
-    async allDaily(){
-      if (typeof window.dbAllDaily === "function") return await window.dbAllDaily();
-      if (typeof window.dbGetAll === "function") {
-        try { return await window.dbGetAll("daily"); } catch {}
-      }
-      return await idbAll(STORE_DAILY);
-    },
-
-    async delTenko(id){
-      if (typeof window.dbDeleteTenko === "function") return await window.dbDeleteTenko(id);
-      if (typeof window.dbDelete === "function") {
-        try { return await window.dbDelete("tenko", id); } catch {}
-      }
-      return await idbDelete(STORE_TENKO, id);
-    },
-    async delDaily(id){
-      if (typeof window.dbDeleteDaily === "function") return await window.dbDeleteDaily(id);
-      if (typeof window.dbDelete === "function") {
-        try { return await window.dbDelete("daily", id); } catch {}
-      }
-      return await idbDelete(STORE_DAILY, id);
-    },
-
-    async clearAll(){
-      // 既存関数があれば使う
-      if (typeof window.dbClearAll === "function") return await window.dbClearAll();
-      await idbClear(STORE_TENKO);
-      await idbClear(STORE_DAILY);
-      // profileは残す運用の方が多いので、ここでは消さない（必要なら別ボタンにする）
-      return true;
-    }
-  };
-
-  // =============================
-  // フォーム取得/反映
-  // =============================
-  function getProfileFromForm(){
-    return {
-      id: "main",
-      name: ($("p_name")?.value || "").trim(),
-      base: ($("p_base")?.value || "").trim(),
-      carNo: ($("p_carNo")?.value || "").trim(),
-      licenseNo: ($("p_licenseNo")?.value || "").trim(),
-      phone: ($("p_phone")?.value || "").trim(),
-      email: ($("p_email")?.value || "").trim(),
-      updatedAt: new Date().toISOString(),
-    };
-  }
-
-  function setProfileToForm(p){
-    if(!p) return;
-    $("p_name").value = p.name || "";
-    $("p_base").value = p.base || "";
-    $("p_carNo").value = p.carNo || "";
-    $("p_licenseNo").value = p.licenseNo || "";
-    $("p_phone").value = p.phone || "";
-    $("p_email").value = p.email || "";
-  }
-
-  function profileIsValid(p){
-    return !!(p.name && p.base && p.carNo && p.licenseNo && p.phone && p.email);
-  }
-
-  // 出発
-  function getDepFromForm(){
-    return {
-      id: `dep_${Date.now()}`,
-      type: "dep", // 出発
-      at: $("d_at")?.value || "",
-      method: $("d_method")?.value || "",
-      sleep: $("d_sleep")?.value || "",
-      temp: $("d_temp")?.value || "",
-      condition: $("d_condition")?.value || "",
-      fatigue: $("d_fatigue")?.value || "",
-      med: $("d_med")?.value || "",
-      medDetail: $("d_medDetail")?.value || "",
-      drink: $("d_drink")?.value || "",
-      alcState: $("d_alcState")?.value || "",
-      alcValue: $("d_alcValue")?.value || "",
-      alcJudge: $("d_alcJudge")?.value || "",
-      projectMain: $("d_projectMain")?.value || "",
-      area: $("d_area")?.value || "",
-      danger: $("d_danger")?.value || "",
-      odoStart: $("d_odoStart")?.value || "",
-      abnormal: $("d_abnormal")?.value || "",
-      abnormalDetail: $("d_abnormalDetail")?.value || "",
-      // checklist / memo は後で（db.js側で持ってるならそこに合わせる）
-      createdAt: new Date().toISOString(),
-    };
-  }
-
-  function clearDepForm(){
-    $("d_at").value = "";
-    $("d_method").value = "";
-    $("d_sleep").value = "";
-    $("d_temp").value = "";
-    $("d_condition").value = "";
-    $("d_fatigue").value = "";
-    $("d_med").value = "";
-    $("d_medDetail").value = "";
-    $("d_drink").value = "";
-    $("d_alcState").value = "";
-    $("d_alcValue").value = "";
-    $("d_alcJudge").value = "";
-    $("d_projectMain").value = "";
-    $("d_area").value = "";
-    $("d_danger").value = "";
-    $("d_odoStart").value = "";
-    $("d_abnormal").value = "";
-    $("d_abnormalDetail").value = "";
-    if($("f_alcDepImg")) $("f_alcDepImg").value = "";
-    if($("f_abnDepImg")) $("f_abnDepImg").value = "";
-  }
-
-  // 帰着
-  function getArrFromForm(){
-    return {
-      id: `arr_${Date.now()}`,
-      type: "arr", // 帰着
-      at: $("a_at")?.value || "",
-      method: $("a_method")?.value || "",
-      breakMin: $("a_breakMin")?.value || "",
-      temp: $("a_temp")?.value || "",
-      condition: $("a_condition")?.value || "",
-      fatigue: $("a_fatigue")?.value || "",
-      med: $("a_med")?.value || "",
-      medDetail: $("a_medDetail")?.value || "",
-      alcState: $("a_alcState")?.value || "",
-      alcValue: $("a_alcValue")?.value || "",
-      alcJudge: $("a_alcJudge")?.value || "",
-      odoEnd: $("a_odoEnd")?.value || "",
-      abnormal: $("a_abnormal")?.value || "",
-      abnormalDetail: $("a_abnormalDetail")?.value || "",
-      createdAt: new Date().toISOString(),
-    };
-  }
-
-  function clearArrForm(){
-    $("a_at").value = "";
-    $("a_method").value = "";
-    $("a_breakMin").value = "";
-    $("a_temp").value = "";
-    $("a_condition").value = "";
-    $("a_fatigue").value = "";
-    $("a_med").value = "";
-    $("a_medDetail").value = "";
-    $("a_alcState").value = "";
-    $("a_alcValue").value = "";
-    $("a_alcJudge").value = "";
-    $("a_odoEnd").value = "";
-    $("a_abnormal").value = "";
-    $("a_abnormalDetail").value = "";
-    if($("f_alcArrImg")) $("f_alcArrImg").value = "";
-    if($("f_abnArrImg")) $("f_abnArrImg").value = "";
-  }
-
-  // 日報（任意）
-  function getDailyFromForm(){
-    // 複数案件はここでは保存キー統一だけ（projectsBoxは既存実装がある前提）
-    const projects = [];
-    document.querySelectorAll("#projectsBox .pjRow").forEach(row=>{
-      const main = row.querySelector('[data-k="main"]')?.value || "";
-      const pay  = row.querySelector('[data-k="pay"]')?.value || "";
-      projects.push({ main, pay });
-    });
-
-    const basePay = safeNum($("r_payBase")?.value);
-    const inc     = safeNum($("r_incentive")?.value);
-    const fuel    = safeNum($("r_fuel")?.value);
-    const hw      = safeNum($("r_highway")?.value);
-    const park    = safeNum($("r_parking")?.value);
-    const other   = safeNum($("r_otherCost")?.value);
-
-    const salesTotal = basePay + inc;
-    const costTotal  = fuel + hw + park + other;
-    const profit     = salesTotal - costTotal;
-
-    return {
-      id: `daily_${Date.now()}`,
-      date: $("r_date")?.value || "",
-      start: $("r_start")?.value || "",
-      end: $("r_end")?.value || "",
-      breakMin: $("r_break")?.value || "",
-      count: $("r_count")?.value || "",
-      absent: $("r_absent")?.value || "",
-      redel: $("r_redel")?.value || "",
-      ret: $("r_return")?.value || "",
-      claim: $("r_claim")?.value || "",
-      claimDetail: $("r_claimDetail")?.value || "",
-      payBase: basePay,
-      incentive: inc,
-      fuel,
-      highway: hw,
-      parking: park,
-      otherCost: other,
-      salesTotal,
-      costTotal,
-      profit,
-      memo: $("r_memo")?.value || "",
-      projects,
-      createdAt: new Date().toISOString(),
-    };
-  }
-
-  // =============================
-  // ODO計算
-  // =============================
-  function calcOdoDiff(dep, arr){
-    const s = safeNum(dep?.odoStart);
-    const e = safeNum(arr?.odoEnd);
-    const diff = e - s;
-    return diff > 0 ? diff : 0;
-  }
-
-  function updateOdoState(dep, arr){
-    const diff = calcOdoDiff(dep, arr);
-    if(diff > 0){
-      setDot("dotOdo", true);
-      if($("odoState")) $("odoState").textContent = `走行距離：${diff} km`;
-    }else{
-      setDot("dotOdo", false);
-      if($("odoState")) $("odoState").textContent = "走行距離：未計算";
-    }
-    return diff;
-  }
-
-  // =============================
-  // 履歴表示（カードUI + タップでPDF）
-  // =============================
-  // 日付ごとに dep/arr/daily をまとめる
-  function groupByDay(tenkoAll, dailyAll){
-    const map = new Map();
-
-    tenkoAll.forEach(t=>{
-      const day = ymdFromAny(t.at);
-      if(!day) return;
-      if(!map.has(day)) map.set(day, { day, dep:null, arr:null, daily:null, items:[] });
-      const g = map.get(day);
-      if(t.type === "arr") g.arr = t;
-      else g.dep = t;
-      g.items.push({ kind:"tenko", row:t });
-    });
-
-    dailyAll.forEach(r=>{
-      const day = ymdFromAny(r.date || r.createdAt || "");
-      if(!day) return;
-      if(!map.has(day)) map.set(day, { day, dep:null, arr:null, daily:null, items:[] });
-      const g = map.get(day);
-      g.daily = r;
-      g.items.push({ kind:"daily", row:r });
-    });
-
-    return Array.from(map.values()).sort((a,b)=> (a.day < b.day ? 1 : -1)); // 新しい順
-  }
-
-  function historyCardHtml(g, profile){
-    const depAt = g.dep?.at ? fmtDateTime(g.dep.at) : "";
-    const arrAt = g.arr?.at ? fmtDateTime(g.arr.at) : "";
-    const odo = calcOdoDiff(g.dep, g.arr);
-
-    const title = `${g.day} の履歴`;
-    const sub = [
-      depAt ? `出発:${depAt}` : "出発:—",
-      arrAt ? `帰着:${arrAt}` : "帰着:—",
-      `走行:${odo || 0}km`,
-      g.daily?.salesTotal != null ? `売上:${g.daily.salesTotal}` : "売上:—"
-    ].join(" / ");
-
-    // 個別削除：その日まとめて削除（dep/arr/daily全部）
-    return `
-      <div class="historyItem" data-day="${esc(g.day)}" style="position:relative">
-        <div class="historyTop">
-          <div>
-            <div class="historyTitle">${esc(title)}</div>
-            <div class="historyBody" style="margin-top:4px;opacity:.9">${esc(sub)}</div>
-            <div class="historyBody" style="margin-top:6px;opacity:.75">
-              ${esc(profile?.base || g.dep?.base || g.arr?.base || "拠点:—")} / ${esc(profile?.name || g.dep?.name || g.arr?.name || "氏名:—")} / ${esc(profile?.phone || g.dep?.phone || g.arr?.phone || "TEL:—")}
-            </div>
-            <div class="historyBody" style="margin-top:6px;opacity:.7">
-              タップでこの日のPDFを出力
-            </div>
-          </div>
-
-          <div class="historyActions" onclick="event.stopPropagation()">
-            <button class="miniBtn danger" data-act="delDay" data-day="${esc(g.day)}">削除</button>
-          </div>
-        </div>
-      </div>
-    `;
-  }
-
-  async function renderHistory(){
-    const profile = await DB.getProfile().catch(()=>null);
-    const [tenkoAll, dailyAll] = await Promise.all([DB.allTenko(), DB.allDaily()]);
-    const groups = groupByDay(tenkoAll, dailyAll);
-
-    const box = $("historyBox");
+  // ====== checklist render ======
+  function renderChecklist(){
+    const box = $(EL.checkScroll);
     if(!box) return;
 
-    if(!groups.length){
-      box.innerHTML = `<div class="note" style="opacity:.8">履歴がありません</div>`;
-      return;
-    }
-
-    box.innerHTML = groups.map(g=>historyCardHtml(g, profile)).join("");
-
-    // カードタップ → PDF
-    box.querySelectorAll(".historyItem").forEach(el=>{
-      el.addEventListener("click", async ()=>{
-        const day = el.dataset.day;
-        await exportPdfByDay(day);
-      }, {passive:true});
-    });
-
-    // 個別削除
-    box.querySelectorAll('[data-act="delDay"]').forEach(btn=>{
-      btn.addEventListener("click", async (e)=>{
-        e.preventDefault();
-        const day = btn.dataset.day;
-        if(!confirm(`${day} の履歴を削除しますか？（出発/帰着/日報）`)) return;
-        await deleteByDay(day);
-        await renderHistory();
-        toast("削除しました");
-      }, {passive:false});
+    box.innerHTML = "";
+    CHECK_ITEMS.forEach((label, idx)=>{
+      const row = document.createElement("div");
+      row.className = "checkRow";
+      row.innerHTML = `
+        <div class="checkCol item">${label}</div>
+        <div class="checkCol ok">
+          <input type="radio" name="chk_${idx}" value="ok" />
+        </div>
+        <div class="checkCol ng">
+          <input type="radio" name="chk_${idx}" value="ng" />
+        </div>
+      `;
+      box.appendChild(row);
     });
   }
 
-  // =============================
-  // その日のデータを探してPDF出力
-  // =============================
-  async function exportPdfByDay(dayYmd){
-    const profile = await DB.getProfile().catch(()=>null);
-    if(!profile || !profileIsValid(profile)){
-      toast("先に「基本情報」を保存してください（必須）");
-      return;
-    }
+  function getChecklist(){
+    return CHECK_ITEMS.map((label, idx)=>{
+      const ok = document.querySelector(`input[name="chk_${idx}"][value="ok"]`)?.checked || false;
+      const ng = document.querySelector(`input[name="chk_${idx}"][value="ng"]`)?.checked || false;
+      // 未選択は ok=false 扱い（必要なら null にしてもOK）
+      return { label, ok: ok && !ng };
+    });
+  }
 
-    const [tenkoAll, dailyAll] = await Promise.all([DB.allTenko(), DB.allDaily()]);
-    const dep = tenkoAll
-      .filter(t=> t.type !== "arr" && ymdFromAny(t.at) === dayYmd)
-      .sort((a,b)=> new Date(a.at).getTime() - new Date(b.at).getTime())
-      .at(-1) || null;
+  function clearChecklist(){
+    CHECK_ITEMS.forEach((_, idx)=>{
+      const radios = document.querySelectorAll(`input[name="chk_${idx}"]`);
+      radios.forEach(r=> r.checked = false);
+    });
+    if($(EL.checkMemo)) $(EL.checkMemo).value = "";
+    if($(EL.f_checkImg)) $(EL.f_checkImg).value = "";
+    state.files.checkImg = null;
+  }
 
-    const arr = tenkoAll
-      .filter(t=> t.type === "arr" && ymdFromAny(t.at) === dayYmd)
-      .sort((a,b)=> new Date(a.at).getTime() - new Date(b.at).getTime())
-      .at(-1) || null;
-
-    const daily = dailyAll
-      .filter(r=> ymdFromAny(r.date || r.createdAt) === dayYmd)
-      .sort((a,b)=> new Date(a.createdAt || 0).getTime() - new Date(b.createdAt || 0).getTime())
-      .at(-1) || null;
-
-    const odoDiff = calcOdoDiff(dep, arr);
-
-    if(typeof window.generateTodayPdf !== "function"){
-      toast("PDF機能が読み込めていません（pdf.js）");
-      return;
-    }
-
-    // ファイル入力（その日じゃなくても当日フォームに入ってる分を使う）
-    const files = {
-      licenseImg: $("f_licenseImg")?.files?.[0] || null,
-      alcDepImg: $("f_alcDepImg")?.files?.[0] || null,
-      alcArrImg: $("f_alcArrImg")?.files?.[0] || null,
+  // ====== profile ======
+  function readProfileFromForm(){
+    return {
+      name: ($(EL.p_name)?.value || "").trim(),
+      base: ($(EL.p_base)?.value || "").trim(),
+      carNo: ($(EL.p_carNo)?.value || "").trim(),
+      licenseNo: ($(EL.p_licenseNo)?.value || "").trim(),
+      phone: ($(EL.p_phone)?.value || "").trim(),
+      email: ($(EL.p_email)?.value || "").trim(),
     };
-
-    // generateTodayPdf を “過去日” でも流用（keyは daily.date or dep.at が使われる）
-    await window.generateTodayPdf({ profile, dep, arr, daily, odoDiff, files });
   }
 
-  // =============================
-  // 日付で削除（dep/arr/daily）
-  // =============================
-  async function deleteByDay(dayYmd){
-    const [tenkoAll, dailyAll] = await Promise.all([DB.allTenko(), DB.allDaily()]);
-    const tenkoTargets = tenkoAll.filter(t=> ymdFromAny(t.at) === dayYmd);
-    const dailyTargets = dailyAll.filter(r=> ymdFromAny(r.date || r.createdAt) === dayYmd);
-
-    for(const t of tenkoTargets){
-      if(t.id != null) await DB.delTenko(t.id).catch(()=>{});
-    }
-    for(const r of dailyTargets){
-      if(r.id != null) await DB.delDaily(r.id).catch(()=>{});
-    }
+  function fillProfileForm(p){
+    $(EL.p_name).value = p?.name || "";
+    $(EL.p_base).value = p?.base || "";
+    $(EL.p_carNo).value = p?.carNo || "";
+    $(EL.p_licenseNo).value = p?.licenseNo || "";
+    $(EL.p_phone).value = p?.phone || "";
+    $(EL.p_email).value = p?.email || "";
   }
 
-  // =============================
-  // 保存ボタン動作
-  // =============================
-  async function saveProfile(){
-    const p = getProfileFromForm();
-    if(!profileIsValid(p)){
-      toast("基本情報はすべて必須です（氏名/拠点/車両/免許/電話/メール）");
-      setDot("dotProfile", false);
-      if($("profileState")) $("profileState").textContent = "未保存（必須未入力あり）";
-      return;
-    }
-    await DB.saveProfile(p);
-    setDot("dotProfile", true);
-    if($("profileState")) $("profileState").textContent = "保存済み";
-    toast("基本情報を保存しました");
+  function validateProfile(p){
+    if(!p.name) return "氏名が未入力です";
+    if(!p.base) return "拠点が未入力です";
+    if(!p.carNo) return "車両番号が未入力です";
+    if(!p.licenseNo) return "免許証番号が未入力です";
+    if(!p.phone) return "電話番号が未入力です";
+    if(!p.email) return "メールアドレスが未入力です";
+    return "";
   }
 
   async function loadProfile(){
-    const p = await DB.getProfile().catch(()=>null);
-    if(!p){
-      toast("保存済みの基本情報がありません");
-      setDot("dotProfile", false);
-      if($("profileState")) $("profileState").textContent = "未保存";
-      return;
+    if(!window.OFA_DB) throw new Error("db.js が読み込まれていません");
+    const p = await window.OFA_DB.getProfile();
+    state.profile = p;
+    if(p){
+      fillProfileForm(p);
+      setDotOk(EL.dotProfile, true);
+      $(EL.profileState).textContent = "保存済み";
+    }else{
+      setDotOk(EL.dotProfile, false);
+      $(EL.profileState).textContent = "未保存";
     }
-    setProfileToForm(p);
-    setDot("dotProfile", true);
-    if($("profileState")) $("profileState").textContent = "保存済み（読み込み）";
-    toast("基本情報を読み込みました");
   }
 
-  async function saveDep(){
-    const profile = await DB.getProfile().catch(()=>null);
-    if(!profile || !profileIsValid(profile)){
-      toast("先に「基本情報」を保存してください（必須）");
-      return;
-    }
+  async function saveProfile(){
+    const p = readProfileFromForm();
+    const err = validateProfile(p);
+    if(err){ toast(err); return; }
 
-    const dep = getDepFromForm();
-    // 基本情報を点呼レコードにも埋めて、管理検索（拠点/氏名/電話）に強くする
-    dep.name = profile.name;
-    dep.base = profile.base;
-    dep.phone = profile.phone;
+    const saved = await window.OFA_DB.saveProfile(p);
+    state.profile = saved;
 
-    if(!dep.at || !dep.method || !dep.sleep || !dep.temp || !dep.condition || !dep.fatigue ||
-       !dep.med || !dep.drink || !dep.alcState || dep.alcValue === "" || !dep.alcJudge ||
-       !dep.projectMain || !dep.area || !dep.danger || dep.odoStart === "" || !dep.abnormal){
-      toast("出発点呼の必須項目を入力してください");
-      return;
-    }
-    if(dep.abnormal === "あり" && !dep.abnormalDetail){
-      toast("異常ありの場合は「異常内容」を入力してください");
-      return;
-    }
+    setDotOk(EL.dotProfile, true);
+    $(EL.profileState).textContent = "保存済み";
+    toast("基本情報を保存しました");
+  }
 
-    await DB.putTenko(dep);
+  // ====== tenko forms ======
+  function readDeparture(){
+    return {
+      type: "dep",
+      at: $(EL.d_at).value,
+      method: $(EL.d_method).value,
+      sleep: $(EL.d_sleep).value,
+      temp: $(EL.d_temp).value,
+      condition: $(EL.d_condition).value,
+      fatigue: $(EL.d_fatigue).value,
+      med: $(EL.d_med).value,
+      medDetail: $(EL.d_medDetail).value,
+      drink: $(EL.d_drink).value,
+      alcState: $(EL.d_alcState).value,
+      alcValue: $(EL.d_alcValue).value,
+      alcJudge: $(EL.d_alcJudge).value,
+      projectMain: $(EL.d_projectMain).value,
+      area: $(EL.d_area).value,
+      danger: $(EL.d_danger).value,
+      odoStart: $(EL.d_odoStart).value,
+      abnormal: $(EL.d_abnormal).value,
+      abnormalDetail: $(EL.d_abnormalDetail).value,
+      checklist: getChecklist(),
+      checkMemo: $(EL.checkMemo)?.value || "",
+    };
+  }
+
+  function readArrival(){
+    return {
+      type: "arr",
+      at: $(EL.a_at).value,
+      method: $(EL.a_method).value,
+      breakMin: $(EL.a_breakMin).value,
+      temp: $(EL.a_temp).value,
+      condition: $(EL.a_condition).value,
+      fatigue: $(EL.a_fatigue).value,
+      med: $(EL.a_med).value,
+      medDetail: $(EL.a_medDetail).value,
+      alcState: $(EL.a_alcState).value,
+      alcValue: $(EL.a_alcValue).value,
+      alcJudge: $(EL.a_alcJudge).value,
+      odoEnd: $(EL.a_odoEnd).value,
+      abnormal: $(EL.a_abnormal).value,
+      abnormalDetail: $(EL.a_abnormalDetail).value,
+      checklist: getChecklist(),
+      checkMemo: $(EL.checkMemo)?.value || "",
+    };
+  }
+
+  function validateTenkoCommon(profile){
+    const p = profile || state.profile;
+    if(!p) return "先に基本情報を保存してください";
+    const err = validateProfile({
+      name: p.name, base: p.base, carNo: p.carNo,
+      licenseNo: p.licenseNo, phone: p.phone, email: p.email
+    });
+    if(err) return "基本情報が未完成です：" + err;
+    return "";
+  }
+
+  function validateDep(d){
+    if(!d.at) return "出発：点呼日時が未入力です";
+    if(!d.method) return "出発：方法が未選択です";
+    if(!d.sleep) return "出発：睡眠時間が未入力です";
+    if(!d.temp) return "出発：体温が未入力です";
+    if(!d.condition) return "出発：体調が未選択です";
+    if(!d.fatigue) return "出発：疲労が未選択です";
+    if(!d.med) return "出発：服薬が未選択です";
+    if(!d.drink) return "出発：飲酒が未選択です";
+    if(!d.alcState) return "出発：酒気帯びが未選択です";
+    if(d.alcValue === "") return "出発：アルコール数値が未入力です";
+    if(!d.alcJudge) return "出発：判定が未選択です";
+    if(!d.projectMain) return "出発：稼働案件が未入力です";
+    if(!d.area) return "出発：積込拠点/エリアが未入力です";
+    if(!d.danger) return "出発：危険物が未選択です";
+    if(d.odoStart === "") return "出発：出発ODOが未入力です";
+    if(!d.abnormal) return "出発：異常申告が未選択です";
+    if(d.abnormal === "あり" && !d.abnormalDetail) return "出発：異常内容が未入力です";
+    return "";
+  }
+
+  function validateArr(a){
+    if(!a.at) return "帰着：点呼日時が未入力です";
+    if(!a.method) return "帰着：方法が未選択です";
+    if(a.breakMin === "") return "帰着：休憩時間が未入力です";
+    if(!a.temp) return "帰着：体温が未入力です";
+    if(!a.condition) return "帰着：体調が未選択です";
+    if(!a.fatigue) return "帰着：疲労が未選択です";
+    if(!a.med) return "帰着：服薬が未選択です";
+    if(!a.alcState) return "帰着：酒気帯びが未選択です";
+    if(a.alcValue === "") return "帰着：アルコール数値が未入力です";
+    if(!a.alcJudge) return "帰着：判定が未選択です";
+    if(a.odoEnd === "") return "帰着：帰着ODOが未入力です";
+    if(!a.abnormal) return "帰着：異常申告が未選択です";
+    if(a.abnormal === "あり" && !a.abnormalDetail) return "帰着：異常内容が未入力です";
+    return "";
+  }
+
+  async function saveDeparture(){
+    const pre = validateTenkoCommon(state.profile);
+    if(pre){ toast(pre); return; }
+
+    const d = readDeparture();
+    const err = validateDep(d);
+    if(err){ toast(err); return; }
+
+    await window.OFA_DB.addTenko(d, state.profile);
     toast("出発点呼を保存しました");
-    await renderHistory();
+
+    await reloadHistory();
   }
 
-  async function saveArr(){
-    const profile = await DB.getProfile().catch(()=>null);
-    if(!profile || !profileIsValid(profile)){
-      toast("先に「基本情報」を保存してください（必須）");
-      return;
-    }
+  async function saveArrival(){
+    const pre = validateTenkoCommon(state.profile);
+    if(pre){ toast(pre); return; }
 
-    const arr = getArrFromForm();
-    arr.name = profile.name;
-    arr.base = profile.base;
-    arr.phone = profile.phone;
+    const a = readArrival();
+    const err = validateArr(a);
+    if(err){ toast(err); return; }
 
-    if(!arr.at || !arr.method || arr.breakMin === "" || !arr.temp || !arr.condition || !arr.fatigue ||
-       !arr.med || !arr.alcState || arr.alcValue === "" || !arr.alcJudge ||
-       arr.odoEnd === "" || !arr.abnormal){
-      toast("帰着点呼の必須項目を入力してください");
-      return;
-    }
-    if(arr.abnormal === "あり" && !arr.abnormalDetail){
-      toast("異常ありの場合は「異常内容」を入力してください");
-      return;
-    }
-
-    await DB.putTenko(arr);
+    await window.OFA_DB.addTenko(a, state.profile);
     toast("帰着点呼を保存しました");
-    await renderHistory();
+
+    await reloadHistory();
+    calcOdoBadgeFromLatest();
+  }
+
+  function clearDeparture(){
+    $(EL.d_at).value = defaultDateTimeLocal();
+    $(EL.d_method).value = "";
+    $(EL.d_sleep).value = "";
+    $(EL.d_temp).value = "";
+    $(EL.d_condition).value = "";
+    $(EL.d_fatigue).value = "";
+    $(EL.d_med).value = "";
+    $(EL.d_medDetail).value = "";
+    $(EL.d_drink).value = "";
+    $(EL.d_alcState).value = "";
+    $(EL.d_alcValue).value = "";
+    $(EL.d_alcJudge).value = "";
+    $(EL.d_projectMain).value = "";
+    $(EL.d_area).value = "";
+    $(EL.d_danger).value = "";
+    $(EL.d_odoStart).value = "";
+    $(EL.d_abnormal).value = "";
+    $(EL.d_abnormalDetail).value = "";
+    $(EL.f_alcDepImg).value = "";
+    $(EL.f_abnDepImg).value = "";
+    state.files.alcDepImg = null;
+    state.files.abnDepImg = null;
+  }
+
+  function clearArrival(){
+    $(EL.a_at).value = defaultDateTimeLocal();
+    $(EL.a_method).value = "";
+    $(EL.a_breakMin).value = "";
+    $(EL.a_temp).value = "";
+    $(EL.a_condition).value = "";
+    $(EL.a_fatigue).value = "";
+    $(EL.a_med).value = "";
+    $(EL.a_medDetail).value = "";
+    $(EL.a_alcState).value = "";
+    $(EL.a_alcValue).value = "";
+    $(EL.a_alcJudge).value = "";
+    $(EL.a_odoEnd).value = "";
+    $(EL.a_abnormal).value = "";
+    $(EL.a_abnormalDetail).value = "";
+    $(EL.f_alcArrImg).value = "";
+    $(EL.f_abnArrImg).value = "";
+    state.files.alcArrImg = null;
+    state.files.abnArrImg = null;
+  }
+
+  // ===== daily (optional) =====
+  function readDaily(){
+    const projects = [];
+    const box = $(EL.projectsBox);
+    if(box){
+      box.querySelectorAll(".pjRow").forEach(row=>{
+        const p = row.querySelector(".pj_project")?.value || "";
+        const a = row.querySelector(".pj_amount")?.value || "";
+        const m = row.querySelector(".pj_memo")?.value || "";
+        if(p || a || m){
+          projects.push({ project:p, amount:a, memo:m });
+        }
+      });
+    }
+
+    // 合計（任意）
+    const payBase = Number($(EL.r_payBase)?.value || 0) || 0;
+    const incentive = Number($(EL.r_incentive)?.value || 0) || 0;
+    const salesTotal = payBase + incentive;
+
+    const fuel = Number($(EL.r_fuel)?.value || 0) || 0;
+    const highway = Number($(EL.r_highway)?.value || 0) || 0;
+    const parking = Number($(EL.r_parking)?.value || 0) || 0;
+    const otherCost = Number($(EL.r_otherCost)?.value || 0) || 0;
+    const costTotal = fuel + highway + parking + otherCost;
+
+    const profit = salesTotal - costTotal;
+
+    return {
+      date: ($(EL.r_date)?.value || "").trim(),
+      start: $(EL.r_start)?.value || "",
+      end: $(EL.r_end)?.value || "",
+      breakMin: $(EL.r_break)?.value || "",
+      count: $(EL.r_count)?.value || "",
+      absent: $(EL.r_absent)?.value || "",
+      redel: $(EL.r_redel)?.value || "",
+      returns: $(EL.r_return)?.value || "",
+      claim: $(EL.r_claim)?.value || "",
+      claimDetail: $(EL.r_claimDetail)?.value || "",
+
+      payBase: $(EL.r_payBase)?.value || "",
+      incentive: $(EL.r_incentive)?.value || "",
+      fuel: $(EL.r_fuel)?.value || "",
+      highway: $(EL.r_highway)?.value || "",
+      parking: $(EL.r_parking)?.value || "",
+      otherCost: $(EL.r_otherCost)?.value || "",
+
+      salesTotal,
+      costTotal,
+      profit,
+
+      memo: $(EL.r_memo)?.value || "",
+      projects,
+    };
+  }
+
+  function addProjectRow(p = {}){
+    const box = $(EL.projectsBox);
+    if(!box) return;
+
+    const row = document.createElement("div");
+    row.className = "pjRow";
+    row.innerHTML = `
+      <label>案件名（任意）</label>
+      <input class="pj_project" placeholder="例：ヤマト / Amazon / 企業便" value="${(p.project||"")}" />
+      <label>金額（任意）</label>
+      <input class="pj_amount" inputmode="decimal" placeholder="例：15000" value="${(p.amount||"")}" />
+      <label>メモ（任意）</label>
+      <input class="pj_memo" placeholder="任意" value="${(p.memo||"")}" />
+      <div class="actions" style="margin-top:10px">
+        <button class="miniBtn danger pj_remove">この案件を削除</button>
+      </div>
+    `;
+    row.querySelector(".pj_remove").addEventListener("click",(e)=>{
+      e.preventDefault();
+      row.remove();
+    }, {passive:false});
+
+    box.appendChild(row);
+  }
+
+  // ===== PDF output (today or by date) =====
+  function odoDiffFrom(dep, arr){
+    const s = Number(dep?.odoStart || 0) || 0;
+    const e = Number(arr?.odoEnd || 0) || 0;
+    const diff = e - s;
+    return (diff > 0) ? diff : 0;
+  }
+
+  function pickDayRecords(ymd, tenkoAll, dailyAll){
+    // tenko: date で絞る（無い場合は at の先頭10）
+    const tenko = tenkoAll.filter(t=>{
+      const d = (t.date || String(t.at||"").slice(0,10));
+      return d === ymd;
+    });
+
+    // type: dep/arr
+    const dep = tenko.filter(t=> (t.type === "dep" || t.type === "departure")).sort((a,b)=> new Date(a.at)-new Date(b.at)).at(-1) || null;
+    const arr = tenko.filter(t=> (t.type === "arr" || t.type === "arrival")).sort((a,b)=> new Date(a.at)-new Date(b.at)).at(-1) || null;
+
+    const daily = dailyAll.filter(r=> (r.date || "") === ymd).sort((a,b)=> new Date(a.updatedAt||0)-new Date(b.updatedAt||0)).at(-1) || null;
+
+    return { dep, arr, daily };
+  }
+
+  async function makePdfForDate(ymd){
+    if(typeof window.generateTodayPdf !== "function"){
+      toast("PDF機能（pdf.js）が読み込まれていません");
+      return;
+    }
+
+    // profile は “保存済み” から作る（履歴側にもコピーされてるが、優先はprofile）
+    const profile = state.profile || await window.OFA_DB.getProfile();
+    if(!profile){
+      toast("基本情報が未保存です（PDF作成できません）");
+      return;
+    }
+
+    const tenkoAll = state.lastHistory.tenko || await window.OFA_DB.getAllTenko();
+    const dailyAll = state.lastHistory.daily || await window.OFA_DB.getAllDaily();
+
+    const { dep, arr, daily } = pickDayRecords(ymd, tenkoAll, dailyAll);
+    const odoDiff = odoDiffFrom(dep, arr);
+
+    const files = {
+      licenseImg: state.files.licenseImg,
+      alcDepImg: state.files.alcDepImg,
+      alcArrImg: state.files.alcArrImg,
+    };
+
+    await window.generateTodayPdf({ profile, dep, arr, daily, odoDiff, files });
   }
 
   async function makeTodayPdf(){
-    const profile = await DB.getProfile().catch(()=>null);
-    if(!profile || !profileIsValid(profile)){
-      toast("先に「基本情報」を保存してください（必須）");
-      return;
-    }
-
-    const day = todayYMD();
-    await exportPdfByDay(day);
+    await makePdfForDate(todayYmd());
   }
 
-  // CSVは既存csv.jsに任せる（全履歴）
+  // ===== CSV output (all) =====
   async function makeCsv(){
-    if(typeof window.exportAllCsv === "function"){
-      await window.exportAllCsv();
+    if(typeof window.exportCsv === "function"){
+      await window.exportCsv();
       return;
     }
-    // fallback：json
-    const [tenkoAll, dailyAll] = await Promise.all([DB.allTenko(), DB.allDaily()]);
-    const blob = new Blob([JSON.stringify({tenkoAll,dailyAll}, null, 2)], {type:"application/json"});
+    // fallback: json dump
+    const tenko = await window.OFA_DB.getAllTenko();
+    const daily = await window.OFA_DB.getAllDaily();
+    const blob = new Blob([JSON.stringify({tenko,daily}, null, 2)], {type:"application/json"});
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
-    a.download = `OFA_all_${todayYMD().replaceAll("-","")}.json`;
+    a.download = `OFA_export_${todayYmd()}.json`;
     a.click();
   }
 
-  // 全削除（点呼/日報）
-  async function clearAll(){
-    if(!confirm("点呼/日報の履歴を全削除しますか？（基本情報は残します）")) return;
-    await DB.clearAll();
-    toast("全削除しました");
-    await renderHistory();
+  // ===== history =====
+  function sortByAtDesc(a,b){
+    const ta = new Date(a.at || a.date || a.updatedAt || 0).getTime();
+    const tb = new Date(b.at || b.date || b.updatedAt || 0).getTime();
+    return tb - ta;
   }
 
-  // =============================
-  // 初期化
-  // =============================
-  document.addEventListener("DOMContentLoaded", async ()=>{
-    // プロファイル状態表示
-    const p = await DB.getProfile().catch(()=>null);
-    if(p && profileIsValid(p)){
-      setDot("dotProfile", true);
-      if($("profileState")) $("profileState").textContent = "保存済み";
-      // 自動入力しておく（現場が楽）
-      setProfileToForm(p);
-    }else{
-      setDot("dotProfile", false);
-      if($("profileState")) $("profileState").textContent = "未保存";
+  function renderHistory(tenkoAll, dailyAll){
+    const box = $(EL.historyBox);
+    if(!box) return;
+
+    // 日付キーでまとめる
+    const map = new Map(); // ymd -> {tenko:[], daily:[]}
+    const push = (ymd, kind, rec)=>{
+      if(!map.has(ymd)) map.set(ymd, { tenko: [], daily: [] });
+      map.get(ymd)[kind].push(rec);
+    };
+
+    tenkoAll.forEach(t=>{
+      const ymd = t.date || String(t.at||"").slice(0,10) || "unknown";
+      push(ymd, "tenko", t);
+    });
+    dailyAll.forEach(r=>{
+      const ymd = r.date || "unknown";
+      push(ymd, "daily", r);
+    });
+
+    const days = Array.from(map.keys()).sort((a,b)=> b.localeCompare(a)); // desc
+
+    if(!days.length){
+      box.innerHTML = `<div class="note">履歴がありません</div>`;
+      return;
     }
 
-    // ボタン束縛
-    $("btnSaveProfile")?.addEventListener("click", async (e)=>{ e.preventDefault(); await saveProfile(); }, {passive:false});
-    $("btnLoadProfile")?.addEventListener("click", async (e)=>{ e.preventDefault(); await loadProfile(); }, {passive:false});
+    box.innerHTML = "";
+    days.forEach(ymd=>{
+      const g = map.get(ymd);
+      const dep = g.tenko.filter(x=>x.type==="dep" || x.type==="departure").sort(sortByAtDesc)[0] || null;
+      const arr = g.tenko.filter(x=>x.type==="arr" || x.type==="arrival").sort(sortByAtDesc)[0] || null;
+      const daily = g.daily.sort(sortByAtDesc)[0] || null;
 
-    $("btnSaveDep")?.addEventListener("click", async (e)=>{ e.preventDefault(); await saveDep(); }, {passive:false});
-    $("btnClearDep")?.addEventListener("click", (e)=>{ e.preventDefault(); clearDepForm(); }, {passive:false});
+      const name = (daily?.name || dep?.name || arr?.name || state.profile?.name || "").trim();
+      const base = (daily?.base || dep?.base || arr?.base || state.profile?.base || "").trim();
+      const phone = (daily?.phone || dep?.phone || arr?.phone || state.profile?.phone || "").trim();
 
-    $("btnSaveArr")?.addEventListener("click", async (e)=>{ e.preventDefault(); await saveArr(); }, {passive:false});
-    $("btnClearArr")?.addEventListener("click", (e)=>{ e.preventDefault(); clearArrForm(); }, {passive:false});
+      const odo = odoDiffFrom(dep, arr);
+      const hasDep = !!dep;
+      const hasArr = !!arr;
 
-    $("btnMakePdf")?.addEventListener("click", async (e)=>{ e.preventDefault(); await makeTodayPdf(); }, {passive:false});
-    $("btnMakeCsv")?.addEventListener("click", async (e)=>{ e.preventDefault(); await makeCsv(); }, {passive:false});
+      const card = document.createElement("div");
+      card.className = "histItem";
+      card.innerHTML = `
+        <div class="histTop">
+          <div>
+            <div class="histTitle">${ymd}　${name ? `｜${name}`:""} ${base ? `｜${base}`:""}</div>
+            <div class="small" style="margin-top:4px">
+              ${phone ? `📞 ${phone}　`:""}
+              🚚 走行 ${odo} km　
+              🟦 出発 ${hasDep ? "あり":"なし"} / 🩷 帰着 ${hasArr ? "あり":"なし"}　
+              📝 日報 ${daily ? "あり":"なし"}
+            </div>
+          </div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end">
+            <button class="miniBtn hist_pdf">PDF</button>
+            <button class="miniBtn danger hist_del_day">この日を削除</button>
+          </div>
+        </div>
 
-    $("btnReloadHistory")?.addEventListener("click", async (e)=>{ e.preventDefault(); await renderHistory(); }, {passive:false});
-    $("btnClearAll")?.addEventListener("click", async (e)=>{ e.preventDefault(); await clearAll(); }, {passive:false});
+        <div class="histBody">
+          ${hasDep ? `【出発】${fmtDateTime(dep.at)} / ${dep.method||"-"} / Alc:${dep.alcValue ?? "-"} / 異常:${dep.abnormal||"-"}<br/>`:""}
+          ${hasArr ? `【帰着】${fmtDateTime(arr.at)} / ${arr.method||"-"} / Alc:${arr.alcValue ?? "-"} / 異常:${arr.abnormal||"-"}<br/>`:""}
+          ${daily ? `【日報】売上:${daily.salesTotal ?? "-"} 経費:${daily.costTotal ?? "-"} 利益:${daily.profit ?? "-"} / ${String(daily.memo||"").slice(0,60)}`:""}
+          ${(!hasDep && !hasArr && !daily) ? `<span style="opacity:.7">データ無し</span>`:""}
+        </div>
 
-    // 初回履歴
-    await renderHistory();
+        <div class="actions" style="margin-top:10px">
+          <button class="miniBtn hist_del_dep" ${hasDep ? "" : "disabled"}>出発だけ削除</button>
+          <button class="miniBtn hist_del_arr" ${hasArr ? "" : "disabled"}>帰着だけ削除</button>
+          <button class="miniBtn hist_del_daily" ${daily ? "" : "disabled"}>日報だけ削除</button>
+        </div>
+      `;
+
+      // PDF（過去日もOK）
+      card.querySelector(".hist_pdf").addEventListener("click", async (e)=>{
+        e.preventDefault();
+        try{
+          await makePdfForDate(ymd);
+        }catch(err){
+          console.error(err);
+          toast("PDF作成に失敗しました");
+        }
+      }, {passive:false});
+
+      // 個別削除
+      const delDepBtn = card.querySelector(".hist_del_dep");
+      const delArrBtn = card.querySelector(".hist_del_arr");
+      const delDailyBtn = card.querySelector(".hist_del_daily");
+      const delDayBtn = card.querySelector(".hist_del_day");
+
+      delDepBtn?.addEventListener("click", async (e)=>{
+        e.preventDefault();
+        if(!dep) return;
+        if(!confirm(`出発点呼だけ削除しますか？（${ymd}）`)) return;
+        await window.OFA_DB.deleteTenkoById(dep.id);
+        await reloadHistory();
+      }, {passive:false});
+
+      delArrBtn?.addEventListener("click", async (e)=>{
+        e.preventDefault();
+        if(!arr) return;
+        if(!confirm(`帰着点呼だけ削除しますか？（${ymd}）`)) return;
+        await window.OFA_DB.deleteTenkoById(arr.id);
+        await reloadHistory();
+      }, {passive:false});
+
+      delDailyBtn?.addEventListener("click", async (e)=>{
+        e.preventDefault();
+        if(!daily) return;
+        if(!confirm(`日報だけ削除しますか？（${ymd}）`)) return;
+        await window.OFA_DB.deleteDailyById(daily.id);
+        await reloadHistory();
+      }, {passive:false});
+
+      delDayBtn?.addEventListener("click", async (e)=>{
+        e.preventDefault();
+        if(!confirm(`この日のデータを全部削除しますか？（${ymd}）`)) return;
+
+        // この日の tenko/daily を全削除
+        const delIdsTenko = g.tenko.map(x=>x.id).filter(x=>x!=null);
+        const delIdsDaily = g.daily.map(x=>x.id).filter(x=>x!=null);
+
+        for(const id of delIdsTenko) await window.OFA_DB.deleteTenkoById(id);
+        for(const id of delIdsDaily) await window.OFA_DB.deleteDailyById(id);
+
+        await reloadHistory();
+      }, {passive:false});
+
+      box.appendChild(card);
+    });
+  }
+
+  async function reloadHistory(){
+    const [tenko, daily] = await Promise.all([
+      window.OFA_DB.getAllTenko(),
+      window.OFA_DB.getAllDaily(),
+    ]);
+    state.lastHistory.tenko = tenko;
+    state.lastHistory.daily = daily;
+    renderHistory(tenko, daily);
+  }
+
+  function calcOdoBadgeFromLatest(){
+    const tenko = state.lastHistory.tenko || [];
+    // 今日の dep/arr から計算
+    const ymd = todayYmd();
+    const list = tenko.filter(t=> (t.date || String(t.at||"").slice(0,10)) === ymd);
+
+    const dep = list.filter(t=>t.type==="dep" || t.type==="departure").sort(sortByAtDesc)[0] || null;
+    const arr = list.filter(t=>t.type==="arr" || t.type==="arrival").sort(sortByAtDesc)[0] || null;
+
+    const diff = odoDiffFrom(dep, arr);
+    $(EL.odoState).textContent = (dep && arr) ? `走行距離：${diff} km` : "走行距離：未計算";
+    setDotOk(EL.dotOdo, (dep && arr));
+  }
+
+  // ===== init =====
+  function bindFileInputs(){
+    const bind = (id, key)=>{
+      const el = $(id);
+      if(!el) return;
+      el.addEventListener("change", ()=>{
+        state.files[key] = el.files?.[0] || null;
+      });
+    };
+
+    bind(EL.f_licenseImg, "licenseImg");
+    bind(EL.f_alcDepImg, "alcDepImg");
+    bind(EL.f_alcArrImg, "alcArrImg");
+    bind(EL.f_dailyImg, "dailyImg");
+    bind(EL.f_checkImg, "checkImg");
+    bind(EL.f_abnDepImg, "abnDepImg");
+    bind(EL.f_abnArrImg, "abnArrImg");
+  }
+
+  function setDefaultDates(){
+    if($(EL.d_at) && !$(EL.d_at).value) $(EL.d_at).value = defaultDateTimeLocal();
+    if($(EL.a_at) && !$(EL.a_at).value) $(EL.a_at).value = defaultDateTimeLocal();
+    if($(EL.r_date) && !$(EL.r_date).value) $(EL.r_date).value = todayYmd();
+  }
+
+  async function init(){
+    if(!window.OFA_DB){
+      toast("db.js が読み込まれていません（読み込み順を確認してください）");
+      return;
+    }
+
+    renderChecklist();
+    bindFileInputs();
+    setDefaultDates();
+
+    // buttons
+    $(EL.btnSaveProfile)?.addEventListener("click", async (e)=>{
+      e.preventDefault();
+      try{ await saveProfile(); }
+      catch(err){ console.error(err); toast("保存に失敗しました"); }
+    }, {passive:false});
+
+    $(EL.btnLoadProfile)?.addEventListener("click", async (e)=>{
+      e.preventDefault();
+      try{ await loadProfile(); toast("読み込みました"); }
+      catch(err){ console.error(err); toast("読み込みに失敗しました"); }
+    }, {passive:false});
+
+    $(EL.btnSaveDep)?.addEventListener("click", async (e)=>{
+      e.preventDefault();
+      try{ await saveDeparture(); }
+      catch(err){ console.error(err); toast("保存に失敗しました"); }
+    }, {passive:false});
+
+    $(EL.btnSaveArr)?.addEventListener("click", async (e)=>{
+      e.preventDefault();
+      try{ await saveArrival(); }
+      catch(err){ console.error(err); toast("保存に失敗しました"); }
+    }, {passive:false});
+
+    $(EL.btnClearDep)?.addEventListener("click", (e)=>{
+      e.preventDefault();
+      clearDeparture();
+      toast("出発点呼をクリアしました");
+    }, {passive:false});
+
+    $(EL.btnClearArr)?.addEventListener("click", (e)=>{
+      e.preventDefault();
+      clearArrival();
+      toast("帰着点呼をクリアしました");
+    }, {passive:false});
+
+    $(EL.btnAddProject)?.addEventListener("click", (e)=>{
+      e.preventDefault();
+      addProjectRow();
+    }, {passive:false});
+
+    $(EL.btnMakePdf)?.addEventListener("click", async (e)=>{
+      e.preventDefault();
+      try{ await makeTodayPdf(); }
+      catch(err){ console.error(err); toast("PDF作成に失敗しました"); }
+    }, {passive:false});
+
+    $(EL.btnMakeCsv)?.addEventListener("click", async (e)=>{
+      e.preventDefault();
+      try{ await makeCsv(); }
+      catch(err){ console.error(err); toast("CSV作成に失敗しました"); }
+    }, {passive:false});
+
+    $(EL.btnReloadHistory)?.addEventListener("click", async (e)=>{
+      e.preventDefault();
+      try{ await reloadHistory(); toast("履歴を更新しました"); }
+      catch(err){ console.error(err); toast("更新に失敗しました"); }
+    }, {passive:false});
+
+    $(EL.btnClearAll)?.addEventListener("click", async (e)=>{
+      e.preventDefault();
+      if(!confirm("端末内データを全削除します。よろしいですか？")) return;
+      try{
+        await window.OFA_DB.clearAll();
+        toast("全削除しました");
+        await loadProfile();
+        await reloadHistory();
+        calcOdoBadgeFromLatest();
+        clearChecklist();
+      }catch(err){
+        console.error(err);
+        toast("全削除に失敗しました");
+      }
+    }, {passive:false});
+
+    // 初期ロード
+    await loadProfile();
+    await reloadHistory();
+    calcOdoBadgeFromLatest();
+  }
+
+  document.addEventListener("DOMContentLoaded", ()=>{
+    init().catch(err=>{
+      console.error(err);
+      toast("初期化に失敗しました");
+    });
   });
 
 })();
