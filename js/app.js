@@ -1,781 +1,659 @@
 // js/app.js
 // OFA 点呼/日報（ドライバー）
-// - IndexedDB保存（profile / tenko / daily）
-// - PDF生成：window.generateTodayPdf を使用（pdf.js）
-// - CSV：window.exportAllCsv があれば使う（csv.js）
-// - 履歴タップで「過去日PDFを再出力」対応
+// - 基本情報は必須 → tenko/daily に name/base/phone を必ず保存（管理側検索用）
+// - 履歴を見やすく：カード化＋個別削除
+// - 履歴をタップ：その日の「点呼＋日報」PDFを再出力（画像は過去分は保持しない仕様）
+//
+// 依存:
+//   window.OFADB (db.js)
+//   window.generateTodayPdf (pdf.js)
 
 (() => {
-  // ------------------------------
-  // DOM helpers
-  // ------------------------------
-  const $ = (id) => document.getElementById(id);
-  const val = (id) => ($(id) ? $(id).value : "");
-  const setVal = (id, v) => { if ($(id)) $(id).value = v ?? ""; };
+  "use strict";
 
-  const alertMsg = (msg) => {
-    try { window.alert(msg); } catch(e) { console.log(msg); }
-  };
+  const $ = (id)=> document.getElementById(id);
 
-  const fmt = (v) => {
-    if (!v) return "";
-    return String(v).replace("T", " ").slice(0, 16);
-  };
+  // iOS/Chrome対策：clickとpointerup両方を拾う
+  function bindTap(el, fn){
+    if(!el) return;
+    const handler = (e)=>{
+      try{ e.preventDefault(); }catch{}
+      try{ e.stopPropagation(); }catch{}
+      fn();
+    };
+    el.addEventListener("click", handler, {passive:false});
+    el.addEventListener("pointerup", handler, {passive:false});
+  }
 
-  const dateOnly = (v) => {
-    if (!v) return "";
-    // v: "YYYY-MM-DDTHH:mm" or "YYYY-MM-DD"
-    return String(v).slice(0, 10);
-  };
+  function nowLocalInputValue(){
+    const d = new Date();
+    const pad = (n)=> String(n).padStart(2,"0");
+    const yyyy = d.getFullYear();
+    const mm = pad(d.getMonth()+1);
+    const dd = pad(d.getDate());
+    const hh = pad(d.getHours());
+    const mi = pad(d.getMinutes());
+    return `${yyyy}-${mm}-${dd}T${hh}:${mi}`;
+  }
 
-  const normalizePhone = (s) => String(s || "").replace(/[^\d]/g, "");
-  const safeNum = (n) => {
-    const x = Number(n);
+  function ymdFromAny(v){
+    if(!v) return "";
+    return String(v).slice(0,10);
+  }
+
+  function num(v){
+    const x = Number(v);
     return Number.isFinite(x) ? x : 0;
-  };
-
-  // ------------------------------
-  // IndexedDB minimal wrapper
-  // db.js に idbOpen / STORE_* がある前提
-  // 無い場合でも落ちないようガード
-  // ------------------------------
-  async function openDb() {
-    if (typeof idbOpen === "function") return idbOpen();
-    // フォールバック（万一）
-    return new Promise((resolve, reject) => {
-      const req = indexedDB.open("ofa_nippou_db", 1);
-      req.onupgradeneeded = () => {
-        const db = req.result;
-        if (!db.objectStoreNames.contains("profile")) db.createObjectStore("profile", { keyPath: "id" });
-        if (!db.objectStoreNames.contains("tenko")) db.createObjectStore("tenko", { keyPath: "id" });
-        if (!db.objectStoreNames.contains("daily")) db.createObjectStore("daily", { keyPath: "id" });
-      };
-      req.onsuccess = () => resolve(req.result);
-      req.onerror = () => reject(req.error);
-    });
   }
 
-  const STORE_PROFILE_SAFE = (typeof STORE_PROFILE !== "undefined") ? STORE_PROFILE : "profile";
-  const STORE_TENKO_SAFE   = (typeof STORE_TENKO   !== "undefined") ? STORE_TENKO   : "tenko";
-  const STORE_DAILY_SAFE   = (typeof STORE_DAILY   !== "undefined") ? STORE_DAILY   : "daily";
-
-  async function tx(storeName, mode, fn) {
-    const db = await openDb();
-    return new Promise((resolve, reject) => {
-      const t = db.transaction([storeName], mode);
-      const st = t.objectStore(storeName);
-      let out;
-      Promise.resolve()
-        .then(() => fn(st))
-        .then((r) => { out = r; })
-        .catch(reject);
-
-      t.oncomplete = () => resolve(out);
-      t.onerror = () => reject(t.error);
-      t.onabort = () => reject(t.error);
-    });
+  function normalizePhone(s){
+    return String(s || "").replace(/[^\d]/g, "");
   }
 
-  async function dbPut(storeName, obj) {
-    return tx(storeName, "readwrite", (st) => new Promise((res, rej) => {
-      const req = st.put(obj);
-      req.onsuccess = () => res(true);
-      req.onerror = () => rej(req.error);
-    }));
-  }
-
-  async function dbGet(storeName, key) {
-    return tx(storeName, "readonly", (st) => new Promise((res, rej) => {
-      const req = st.get(key);
-      req.onsuccess = () => res(req.result || null);
-      req.onerror = () => rej(req.error);
-    }));
-  }
-
-  async function dbGetAll(storeName) {
-    return tx(storeName, "readonly", (st) => new Promise((res, rej) => {
-      const req = st.getAll();
-      req.onsuccess = () => res(req.result || []);
-      req.onerror = () => rej(req.error);
-    }));
-  }
-
-  async function dbDelete(storeName, key) {
-    return tx(storeName, "readwrite", (st) => new Promise((res, rej) => {
-      const req = st.delete(key);
-      req.onsuccess = () => res(true);
-      req.onerror = () => rej(req.error);
-    }));
-  }
-
-  async function dbClear(storeName) {
-    return tx(storeName, "readwrite", (st) => new Promise((res, rej) => {
-      const req = st.clear();
-      req.onsuccess = () => res(true);
-      req.onerror = () => rej(req.error);
-    }));
+  function setChip(dotId, textId, ok, text){
+    const dot = $(dotId);
+    const el = $(textId);
+    if(dot){
+      dot.classList.remove("ok");
+      if(ok) dot.classList.add("ok");
+    }
+    if(el) el.textContent = text;
   }
 
   // ------------------------------
-  // Checklist（簡易：必要なら増やしてOK）
-  // ※ UIは index.html の #checkScroll に動的生成
+  // チェックリスト（必要なら増やしてOK）
   // ------------------------------
   const CHECK_ITEMS = [
-    "タイヤ空気圧",
-    "タイヤ溝",
-    "ライト（前）",
-    "ライト（後）",
-    "ウインカー",
+    "タイヤ空気圧/亀裂",
     "ブレーキ",
-    "ワイパー",
+    "ライト（前後/ウインカー）",
+    "ワイパー/ウォッシャー",
     "ミラー",
-    "ホーン",
-    "オイル漏れ",
-    "冷却水",
-    "バッテリー",
-    "積載状態",
-    "車内清掃",
-    "その他異常"
+    "積載状態/荷崩れ防止",
+    "ドア/スライド/ロック",
+    "オイル/冷却水漏れ",
+    "車内清掃/視界確保",
   ];
 
-  function renderChecklist() {
-    const wrap = $("checkScroll");
-    if (!wrap) return;
-    wrap.innerHTML = "";
+  function renderChecklist(){
+    const box = $("checkScroll");
+    if(!box) return;
 
-    CHECK_ITEMS.forEach((label, idx) => {
-      const row = document.createElement("div");
-      row.className = "checkRow";
-      row.style.display = "grid";
-      row.style.gridTemplateColumns = "1fr 72px 72px";
-      row.style.gap = "8px";
-      row.style.alignItems = "center";
-      row.style.padding = "10px 0";
-      row.style.borderBottom = "1px solid #eef2f7";
+    const html = CHECK_ITEMS.map((label, idx)=>{
+      const name = `check_${idx}`;
+      return `
+        <div class="checkRow" style="display:flex;align-items:center;border-top:1px solid #edf1f7">
+          <div class="checkCol item" style="flex:1;padding:10px 6px">${label}</div>
+          <div class="checkCol ok" style="width:64px;text-align:center;padding:10px 6px">
+            <input type="radio" name="${name}" value="ok">
+          </div>
+          <div class="checkCol ng" style="width:64px;text-align:center;padding:10px 6px">
+            <input type="radio" name="${name}" value="ng">
+          </div>
+        </div>
+      `;
+    }).join("");
 
-      const item = document.createElement("div");
-      item.className = "checkItem";
-      item.textContent = label;
+    box.innerHTML = html;
+  }
 
-      const ok = document.createElement("input");
-      ok.type = "radio";
-      ok.name = `ck_${idx}`;
-      ok.value = "ok";
-
-      const ng = document.createElement("input");
-      ng.type = "radio";
-      ng.name = `ck_${idx}`;
-      ng.value = "ng";
-
-      const okBox = document.createElement("label");
-      okBox.style.display = "flex";
-      okBox.style.justifyContent = "center";
-      okBox.style.alignItems = "center";
-      okBox.style.gap = "6px";
-      okBox.innerHTML = `<span style="font-weight:700">OK</span>`;
-      okBox.prepend(ok);
-
-      const ngBox = document.createElement("label");
-      ngBox.style.display = "flex";
-      ngBox.style.justifyContent = "center";
-      ngBox.style.alignItems = "center";
-      ngBox.style.gap = "6px";
-      ngBox.innerHTML = `<span style="font-weight:700">NG</span>`;
-      ngBox.prepend(ng);
-
-      row.appendChild(item);
-      row.appendChild(okBox);
-      row.appendChild(ngBox);
-      wrap.appendChild(row);
+  function readChecklist(){
+    return CHECK_ITEMS.map((label, idx)=>{
+      const name = `check_${idx}`;
+      const checked = document.querySelector(`input[name="${name}"]:checked`);
+      return { label, ok: checked ? (checked.value === "ok") : true }; // 未選択はOK扱い（運用上ラク）
     });
   }
 
-  function readChecklist() {
-    const list = CHECK_ITEMS.map((label, idx) => {
-      const ok = document.querySelector(`input[name="ck_${idx}"][value="ok"]`)?.checked || false;
-      const ng = document.querySelector(`input[name="ck_${idx}"][value="ng"]`)?.checked || false;
-      // 未選択は null 扱い
-      let state = null;
-      if (ok) state = true;
-      if (ng) state = false;
-      return { label, ok: state };
-    }).filter(x => x.ok !== null);
-
-    const memo = val("checkMemo");
-    return { list, memo };
-  }
-
   // ------------------------------
-  // Profile
+  // 画面入力 → オブジェクト
   // ------------------------------
-  async function saveProfile() {
-    const p = {
-      id: "me",
-      name: val("p_name").trim(),
-      base: val("p_base").trim(),
-      carNo: val("p_carNo").trim(),
-      licenseNo: val("p_licenseNo").trim(),
-      phone: val("p_phone").trim(),
-      email: val("p_email").trim(),
-      updatedAt: new Date().toISOString()
+  function getProfileInputs(){
+    return {
+      name: $("p_name")?.value.trim(),
+      base: $("p_base")?.value.trim(),
+      carNo: $("p_carNo")?.value.trim(),
+      licenseNo: $("p_licenseNo")?.value.trim(),
+      phone: $("p_phone")?.value.trim(),
+      phoneNorm: normalizePhone($("p_phone")?.value.trim()),
+      email: $("p_email")?.value.trim(),
     };
-
-    // 必須チェック
-    const miss = [];
-    if (!p.name) miss.push("氏名");
-    if (!p.base) miss.push("拠点");
-    if (!p.carNo) miss.push("車両番号");
-    if (!p.licenseNo) miss.push("免許証番号");
-    if (!p.phone) miss.push("電話番号");
-    if (!p.email) miss.push("メールアドレス");
-
-    if (miss.length) {
-      alertMsg(`未入力があります：${miss.join(" / ")}`);
-      return;
-    }
-
-    await dbPut(STORE_PROFILE_SAFE, p);
-    setProfileState(true);
-    alertMsg("基本情報を保存しました");
   }
 
-  async function loadProfile() {
-    const p = await dbGet(STORE_PROFILE_SAFE, "me");
-    if (!p) {
-      setProfileState(false);
-      alertMsg("まだ保存がありません");
-      return null;
+  function validateProfile(p){
+    const missing = [];
+    if(!p.name) missing.push("氏名");
+    if(!p.base) missing.push("拠点");
+    if(!p.carNo) missing.push("車両番号");
+    if(!p.licenseNo) missing.push("免許証番号");
+    if(!p.phone) missing.push("電話番号");
+    if(!p.email) missing.push("メール");
+    if(missing.length){
+      alert("基本情報の必須が未入力です：\n" + missing.join(" / "));
+      return false;
     }
-    setVal("p_name", p.name);
-    setVal("p_base", p.base);
-    setVal("p_carNo", p.carNo);
-    setVal("p_licenseNo", p.licenseNo);
-    setVal("p_phone", p.phone);
-    setVal("p_email", p.email);
-    setProfileState(true);
-    return p;
+    return true;
   }
 
-  function setProfileState(saved) {
-    const dot = $("dotProfile");
-    const st = $("profileState");
-    if (dot) {
-      dot.className = "dot" + (saved ? " ok" : "");
-    }
-    if (st) {
-      st.textContent = saved ? "保存済み" : "未保存";
-    }
-  }
-
-  // ------------------------------
-  // Tenko（dep/arr）
-  // ------------------------------
-  async function requireProfile() {
-    const p = await dbGet(STORE_PROFILE_SAFE, "me");
-    if (!p) {
-      alertMsg("先に「基本情報を保存」してください。");
-      throw new Error("no profile");
-    }
-    return p;
-  }
-
-  function calcOdoDiff(dep, arr) {
-    if (!dep || !arr) return 0;
-    const d = safeNum(arr.odoEnd) - safeNum(dep.odoStart);
-    return d > 0 ? d : 0;
-  }
-
-  async function saveDep() {
-    const profile = await requireProfile();
-
-    const ck = readChecklist();
-
-    const obj = {
-      id: `tenko|${dateOnly(val("d_at"))}|${normalizePhone(profile.phone)}|dep|${val("d_at") || ""}`,
+  function getDepInputs(profile){
+    return {
       type: "dep",
-      at: val("d_at"),
-      method: val("d_method"),
-      sleep: val("d_sleep"),
-      temp: val("d_temp"),
-      condition: val("d_condition"),
-      fatigue: val("d_fatigue"),
-      med: val("d_med"),
-      medDetail: val("d_medDetail"),
-      drink: val("d_drink"),
-      alcState: val("d_alcState"),
-      alcValue: val("d_alcValue"),
-      alcJudge: val("d_alcJudge"),
-      projectMain: val("d_projectMain"),
-      area: val("d_area"),
-      danger: val("d_danger"),
-      odoStart: val("d_odoStart"),
-      abnormal: val("d_abnormal"),
-      abnormalDetail: val("d_abnormalDetail"),
-      checklist: ck.list,
-      checkMemo: ck.memo,
-
-      // ★検索キー（必須情報）
+      // 検索用キー（必ず保存）
       name: profile.name,
       base: profile.base,
       phone: profile.phone,
+      phoneNorm: profile.phoneNorm,
 
-      updatedAt: new Date().toISOString()
+      // 本体
+      at: $("d_at")?.value,
+      method: $("d_method")?.value,
+      sleep: $("d_sleep")?.value.trim(),
+      temp: $("d_temp")?.value.trim(),
+      condition: $("d_condition")?.value,
+      fatigue: $("d_fatigue")?.value,
+      med: $("d_med")?.value,
+      medDetail: $("d_medDetail")?.value.trim(),
+      drink: $("d_drink")?.value,
+      alcState: $("d_alcState")?.value,
+      alcValue: $("d_alcValue")?.value.trim(),
+      alcJudge: $("d_alcJudge")?.value,
+      projectMain: $("d_projectMain")?.value.trim(),
+      area: $("d_area")?.value.trim(),
+      danger: $("d_danger")?.value,
+      odoStart: $("d_odoStart")?.value.trim(),
+      abnormal: $("d_abnormal")?.value,
+      abnormalDetail: $("d_abnormalDetail")?.value.trim(),
+      checklist: readChecklist(),
+      checkMemo: $("checkMemo")?.value.trim(),
     };
-
-    // 必須最低限（あなたの運用に合わせてOK）
-    const miss = [];
-    if (!obj.at) miss.push("点呼日時（出発）");
-    if (!obj.method) miss.push("方法（出発）");
-    if (!obj.sleep) miss.push("睡眠（出発）");
-    if (!obj.temp) miss.push("体温（出発）");
-    if (!obj.condition) miss.push("体調（出発）");
-    if (!obj.fatigue) miss.push("疲労（出発）");
-    if (!obj.med) miss.push("服薬（出発）");
-    if (!obj.drink) miss.push("飲酒（出発）");
-    if (!obj.alcState) miss.push("酒気帯び（出発）");
-    if (!obj.alcValue) miss.push("アルコール数値（出発）");
-    if (!obj.alcJudge) miss.push("判定（出発）");
-    if (!obj.projectMain) miss.push("稼働案件（出発）");
-    if (!obj.area) miss.push("積込拠点/エリア（出発）");
-    if (!obj.danger) miss.push("危険物（出発）");
-    if (!obj.odoStart) miss.push("出発ODO（出発）");
-    if (!obj.abnormal) miss.push("異常申告（出発）");
-    if (obj.abnormal === "あり" && !obj.abnormalDetail) miss.push("異常内容（出発）");
-
-    if (miss.length) {
-      alertMsg(`未入力があります：\n${miss.join("\n")}`);
-      return;
-    }
-
-    await dbPut(STORE_TENKO_SAFE, obj);
-    await reloadHistory();
-    alertMsg("出発点呼を保存しました");
   }
 
-  async function saveArr() {
-    const profile = await requireProfile();
-
-    const ck = readChecklist();
-
-    const obj = {
-      id: `tenko|${dateOnly(val("a_at"))}|${normalizePhone(profile.phone)}|arr|${val("a_at") || ""}`,
+  function getArrInputs(profile){
+    return {
       type: "arr",
-      at: val("a_at"),
-      method: val("a_method"),
-      breakMin: val("a_breakMin"),
-      temp: val("a_temp"),
-      condition: val("a_condition"),
-      fatigue: val("a_fatigue"),
-      med: val("a_med"),
-      medDetail: val("a_medDetail"),
-      alcState: val("a_alcState"),
-      alcValue: val("a_alcValue"),
-      alcJudge: val("a_alcJudge"),
-      odoEnd: val("a_odoEnd"),
-      abnormal: val("a_abnormal"),
-      abnormalDetail: val("a_abnormalDetail"),
-      checklist: ck.list,
-      checkMemo: ck.memo,
-
-      // ★検索キー（必須情報）
+      // 検索用キー（必ず保存）
       name: profile.name,
       base: profile.base,
       phone: profile.phone,
+      phoneNorm: profile.phoneNorm,
 
-      updatedAt: new Date().toISOString()
+      // 本体
+      at: $("a_at")?.value,
+      method: $("a_method")?.value,
+      breakMin: $("a_breakMin")?.value.trim(),
+      temp: $("a_temp")?.value.trim(),
+      condition: $("a_condition")?.value,
+      fatigue: $("a_fatigue")?.value,
+      med: $("a_med")?.value,
+      medDetail: $("a_medDetail")?.value.trim(),
+      alcState: $("a_alcState")?.value,
+      alcValue: $("a_alcValue")?.value.trim(),
+      alcJudge: $("a_alcJudge")?.value,
+      odoEnd: $("a_odoEnd")?.value.trim(),
+      abnormal: $("a_abnormal")?.value,
+      abnormalDetail: $("a_abnormalDetail")?.value.trim(),
+      checklist: readChecklist(),
+      checkMemo: $("checkMemo")?.value.trim(),
     };
+  }
 
-    const miss = [];
-    if (!obj.at) miss.push("点呼日時（帰着）");
-    if (!obj.method) miss.push("方法（帰着）");
-    if (!obj.breakMin) miss.push("休憩（帰着）");
-    if (!obj.temp) miss.push("体温（帰着）");
-    if (!obj.condition) miss.push("体調（帰着）");
-    if (!obj.fatigue) miss.push("疲労（帰着）");
-    if (!obj.med) miss.push("服薬（帰着）");
-    if (!obj.alcState) miss.push("酒気帯び（帰着）");
-    if (!obj.alcValue) miss.push("アルコール数値（帰着）");
-    if (!obj.alcJudge) miss.push("判定（帰着）");
-    if (!obj.odoEnd) miss.push("帰着ODO（帰着）");
-    if (!obj.abnormal) miss.push("異常申告（帰着）");
-    if (obj.abnormal === "あり" && !obj.abnormalDetail) miss.push("異常内容（帰着）");
+  function validateTenkoCommon(t, isDep){
+    const missing = [];
+    if(!t.at) missing.push("点呼日時");
+    if(!t.method) missing.push("点呼実施方法");
+    if(!t.temp) missing.push("体温");
+    if(!t.condition) missing.push("体調");
+    if(!t.fatigue) missing.push("疲労");
+    if(!t.med) missing.push("服薬・体調影響");
+    if(!t.alcState) missing.push("酒気帯び有無");
+    if(!t.alcValue) missing.push("アルコール数値");
+    if(!t.alcJudge) missing.push("判定");
+    if(!t.abnormal) missing.push("異常申告");
 
-    if (miss.length) {
-      alertMsg(`未入力があります：\n${miss.join("\n")}`);
-      return;
+    if(isDep){
+      if(!t.sleep) missing.push("睡眠時間");
+      if(!t.projectMain) missing.push("稼働案件（メイン）");
+      if(!t.area) missing.push("積込拠点/エリア");
+      if(!t.danger) missing.push("危険物・高額品");
+      if(!t.odoStart) missing.push("出発ODO");
+    }else{
+      if(!t.breakMin) missing.push("休憩時間");
+      if(!t.odoEnd) missing.push("帰着ODO");
     }
 
-    await dbPut(STORE_TENKO_SAFE, obj);
-    await updateOdoChip();
-    await reloadHistory();
-    alertMsg("帰着点呼を保存しました");
+    if(t.abnormal === "あり" && !t.abnormalDetail){
+      missing.push("異常内容（異常ありの場合）");
+    }
+
+    if(missing.length){
+      alert("必須が未入力です：\n" + missing.join(" / "));
+      return false;
+    }
+    return true;
   }
 
-  function clearDep() {
-    [
-      "d_at","d_method","d_sleep","d_temp","d_condition","d_fatigue","d_med","d_medDetail",
-      "d_drink","d_alcState","d_alcValue","d_alcJudge","d_projectMain","d_area","d_danger",
-      "d_odoStart","d_abnormal","d_abnormalDetail"
-    ].forEach(id => setVal(id, ""));
-  }
+  function getDailyInputs(profile){
+    // 日報は任意：dateが空なら保存しない運用
+    const date = $("r_date")?.value;
+    const payBase = $("r_payBase")?.value.trim();
+    const incentive = $("r_incentive")?.value.trim();
 
-  function clearArr() {
-    [
-      "a_at","a_method","a_breakMin","a_temp","a_condition","a_fatigue","a_med","a_medDetail",
-      "a_alcState","a_alcValue","a_alcJudge","a_odoEnd","a_abnormal","a_abnormalDetail"
-    ].forEach(id => setVal(id, ""));
-  }
+    const fuel = $("r_fuel")?.value.trim();
+    const highway = $("r_highway")?.value.trim();
+    const parking = $("r_parking")?.value.trim();
+    const otherCost = $("r_otherCost")?.value.trim();
 
-  async function updateOdoChip() {
-    const chipDot = $("dotOdo");
-    const chipText = $("odoState");
-    if (!chipText) return;
-
-    const tenko = await dbGetAll(STORE_TENKO_SAFE);
-    // 最新日っぽいもの同士でざっくり算出
-    const deps = tenko.filter(x => x.type === "dep" && x.at).sort((a,b)=> (b.at||"").localeCompare(a.at||""));
-    const arrs = tenko.filter(x => x.type === "arr" && x.at).sort((a,b)=> (b.at||"").localeCompare(a.at||""));
-
-    const dep = deps[0] || null;
-    const arr = arrs[0] || null;
-
-    const diff = calcOdoDiff(dep, arr);
-    chipText.textContent = diff ? `走行距離：${diff} km` : "走行距離：未計算";
-    if (chipDot) chipDot.className = "dot" + (diff ? " ok" : "");
-  }
-
-  // ------------------------------
-  // Daily（任意）
-  // ------------------------------
-  function buildDaily(profile) {
-    const date = val("r_date") || dateOnly(new Date().toISOString());
-    const payBase = safeNum(val("r_payBase"));
-    const incentive = safeNum(val("r_incentive"));
-    const salesTotal = payBase + incentive;
-
-    const costFuel = safeNum(val("r_fuel"));
-    const costHigh = safeNum(val("r_highway"));
-    const costPark = safeNum(val("r_parking"));
-    const costOther = safeNum(val("r_otherCost"));
-    const costs = costFuel + costHigh + costPark + costOther;
-
-    const profit = salesTotal - costs;
+    const salesTotal = num(payBase) + num(incentive);
+    const cost = num(fuel) + num(highway) + num(parking) + num(otherCost);
+    const profit = salesTotal - cost;
 
     return {
-      id: `daily|${date}|${normalizePhone(profile.phone)}`,
-      date,
-      start: val("r_start"),
-      end: val("r_end"),
-      breakMin: val("r_break"),
-      count: val("r_count"),
-      absent: val("r_absent"),
-      redel: val("r_redel"),
-      returnCount: val("r_return"),
-      claim: val("r_claim"),
-      claimDetail: val("r_claimDetail"),
-      payBase,
-      incentive,
-      salesTotal,
-      fuel: costFuel,
-      highway: costHigh,
-      parking: costPark,
-      otherCost: costOther,
-      costs,
-      profit,
-      memo: val("r_memo"),
-
-      // ★検索キー（必須情報）
+      // 検索用キー（必ず保存）
       name: profile.name,
       base: profile.base,
       phone: profile.phone,
+      phoneNorm: profile.phoneNorm,
 
-      updatedAt: new Date().toISOString()
+      // 本体
+      date: date || "",
+      start: $("r_start")?.value || "",
+      end: $("r_end")?.value || "",
+      breakMin: $("r_break")?.value.trim(),
+      count: $("r_count")?.value.trim(),
+      absent: $("r_absent")?.value.trim(),
+      redel: $("r_redel")?.value.trim(),
+      returned: $("r_return")?.value.trim(),
+      claim: $("r_claim")?.value || "",
+      claimDetail: $("r_claimDetail")?.value.trim(),
+      payBase: payBase,
+      incentive: incentive,
+      fuel: fuel,
+      highway: highway,
+      parking: parking,
+      otherCost: otherCost,
+      salesTotal,
+      profit,
+      memo: $("r_memo")?.value.trim(),
+      mainProject: $("d_projectMain")?.value.trim() || "",
     };
   }
 
   // ------------------------------
-  // PDF（今日 / 過去日）
+  // PDF（任意の日付を出す）
+  // 画像は「その時点の入力ファイル」しか使えないため、過去履歴PDFは画像なしで出す
   // ------------------------------
-  async function makePdfForDate(targetDate, profile) {
-    // その日の dep/arr/daily を集める（電話番号で絞る）
-    const phoneN = normalizePhone(profile.phone);
-    const tenkoAll = await dbGetAll(STORE_TENKO_SAFE);
-    const dailyAll = await dbGetAll(STORE_DAILY_SAFE);
+  async function makePdfForDayFromDb({ymd, name, phoneNorm, base}){
+    const tenkoAll = await window.OFADB.allTenko();
+    const dailyAll = await window.OFADB.allDaily();
 
-    const tenko = tenkoAll.filter(x =>
-      dateOnly(x.at) === targetDate && normalizePhone(x.phone) === phoneN
-    );
+    const matchPerson = (x)=>{
+      const pn = normalizePhone(x.phoneNorm || x.phone);
+      return (x.name === name) && (pn === phoneNorm) && (x.base === base);
+    };
 
-    const dep = tenko.filter(x => x.type === "dep").sort((a,b)=> (a.at||"").localeCompare(b.at||""))[0] || null;
-    const arr = tenko.filter(x => x.type === "arr").sort((a,b)=> (a.at||"").localeCompare(b.at||""))[0] || null;
+    const dep = tenkoAll
+      .filter(t=> t.type==="dep" && ymdFromAny(t.at)===ymd && matchPerson(t))
+      .sort((a,b)=> new Date(a.at).getTime() - new Date(b.at).getTime())
+      .pop() || null;
 
-    const daily = dailyAll.find(x =>
-      (x.date === targetDate) && normalizePhone(x.phone) === phoneN
-    ) || null;
+    const arr = tenkoAll
+      .filter(t=> t.type==="arr" && ymdFromAny(t.at)===ymd && matchPerson(t))
+      .sort((a,b)=> new Date(a.at).getTime() - new Date(b.at).getTime())
+      .pop() || null;
 
-    const odoDiff = calcOdoDiff(dep, arr);
+    const daily = dailyAll
+      .filter(d=> (d.date===ymd) && matchPerson(d))
+      .sort((a,b)=> new Date(a.createdAt||0).getTime() - new Date(b.createdAt||0).getTime())
+      .pop() || null;
 
-    if (typeof window.generateTodayPdf !== "function") {
-      alertMsg("PDF機能が読み込めていません（pdf.js）");
+    // 走行距離
+    let odoDiff = 0;
+    if(dep?.odoStart && arr?.odoEnd){
+      odoDiff = Math.max(0, num(arr.odoEnd) - num(dep.odoStart));
+    }
+
+    const profile = {
+      name, base,
+      carNo: "", licenseNo: "",
+      phone: "", email: "",
+    };
+
+    // profileは端末の保存を優先（車両/免許/メールも反映）
+    const saved = await window.OFADB.loadProfile();
+    if(saved && saved.name === name && normalizePhone(saved.phoneNorm || saved.phone) === phoneNorm){
+      profile.carNo = saved.carNo || "";
+      profile.licenseNo = saved.licenseNo || "";
+      profile.phone = saved.phone || "";
+      profile.email = saved.email || "";
+    }else{
+      // tenkoの中に保存されてれば拾う（今後は入れていく）
+      const sample = dep || arr || daily;
+      if(sample){
+        profile.phone = sample.phone || "";
+      }
+    }
+
+    if(typeof window.generateTodayPdf !== "function"){
+      alert("PDF生成関数が見つかりません（pdf.js読み込み確認）");
       return;
     }
 
-    // 過去日のため、ファイルは保存していない → 空で渡す（画像なしPDF）
-    const files = {
-      licenseImg: null,
-      alcDepImg: null,
-      alcArrImg: null,
-    };
-
+    // 過去履歴PDFは画像なし（files空）
     await window.generateTodayPdf({
       profile,
       dep,
       arr,
       daily,
       odoDiff,
-      files
+      files: {
+        licenseImg: null,
+        alcDepImg: null,
+        alcArrImg: null,
+      }
     });
   }
 
-  async function makeTodayPdf() {
-    const profile = await requireProfile();
-
-    // 今日扱いの日付は「日報日付があればそれ」「なければ出発 or 帰着の日付」
-    const dDate = val("r_date");
-    let keyDate = dDate || "";
-
-    // 今日の入力から一時オブジェクトを組み立て（DBの有無に依存しない）
-    // ただしPDFは “保存済み” のデータを基本に出すほうが安全なので、
-    // まずはDBから該当日のデータを拾う。
-    if (!keyDate) {
-      keyDate = dateOnly(val("d_at")) || dateOnly(val("a_at")) || dateOnly(new Date().toISOString());
-    }
-
-    await makePdfForDate(keyDate, profile);
-  }
-
   // ------------------------------
-  // 履歴表示（タップでPDF再出力）
+  // 履歴UI
   // ------------------------------
-  function buildTenkoLine(x) {
-    const typeLabel = x.type === "dep" ? "出発" : "帰着";
-    const alc = (x.alcValue ?? "");
-    const abn = (x.abnormal ?? "");
-    const abnText = abn ? (abn === "あり" ? "あり" : "なし") : "";
+  function tenkoCard(t){
+    const dt = String(t.at||"").replace("T"," ").slice(0,16);
+    const type = (t.type==="arr") ? "帰着" : "出発";
+    const base = t.base || "";
+    const name = t.name || "";
+    const alc = (t.alcValue ?? 0);
+
     return `
-      <div class="historyRow" data-kind="tenko" data-id="${x.id}" style="
-        border:1px solid #e7edf6;border-radius:16px;padding:12px 12px;
-        display:flex;align-items:flex-start;justify-content:space-between;gap:10px;
-        margin:10px 0; background:#fff;">
-        <div style="flex:1; min-width:0;">
-          <div style="font-weight:900; font-size:15px;">点呼：${fmt(x.at)} / ${typeLabel}</div>
-          <div style="margin-top:6px; color:#445; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
-            ${x.name || ""} / ${x.base || ""} / alc:${alc} / ${abnText}
+      <div class="historyItem"
+           data-kind="tenko"
+           data-id="${t.id}"
+           data-ymd="${ymdFromAny(t.at)}"
+           data-name="${encodeURIComponent(name)}"
+           data-base="${encodeURIComponent(base)}"
+           data-phone="${encodeURIComponent(normalizePhone(t.phoneNorm || t.phone))}"
+           style="display:flex;gap:10px;align-items:flex-start;justify-content:space-between;border:1px solid #e5eaf2;border-radius:16px;padding:12px;margin:10px 0;background:#fff;">
+        <div style="flex:1;min-width:0">
+          <div style="font-weight:900">点呼：${dt} / ${type}</div>
+          <div style="opacity:.85;margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
+            ${name} / ${base} / alc:${alc} / ${(t.abnormal||"なし")}
           </div>
-          <div style="margin-top:6px; color:#2f6; font-weight:800; font-size:12px;">
-            タップでこの日のPDFを出力
+          <div style="opacity:.55;font-size:12px;margin-top:4px">
+            ※タップでこの日のPDFを再出力（画像は過去分は無し）
           </div>
         </div>
-        <button class="btn secondary" data-del="1" style="padding:8px 10px; border-radius:12px;">削除</button>
+        <button class="btn secondary btnDelOne" data-kind="tenko" data-id="${t.id}" style="width:auto;padding:8px 12px">削除</button>
       </div>
     `;
   }
 
-  function buildDailyLine(x) {
+  function dailyCard(d){
+    const ymd = d.date || ymdFromAny(d.createdAt);
+    const base = d.base || "";
+    const name = d.name || "";
+    const sales = d.salesTotal ?? 0;
+    const profit = d.profit ?? 0;
+    const km = d.km ?? d.distance ?? d.runKm ?? "";
+
     return `
-      <div class="historyRow" data-kind="daily" data-id="${x.id}" style="
-        border:1px solid #e7edf6;border-radius:16px;padding:12px 12px;
-        display:flex;align-items:flex-start;justify-content:space-between;gap:10px;
-        margin:10px 0; background:#fff;">
-        <div style="flex:1; min-width:0;">
-          <div style="font-weight:900; font-size:15px;">日報：${x.date}</div>
-          <div style="margin-top:6px; color:#445; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
-            ${x.name || ""} / ${x.base || ""} / 売上:${x.salesTotal || 0} 利益:${x.profit || 0}
+      <div class="historyItem"
+           data-kind="daily"
+           data-id="${d.id}"
+           data-ymd="${ymd}"
+           data-name="${encodeURIComponent(name)}"
+           data-base="${encodeURIComponent(base)}"
+           data-phone="${encodeURIComponent(normalizePhone(d.phoneNorm || d.phone))}"
+           style="display:flex;gap:10px;align-items:flex-start;justify-content:space-between;border:1px solid #e5eaf2;border-radius:16px;padding:12px;margin:10px 0;background:#fff;">
+        <div style="flex:1;min-width:0">
+          <div style="font-weight:900">日報：${ymd}</div>
+          <div style="opacity:.85;margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
+            ${name} / ${base} / 売上:${sales} 利益:${profit} ${(km?`走行:${km}km`:"")}
           </div>
-          <div style="margin-top:6px; color:#2f6; font-weight:800; font-size:12px;">
-            タップでこの日のPDFを出力
+          <div style="opacity:.55;font-size:12px;margin-top:4px">
+            ※タップでこの日のPDFを再出力（画像は過去分は無し）
           </div>
         </div>
-        <button class="btn secondary" data-del="1" style="padding:8px 10px; border-radius:12px;">削除</button>
+        <button class="btn secondary btnDelOne" data-kind="daily" data-id="${d.id}" style="width:auto;padding:8px 12px">削除</button>
       </div>
     `;
   }
 
-  async function reloadHistory() {
+  async function renderHistory(){
     const box = $("historyBox");
-    if (!box) return;
+    if(!box) return;
 
-    const profile = await dbGet(STORE_PROFILE_SAFE, "me");
-    const phoneN = profile ? normalizePhone(profile.phone) : "";
+    const tenko = (await window.OFADB.allTenko())
+      .slice()
+      .sort((a,b)=> new Date(b.at||0).getTime() - new Date(a.at||0).getTime());
 
-    const tenkoAll = await dbGetAll(STORE_TENKO_SAFE);
-    const dailyAll = await dbGetAll(STORE_DAILY_SAFE);
+    const daily = (await window.OFADB.allDaily())
+      .slice()
+      .sort((a,b)=> new Date((b.date||b.createdAt)||0).getTime() - new Date((a.date||a.createdAt)||0).getTime());
 
-    // 自端末＆自分の電話番号で絞る（誤爆防止）
-    const tenko = phoneN
-      ? tenkoAll.filter(x => normalizePhone(x.phone) === phoneN)
-      : tenkoAll;
+    const tenkoHtml = tenko.length ? tenko.map(tenkoCard).join("") : `<div style="opacity:.7;padding:10px 0">点呼履歴：まだありません</div>`;
+    const dailyHtml = daily.length ? daily.map(dailyCard).join("") : `<div style="opacity:.7;padding:10px 0">日報履歴：まだありません</div>`;
 
-    const daily = phoneN
-      ? dailyAll.filter(x => normalizePhone(x.phone) === phoneN)
-      : dailyAll;
+    box.innerHTML = `
+      <div style="margin-top:8px">
+        <div style="font-weight:900;margin:10px 0 6px 0">点呼履歴</div>
+        ${tenkoHtml}
+      </div>
+      <div style="margin-top:14px">
+        <div style="font-weight:900;margin:10px 0 6px 0">日報履歴</div>
+        ${dailyHtml}
+      </div>
+    `;
 
-    // 新しい順
-    tenko.sort((a,b)=> (b.at||"").localeCompare(a.at||""));
-    daily.sort((a,b)=> (b.date||"").localeCompare(a.date||""));
+    // 個別削除
+    box.querySelectorAll(".btnDelOne").forEach(btn=>{
+      bindTap(btn, async ()=>{
+        const kind = btn.dataset.kind;
+        const id = btn.dataset.id;
+        if(!confirm("この履歴を削除しますか？")) return;
 
-    let html = "";
+        if(kind === "tenko") await window.OFADB.deleteTenko(id);
+        if(kind === "daily") await window.OFADB.deleteDaily(id);
 
-    // 点呼履歴
-    html += `<div class="h3" style="font-weight:900;margin:10px 0 6px;">点呼履歴</div>`;
-    if (!tenko.length) html += `<div class="small" style="color:#666;">まだありません</div>`;
-    else html += tenko.slice(0, 200).map(buildTenkoLine).join("");
+        await renderHistory();
+      });
+    });
 
-    // 日報履歴
-    html += `<div class="h3" style="font-weight:900;margin:18px 0 6px;">日報履歴</div>`;
-    if (!daily.length) html += `<div class="small" style="color:#666;">まだありません</div>`;
-    else html += daily.slice(0, 200).map(buildDailyLine).join("");
+    // タップでPDF（削除ボタン以外）
+    box.querySelectorAll(".historyItem").forEach(item=>{
+      bindTap(item, async ()=>{
+        // 削除ボタン押下はここに来ないように stopPropagation 済みだが、念のため
+        const ymd = item.dataset.ymd;
+        const name = decodeURIComponent(item.dataset.name || "");
+        const base = decodeURIComponent(item.dataset.base || "");
+        const phoneNorm = decodeURIComponent(item.dataset.phone || "");
 
-    box.innerHTML = html;
-
-    // クリック/タップ処理（イベント委譲）
-    box.onclick = async (ev) => {
-      const row = ev.target.closest(".historyRow");
-      if (!row) return;
-
-      const delBtn = ev.target.closest('button[data-del="1"]');
-      const id = row.dataset.id;
-      const kind = row.dataset.kind;
-
-      // 削除
-      if (delBtn) {
-        ev.preventDefault();
-        ev.stopPropagation();
-        const ok = confirm("この履歴を削除しますか？");
-        if (!ok) return;
-
-        if (kind === "tenko") await dbDelete(STORE_TENKO_SAFE, id);
-        if (kind === "daily") await dbDelete(STORE_DAILY_SAFE, id);
-
-        await reloadHistory();
-        return;
-      }
-
-      // タップでPDF再出力
-      try {
-        const profile = await requireProfile();
-
-        if (kind === "tenko") {
-          // tenko の日付でPDF
-          const tenkoAll = await dbGetAll(STORE_TENKO_SAFE);
-          const t = tenkoAll.find(x => x.id === id);
-          if (!t) return;
-          const d = dateOnly(t.at);
-          if (!d) {
-            alertMsg("日付が取得できませんでした");
-            return;
-          }
-          await makePdfForDate(d, profile);
+        if(!ymd || !name || !base || !phoneNorm){
+          alert("履歴データが不足しています");
+          return;
         }
-
-        if (kind === "daily") {
-          const dailyAll = await dbGetAll(STORE_DAILY_SAFE);
-          const d = dailyAll.find(x => x.id === id);
-          if (!d) return;
-          await makePdfForDate(d.date, profile);
+        try{
+          await makePdfForDayFromDb({ymd, name, base, phoneNorm});
+        }catch(e){
+          console.error(e);
+          alert("PDF再出力に失敗しました");
         }
-      } catch (e) {
-        console.error(e);
-      }
-    };
-  }
-
-  async function clearAll() {
-    const ok = confirm("全履歴を削除します。よろしいですか？");
-    if (!ok) return;
-    await dbClear(STORE_TENKO_SAFE);
-    await dbClear(STORE_DAILY_SAFE);
-    await reloadHistory();
-    alertMsg("全履歴を削除しました");
+      });
+    });
   }
 
   // ------------------------------
-  // CSV
+  // 初期化
   // ------------------------------
-  async function exportCsvAll() {
-    // 既存csv.jsに関数があればそれを優先
-    if (typeof window.exportAllCsv === "function") {
-      await window.exportAllCsv();
+  async function loadProfileToInputs(){
+    const p = await window.OFADB.loadProfile();
+    if(!p){
+      setChip("dotProfile", "profileState", false, "未保存");
       return;
     }
-    alertMsg("CSV機能が読み込めていません（csv.js）");
+    $("p_name").value = p.name || "";
+    $("p_base").value = p.base || "";
+    $("p_carNo").value = p.carNo || "";
+    $("p_licenseNo").value = p.licenseNo || "";
+    $("p_phone").value = p.phone || "";
+    $("p_email").value = p.email || "";
+
+    setChip("dotProfile", "profileState", true, "保存済み");
   }
 
-  // ------------------------------
-  // Projects（任意・簡易：画面だけ追加）
-  // ※ DB保存は daily に入れたければ後で拡張OK
-  // ------------------------------
-  function addProjectRow() {
-    const box = $("projectsBox");
-    if (!box) return;
-    const row = document.createElement("div");
-    row.style.border = "1px solid #e7edf6";
-    row.style.borderRadius = "14px";
-    row.style.padding = "10px";
-    row.style.margin = "10px 0";
-    row.innerHTML = `
-      <div class="row">
-        <div style="flex:1">
-          <label>案件名</label>
-          <input class="p_name" placeholder="例：Amazon / 企業便" />
-        </div>
-        <div style="flex:1">
-          <label>売上（任意）</label>
-          <input class="p_sales" inputmode="decimal" placeholder="例：15000" />
-        </div>
-      </div>
-      <button class="btn secondary p_del" style="margin-top:8px">この案件を削除</button>
-    `;
-    row.querySelector(".p_del").onclick = () => row.remove();
-    box.appendChild(row);
+  function computeOdoState(){
+    const s = num($("d_odoStart")?.value);
+    const e = num($("a_odoEnd")?.value);
+    if(s>0 && e>0 && e>=s){
+      setChip("dotOdo", "odoState", true, `走行距離：${e - s} km`);
+    }else{
+      setChip("dotOdo", "odoState", false, "走行距離：未計算");
+    }
   }
 
-  // ------------------------------
-  // Init
-  // ------------------------------
-  function bind() {
-    // Chrome(iOS含む)でたまに click が死ぬ時の保険：pointerupも付ける
-    const onTap = (el, fn) => {
-      if (!el) return;
-      el.addEventListener("click", (e) => { e.preventDefault(); fn(); }, { passive: false });
-      el.addEventListener("pointerup", (e) => { e.preventDefault(); fn(); }, { passive: false });
-    };
-
-    onTap($("btnSaveProfile"), saveProfile);
-    onTap($("btnLoadProfile"), loadProfile);
-
-    onTap($("btnSaveDep"), saveDep);
-    onTap($("btnClearDep"), () => { clearDep(); alertMsg("出発点呼をクリアしました"); });
-
-    onTap($("btnSaveArr"), saveArr);
-    onTap($("btnClearArr"), () => { clearArr(); alertMsg("帰着点呼をクリアしました"); });
-
-    onTap($("btnMakePdf"), makeTodayPdf);
-    onTap($("btnMakeCsv"), exportCsvAll);
-
-    onTap($("btnReloadHistory"), reloadHistory);
-    onTap($("btnClearAll"), clearAll);
-
-    onTap($("btnAddProject"), addProjectRow);
+  function wireOdoCalc(){
+    ["d_odoStart","a_odoEnd"].forEach(id=>{
+      const el = $(id);
+      if(!el) return;
+      el.addEventListener("input", computeOdoState);
+      el.addEventListener("change", computeOdoState);
+    });
   }
 
-  async function bootstrap() {
+  document.addEventListener("DOMContentLoaded", async ()=>{
+    // 日時の初期値（空なら入れる）
+    if($("d_at") && !$("d_at").value) $("d_at").value = nowLocalInputValue();
+    if($("a_at") && !$("a_at").value) $("a_at").value = nowLocalInputValue();
+
     renderChecklist();
-    bind();
-    await loadProfile().catch(()=>{});
-    await updateOdoChip().catch(()=>{});
-    await reloadHistory().catch(()=>{});
-  }
+    wireOdoCalc();
 
-  document.addEventListener("DOMContentLoaded", bootstrap);
+    await loadProfileToInputs();
+    await renderHistory();
+
+    // 基本情報 保存
+    bindTap($("btnSaveProfile"), async ()=>{
+      const p = getProfileInputs();
+      if(!validateProfile(p)) return;
+      await window.OFADB.saveProfile(p);
+      setChip("dotProfile", "profileState", true, "保存済み");
+      alert("基本情報を保存しました");
+    });
+
+    // 基本情報 読み込み
+    bindTap($("btnLoadProfile"), async ()=>{
+      await loadProfileToInputs();
+      alert("読み込みました");
+    });
+
+    // 出発点呼 保存
+    bindTap($("btnSaveDep"), async ()=>{
+      const p = getProfileInputs();
+      if(!validateProfile(p)) return;
+
+      const t = getDepInputs(p);
+      if(!validateTenkoCommon(t, true)) return;
+
+      // 入力ファイルは保存しない（PDF生成時のみ）
+      const id = await window.OFADB.addTenko(t);
+      alert("出発点呼を保存しました");
+
+      await renderHistory();
+    });
+
+    // 出発点呼 クリア
+    bindTap($("btnClearDep"), ()=>{
+      ["d_at","d_method","d_sleep","d_temp","d_condition","d_fatigue","d_med","d_medDetail","d_drink","d_alcState","d_alcValue","d_alcJudge","d_projectMain","d_area","d_danger","d_odoStart","d_abnormal","d_abnormalDetail"]
+        .forEach(id=> { const el=$(id); if(el) el.value=""; });
+
+      if($("d_at")) $("d_at").value = nowLocalInputValue();
+      computeOdoState();
+      alert("出発点呼をクリアしました");
+    });
+
+    // 帰着点呼 保存
+    bindTap($("btnSaveArr"), async ()=>{
+      const p = getProfileInputs();
+      if(!validateProfile(p)) return;
+
+      const t = getArrInputs(p);
+      if(!validateTenkoCommon(t, false)) return;
+
+      const id = await window.OFADB.addTenko(t);
+      alert("帰着点呼を保存しました");
+
+      await renderHistory();
+      computeOdoState();
+    });
+
+    // 帰着点呼 クリア
+    bindTap($("btnClearArr"), ()=>{
+      ["a_at","a_method","a_breakMin","a_temp","a_condition","a_fatigue","a_med","a_medDetail","a_alcState","a_alcValue","a_alcJudge","a_odoEnd","a_abnormal","a_abnormalDetail"]
+        .forEach(id=> { const el=$(id); if(el) el.value=""; });
+
+      if($("a_at")) $("a_at").value = nowLocalInputValue();
+      computeOdoState();
+      alert("帰着点呼をクリアしました");
+    });
+
+    // 今日のPDF（点呼＋日報）
+    bindTap($("btnMakePdf"), async ()=>{
+      const p = getProfileInputs();
+      if(!validateProfile(p)) return;
+
+      // 今日扱い：画面入力を優先でPDF生成（画像あり）
+      const dep = getDepInputs(p);
+      const arr = getArrInputs(p);
+
+      const daily = getDailyInputs(p);
+      // 日報は任意：dateが無ければPDFには空扱いでOK
+      const odoDiff = (dep.odoStart && arr.odoEnd) ? Math.max(0, num(arr.odoEnd) - num(dep.odoStart)) : 0;
+
+      const files = {
+        licenseImg: $("f_licenseImg")?.files?.[0] || null,
+        alcDepImg: $("f_alcDepImg")?.files?.[0] || null,
+        alcArrImg: $("f_alcArrImg")?.files?.[0] || null,
+      };
+
+      if(typeof window.generateTodayPdf !== "function"){
+        alert("PDF生成が読み込まれていません（pdf.js）");
+        return;
+      }
+      try{
+        await window.generateTodayPdf({profile:p, dep, arr, daily:(daily.date?daily:null), odoDiff, files});
+      }catch(e){
+        console.error(e);
+        alert("PDF生成に失敗しました");
+      }
+    });
+
+    // CSV出力（全履歴） ※既存csv.jsがあるならそっちを使う
+    bindTap($("btnMakeCsv"), async ()=>{
+      if(typeof window.exportAllCsv === "function"){
+        await window.exportAllCsv();
+        return;
+      }
+      // 保険：JSONで保存
+      const tenko = await window.OFADB.allTenko();
+      const daily = await window.OFADB.allDaily();
+      const blob = new Blob([JSON.stringify({tenko, daily}, null, 2)], {type:"application/json"});
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = `OFA_all_${new Date().toISOString().slice(0,10)}.json`;
+      a.click();
+    });
+
+    // 履歴 更新
+    bindTap($("btnReloadHistory"), async ()=>{
+      await renderHistory();
+      alert("更新しました");
+    });
+
+    // 全削除（注意）
+    bindTap($("btnClearAll"), async ()=>{
+      if(!confirm("点呼・日報の履歴を全削除します。よろしいですか？")) return;
+      await window.OFADB.clearAll();
+      await renderHistory();
+      alert("全削除しました（基本情報は残ります）");
+    });
+  });
+
 })();
