@@ -1,248 +1,226 @@
-/* /js/app.js
-   OFA 点呼/日報（ドライバー）
-   - ボタン反応の確実化（DOMContentLoaded）
-   - 履歴見やすく（点呼/日報をカード化）
-   - 個別削除対応
-*/
+// js/app.js
+// OFA 点呼/日報（ドライバー）
+// - IndexedDB保存（profile / tenko / daily）
+// - PDF生成：window.generateTodayPdf を使用（pdf.js）
+// - CSV：window.exportAllCsv があれば使う（csv.js）
+// - 履歴タップで「過去日PDFを再出力」対応
 
 (() => {
-  "use strict";
-
-  // ===== DB 定義（db.jsと合わせる） =====
-  const OFA_DB_NAME = "ofa_nippou_db";
-  const OFA_DB_VER  = 1;
-
-  const STORE_PROFILE = "profile";
-  const STORE_TENKO   = "tenko";
-  const STORE_DAILY   = "daily";
-
-  // ===== ユーティリティ =====
+  // ------------------------------
+  // DOM helpers
+  // ------------------------------
   const $ = (id) => document.getElementById(id);
+  const val = (id) => ($(id) ? $(id).value : "");
+  const setVal = (id, v) => { if ($(id)) $(id).value = v ?? ""; };
 
-  const esc = (s) => String(s ?? "")
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#039;");
+  const alertMsg = (msg) => {
+    try { window.alert(msg); } catch(e) { console.log(msg); }
+  };
 
-  const pad2 = (n) => String(n).padStart(2, "0");
+  const fmt = (v) => {
+    if (!v) return "";
+    return String(v).replace("T", " ").slice(0, 16);
+  };
 
-  function toLocalInputValue(d = new Date()) {
-    const yyyy = d.getFullYear();
-    const mm = pad2(d.getMonth() + 1);
-    const dd = pad2(d.getDate());
-    const hh = pad2(d.getHours());
-    const mi = pad2(d.getMinutes());
-    return `${yyyy}-${mm}-${dd}T${hh}:${mi}`;
-  }
+  const dateOnly = (v) => {
+    if (!v) return "";
+    // v: "YYYY-MM-DDTHH:mm" or "YYYY-MM-DD"
+    return String(v).slice(0, 10);
+  };
 
-  function parseDateLike(x) {
-    if (!x) return null;
-    // datetime-local: "2026-01-24T03:25"
-    // date: "2026-01-24"
-    // ISO: etc
-    const d = new Date(x);
-    if (Number.isNaN(d.getTime())) return null;
-    return d;
-  }
+  const normalizePhone = (s) => String(s || "").replace(/[^\d]/g, "");
+  const safeNum = (n) => {
+    const x = Number(n);
+    return Number.isFinite(x) ? x : 0;
+  };
 
-  function fmtYMD(d) {
-    if (!(d instanceof Date)) d = parseDateLike(d);
-    if (!d) return "";
-    return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
-  }
-
-  function fmtYMDHM(d) {
-    if (!(d instanceof Date)) d = parseDateLike(d);
-    if (!d) return "";
-    return `${fmtYMD(d)} ${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
-  }
-
-  function uid() {
-    return `${Date.now()}_${Math.random().toString(16).slice(2)}`;
-  }
-
-  function numOrNull(v) {
-    const n = Number(String(v ?? "").replaceAll(",", "").trim());
-    return Number.isFinite(n) ? n : null;
-  }
-
-  // ===== IndexedDB（db.jsが無い/違っても動く保険） =====
-  function idbOpen() {
+  // ------------------------------
+  // IndexedDB minimal wrapper
+  // db.js に idbOpen / STORE_* がある前提
+  // 無い場合でも落ちないようガード
+  // ------------------------------
+  async function openDb() {
+    if (typeof idbOpen === "function") return idbOpen();
+    // フォールバック（万一）
     return new Promise((resolve, reject) => {
-      const req = indexedDB.open(OFA_DB_NAME, OFA_DB_VER);
+      const req = indexedDB.open("ofa_nippou_db", 1);
       req.onupgradeneeded = () => {
         const db = req.result;
-
-        if (!db.objectStoreNames.contains(STORE_PROFILE)) {
-          db.createObjectStore(STORE_PROFILE, { keyPath: "id" }); // id="me"
-        }
-        if (!db.objectStoreNames.contains(STORE_TENKO)) {
-          const st = db.createObjectStore(STORE_TENKO, { keyPath: "id" });
-          st.createIndex("by_at", "at", { unique: false });
-          st.createIndex("by_name", "name", { unique: false });
-          st.createIndex("by_base", "base", { unique: false });
-          st.createIndex("by_type", "type", { unique: false });
-        }
-        if (!db.objectStoreNames.contains(STORE_DAILY)) {
-          const sd = db.createObjectStore(STORE_DAILY, { keyPath: "id" });
-          sd.createIndex("by_date", "date", { unique: false });
-          sd.createIndex("by_name", "name", { unique: false });
-          sd.createIndex("by_base", "base", { unique: false });
-        }
+        if (!db.objectStoreNames.contains("profile")) db.createObjectStore("profile", { keyPath: "id" });
+        if (!db.objectStoreNames.contains("tenko")) db.createObjectStore("tenko", { keyPath: "id" });
+        if (!db.objectStoreNames.contains("daily")) db.createObjectStore("daily", { keyPath: "id" });
       };
       req.onsuccess = () => resolve(req.result);
       req.onerror = () => reject(req.error);
     });
   }
 
-  async function idbPut(store, value) {
-    const db = await idbOpen();
+  const STORE_PROFILE_SAFE = (typeof STORE_PROFILE !== "undefined") ? STORE_PROFILE : "profile";
+  const STORE_TENKO_SAFE   = (typeof STORE_TENKO   !== "undefined") ? STORE_TENKO   : "tenko";
+  const STORE_DAILY_SAFE   = (typeof STORE_DAILY   !== "undefined") ? STORE_DAILY   : "daily";
+
+  async function tx(storeName, mode, fn) {
+    const db = await openDb();
     return new Promise((resolve, reject) => {
-      const tx = db.transaction(store, "readwrite");
-      tx.oncomplete = () => resolve(true);
-      tx.onerror = () => reject(tx.error);
-      tx.objectStore(store).put(value);
+      const t = db.transaction([storeName], mode);
+      const st = t.objectStore(storeName);
+      let out;
+      Promise.resolve()
+        .then(() => fn(st))
+        .then((r) => { out = r; })
+        .catch(reject);
+
+      t.oncomplete = () => resolve(out);
+      t.onerror = () => reject(t.error);
+      t.onabort = () => reject(t.error);
     });
   }
 
-  async function idbGet(store, key) {
-    const db = await idbOpen();
-    return new Promise((resolve, reject) => {
-      const tx = db.transaction(store, "readonly");
-      const req = tx.objectStore(store).get(key);
-      req.onsuccess = () => resolve(req.result ?? null);
-      req.onerror = () => reject(req.error);
+  async function dbPut(storeName, obj) {
+    return tx(storeName, "readwrite", (st) => new Promise((res, rej) => {
+      const req = st.put(obj);
+      req.onsuccess = () => res(true);
+      req.onerror = () => rej(req.error);
+    }));
+  }
+
+  async function dbGet(storeName, key) {
+    return tx(storeName, "readonly", (st) => new Promise((res, rej) => {
+      const req = st.get(key);
+      req.onsuccess = () => res(req.result || null);
+      req.onerror = () => rej(req.error);
+    }));
+  }
+
+  async function dbGetAll(storeName) {
+    return tx(storeName, "readonly", (st) => new Promise((res, rej) => {
+      const req = st.getAll();
+      req.onsuccess = () => res(req.result || []);
+      req.onerror = () => rej(req.error);
+    }));
+  }
+
+  async function dbDelete(storeName, key) {
+    return tx(storeName, "readwrite", (st) => new Promise((res, rej) => {
+      const req = st.delete(key);
+      req.onsuccess = () => res(true);
+      req.onerror = () => rej(req.error);
+    }));
+  }
+
+  async function dbClear(storeName) {
+    return tx(storeName, "readwrite", (st) => new Promise((res, rej) => {
+      const req = st.clear();
+      req.onsuccess = () => res(true);
+      req.onerror = () => rej(req.error);
+    }));
+  }
+
+  // ------------------------------
+  // Checklist（簡易：必要なら増やしてOK）
+  // ※ UIは index.html の #checkScroll に動的生成
+  // ------------------------------
+  const CHECK_ITEMS = [
+    "タイヤ空気圧",
+    "タイヤ溝",
+    "ライト（前）",
+    "ライト（後）",
+    "ウインカー",
+    "ブレーキ",
+    "ワイパー",
+    "ミラー",
+    "ホーン",
+    "オイル漏れ",
+    "冷却水",
+    "バッテリー",
+    "積載状態",
+    "車内清掃",
+    "その他異常"
+  ];
+
+  function renderChecklist() {
+    const wrap = $("checkScroll");
+    if (!wrap) return;
+    wrap.innerHTML = "";
+
+    CHECK_ITEMS.forEach((label, idx) => {
+      const row = document.createElement("div");
+      row.className = "checkRow";
+      row.style.display = "grid";
+      row.style.gridTemplateColumns = "1fr 72px 72px";
+      row.style.gap = "8px";
+      row.style.alignItems = "center";
+      row.style.padding = "10px 0";
+      row.style.borderBottom = "1px solid #eef2f7";
+
+      const item = document.createElement("div");
+      item.className = "checkItem";
+      item.textContent = label;
+
+      const ok = document.createElement("input");
+      ok.type = "radio";
+      ok.name = `ck_${idx}`;
+      ok.value = "ok";
+
+      const ng = document.createElement("input");
+      ng.type = "radio";
+      ng.name = `ck_${idx}`;
+      ng.value = "ng";
+
+      const okBox = document.createElement("label");
+      okBox.style.display = "flex";
+      okBox.style.justifyContent = "center";
+      okBox.style.alignItems = "center";
+      okBox.style.gap = "6px";
+      okBox.innerHTML = `<span style="font-weight:700">OK</span>`;
+      okBox.prepend(ok);
+
+      const ngBox = document.createElement("label");
+      ngBox.style.display = "flex";
+      ngBox.style.justifyContent = "center";
+      ngBox.style.alignItems = "center";
+      ngBox.style.gap = "6px";
+      ngBox.innerHTML = `<span style="font-weight:700">NG</span>`;
+      ngBox.prepend(ng);
+
+      row.appendChild(item);
+      row.appendChild(okBox);
+      row.appendChild(ngBox);
+      wrap.appendChild(row);
     });
   }
 
-  async function idbGetAll(store) {
-    const db = await idbOpen();
-    return new Promise((resolve, reject) => {
-      const tx = db.transaction(store, "readonly");
-      const req = tx.objectStore(store).getAll();
-      req.onsuccess = () => resolve(req.result ?? []);
-      req.onerror = () => reject(req.error);
-    });
+  function readChecklist() {
+    const list = CHECK_ITEMS.map((label, idx) => {
+      const ok = document.querySelector(`input[name="ck_${idx}"][value="ok"]`)?.checked || false;
+      const ng = document.querySelector(`input[name="ck_${idx}"][value="ng"]`)?.checked || false;
+      // 未選択は null 扱い
+      let state = null;
+      if (ok) state = true;
+      if (ng) state = false;
+      return { label, ok: state };
+    }).filter(x => x.ok !== null);
+
+    const memo = val("checkMemo");
+    return { list, memo };
   }
 
-  async function idbDelete(store, key) {
-    const db = await idbOpen();
-    return new Promise((resolve, reject) => {
-      const tx = db.transaction(store, "readwrite");
-      tx.oncomplete = () => resolve(true);
-      tx.onerror = () => reject(tx.error);
-      tx.objectStore(store).delete(key);
-    });
-  }
-
-  async function idbClear(store) {
-    const db = await idbOpen();
-    return new Promise((resolve, reject) => {
-      const tx = db.transaction(store, "readwrite");
-      tx.oncomplete = () => resolve(true);
-      tx.onerror = () => reject(tx.error);
-      tx.objectStore(store).clear();
-    });
-  }
-
-  // ===== db.jsが提供している関数を優先して使う（存在すれば） =====
-  const DB = {
-    saveProfile: async (obj) => {
-      // db.js側に関数があればそっち
-      if (typeof window.saveProfile === "function") return window.saveProfile(obj);
-      if (typeof window.dbSaveProfile === "function") return window.dbSaveProfile(obj);
-      // 保険（直叩き）
-      return idbPut(STORE_PROFILE, obj);
-    },
-    loadProfile: async () => {
-      if (typeof window.loadProfile === "function") return window.loadProfile();
-      if (typeof window.dbLoadProfile === "function") return window.dbLoadProfile();
-      return idbGet(STORE_PROFILE, "me");
-    },
-
-    addTenko: async (obj) => {
-      if (typeof window.addTenko === "function") return window.addTenko(obj);
-      if (typeof window.dbAddTenko === "function") return window.dbAddTenko(obj);
-      return idbPut(STORE_TENKO, obj);
-    },
-    addDaily: async (obj) => {
-      if (typeof window.addDaily === "function") return window.addDaily(obj);
-      if (typeof window.dbAddDaily === "function") return window.dbAddDaily(obj);
-      return idbPut(STORE_DAILY, obj);
-    },
-
-    getTenkoAll: async () => {
-      if (typeof window.getTenkoAll === "function") return window.getTenkoAll();
-      if (typeof window.dbGetTenkoAll === "function") return window.dbGetTenkoAll();
-      return idbGetAll(STORE_TENKO);
-    },
-    getDailyAll: async () => {
-      if (typeof window.getDailyAll === "function") return window.getDailyAll();
-      if (typeof window.dbGetDailyAll === "function") return window.dbGetDailyAll();
-      return idbGetAll(STORE_DAILY);
-    },
-
-    deleteTenko: async (id) => {
-      if (typeof window.deleteTenko === "function") return window.deleteTenko(id);
-      if (typeof window.dbDeleteTenko === "function") return window.dbDeleteTenko(id);
-      return idbDelete(STORE_TENKO, id);
-    },
-    deleteDaily: async (id) => {
-      if (typeof window.deleteDaily === "function") return window.deleteDaily(id);
-      if (typeof window.dbDeleteDaily === "function") return window.dbDeleteDaily(id);
-      return idbDelete(STORE_DAILY, id);
-    },
-
-    clearAll: async () => {
-      if (typeof window.clearAll === "function") return window.clearAll();
-      if (typeof window.dbClearAll === "function") return window.dbClearAll();
-      await idbClear(STORE_TENKO);
-      await idbClear(STORE_DAILY);
-      // profileは残す運用が多いので消さない（必要なら追加で消してOK）
-      return true;
-    },
-  };
-
-  // ===== UI（状態チップ） =====
-  function setDot(id, ok) {
-    const el = $(id);
-    if (!el) return;
-    el.classList.toggle("ok", !!ok);
-    el.classList.toggle("ng", !ok);
-  }
-
-  function setText(id, text) {
-    const el = $(id);
-    if (el) el.textContent = text;
-  }
-
-  // ===== 基本情報 =====
-  function readProfileForm() {
-    return {
+  // ------------------------------
+  // Profile
+  // ------------------------------
+  async function saveProfile() {
+    const p = {
       id: "me",
-      name: ($("p_name")?.value ?? "").trim(),
-      base: ($("p_base")?.value ?? "").trim(),
-      carNo: ($("p_carNo")?.value ?? "").trim(),
-      licenseNo: ($("p_licenseNo")?.value ?? "").trim(),
-      phone: ($("p_phone")?.value ?? "").trim(),
-      email: ($("p_email")?.value ?? "").trim(),
-      updatedAt: Date.now(),
+      name: val("p_name").trim(),
+      base: val("p_base").trim(),
+      carNo: val("p_carNo").trim(),
+      licenseNo: val("p_licenseNo").trim(),
+      phone: val("p_phone").trim(),
+      email: val("p_email").trim(),
+      updatedAt: new Date().toISOString()
     };
-  }
 
-  function fillProfileForm(p) {
-    if (!p) return;
-    if ($("p_name")) $("p_name").value = p.name ?? "";
-    if ($("p_base")) $("p_base").value = p.base ?? "";
-    if ($("p_carNo")) $("p_carNo").value = p.carNo ?? "";
-    if ($("p_licenseNo")) $("p_licenseNo").value = p.licenseNo ?? "";
-    if ($("p_phone")) $("p_phone").value = p.phone ?? "";
-    if ($("p_email")) $("p_email").value = p.email ?? "";
-  }
-
-  function validateProfile(p) {
+    // 必須チェック
     const miss = [];
     if (!p.name) miss.push("氏名");
     if (!p.base) miss.push("拠点");
@@ -250,246 +228,376 @@
     if (!p.licenseNo) miss.push("免許証番号");
     if (!p.phone) miss.push("電話番号");
     if (!p.email) miss.push("メールアドレス");
-    return miss;
+
+    if (miss.length) {
+      alertMsg(`未入力があります：${miss.join(" / ")}`);
+      return;
+    }
+
+    await dbPut(STORE_PROFILE_SAFE, p);
+    setProfileState(true);
+    alertMsg("基本情報を保存しました");
   }
 
-  async function onSaveProfile() {
-    try {
-      const p = readProfileForm();
-      const miss = validateProfile(p);
-      if (miss.length) {
-        alert(`未入力があります：${miss.join(" / ")}`);
-        return;
-      }
-      await DB.saveProfile(p);
-      setDot("dotProfile", true);
-      setText("profileState", "保存済み");
-      alert("基本情報を保存しました");
-      await reloadHistory(); // ついでに更新
-    } catch (e) {
-      console.error(e);
-      alert("保存に失敗しました。ブラウザの設定（プライベート/制限）を確認してください。");
+  async function loadProfile() {
+    const p = await dbGet(STORE_PROFILE_SAFE, "me");
+    if (!p) {
+      setProfileState(false);
+      alertMsg("まだ保存がありません");
+      return null;
+    }
+    setVal("p_name", p.name);
+    setVal("p_base", p.base);
+    setVal("p_carNo", p.carNo);
+    setVal("p_licenseNo", p.licenseNo);
+    setVal("p_phone", p.phone);
+    setVal("p_email", p.email);
+    setProfileState(true);
+    return p;
+  }
+
+  function setProfileState(saved) {
+    const dot = $("dotProfile");
+    const st = $("profileState");
+    if (dot) {
+      dot.className = "dot" + (saved ? " ok" : "");
+    }
+    if (st) {
+      st.textContent = saved ? "保存済み" : "未保存";
     }
   }
 
-  async function onLoadProfile() {
-    try {
-      const p = await DB.loadProfile();
-      if (!p) {
-        setDot("dotProfile", false);
-        setText("profileState", "未保存");
-        alert("まだ保存がありません");
-        return;
-      }
-      fillProfileForm(p);
-      setDot("dotProfile", true);
-      setText("profileState", "保存済み");
-      alert("基本情報を読み込みました");
-    } catch (e) {
-      console.error(e);
-      alert("読み込みに失敗しました");
+  // ------------------------------
+  // Tenko（dep/arr）
+  // ------------------------------
+  async function requireProfile() {
+    const p = await dbGet(STORE_PROFILE_SAFE, "me");
+    if (!p) {
+      alertMsg("先に「基本情報を保存」してください。");
+      throw new Error("no profile");
     }
+    return p;
   }
 
-  // ===== 点呼（出発/帰着） =====
-  function readDep() {
-    const at = $("d_at")?.value;
-    return {
-      id: uid(),
+  function calcOdoDiff(dep, arr) {
+    if (!dep || !arr) return 0;
+    const d = safeNum(arr.odoEnd) - safeNum(dep.odoStart);
+    return d > 0 ? d : 0;
+  }
+
+  async function saveDep() {
+    const profile = await requireProfile();
+
+    const ck = readChecklist();
+
+    const obj = {
+      id: `tenko|${dateOnly(val("d_at"))}|${normalizePhone(profile.phone)}|dep|${val("d_at") || ""}`,
       type: "dep",
-      at: at || toLocalInputValue(new Date()),
-      name: ($("p_name")?.value ?? "").trim(),
-      base: ($("p_base")?.value ?? "").trim(),
-      sleep: numOrNull($("d_sleep")?.value),
-      temp: numOrNull($("d_temp")?.value),
-      method: ($("d_method")?.value ?? "").trim(),
-      condition: ($("d_condition")?.value ?? "").trim(),
-      fatigue: ($("d_fatigue")?.value ?? "").trim(),
-      med: ($("d_med")?.value ?? "").trim(),
-      medDetail: ($("d_medDetail")?.value ?? "").trim(),
-      drink: ($("d_drink")?.value ?? "").trim(),
-      alcState: ($("d_alcState")?.value ?? "").trim(),
-      alcValue: numOrNull($("d_alcValue")?.value) ?? 0,
-      alcJudge: ($("d_alcJudge")?.value ?? "").trim(),
-      projectMain: ($("d_projectMain")?.value ?? "").trim(),
-      area: ($("d_area")?.value ?? "").trim(),
-      danger: ($("d_danger")?.value ?? "").trim(),
-      odoStart: numOrNull($("d_odoStart")?.value),
-      abnormal: ($("d_abnormal")?.value ?? "").trim(),
-      abnormalDetail: ($("d_abnormalDetail")?.value ?? "").trim(),
-      createdAt: Date.now(),
-    };
-  }
+      at: val("d_at"),
+      method: val("d_method"),
+      sleep: val("d_sleep"),
+      temp: val("d_temp"),
+      condition: val("d_condition"),
+      fatigue: val("d_fatigue"),
+      med: val("d_med"),
+      medDetail: val("d_medDetail"),
+      drink: val("d_drink"),
+      alcState: val("d_alcState"),
+      alcValue: val("d_alcValue"),
+      alcJudge: val("d_alcJudge"),
+      projectMain: val("d_projectMain"),
+      area: val("d_area"),
+      danger: val("d_danger"),
+      odoStart: val("d_odoStart"),
+      abnormal: val("d_abnormal"),
+      abnormalDetail: val("d_abnormalDetail"),
+      checklist: ck.list,
+      checkMemo: ck.memo,
 
-  function readArr() {
-    const at = $("a_at")?.value;
-    return {
-      id: uid(),
-      type: "arr",
-      at: at || toLocalInputValue(new Date()),
-      name: ($("p_name")?.value ?? "").trim(),
-      base: ($("p_base")?.value ?? "").trim(),
-      breakMin: numOrNull($("a_breakMin")?.value),
-      temp: numOrNull($("a_temp")?.value),
-      method: ($("a_method")?.value ?? "").trim(),
-      condition: ($("a_condition")?.value ?? "").trim(),
-      fatigue: ($("a_fatigue")?.value ?? "").trim(),
-      med: ($("a_med")?.value ?? "").trim(),
-      medDetail: ($("a_medDetail")?.value ?? "").trim(),
-      alcState: ($("a_alcState")?.value ?? "").trim(),
-      alcValue: numOrNull($("a_alcValue")?.value) ?? 0,
-      alcJudge: ($("a_alcJudge")?.value ?? "").trim(),
-      odoEnd: numOrNull($("a_odoEnd")?.value),
-      abnormal: ($("a_abnormal")?.value ?? "").trim(),
-      abnormalDetail: ($("a_abnormalDetail")?.value ?? "").trim(),
-      createdAt: Date.now(),
-    };
-  }
+      // ★検索キー（必須情報）
+      name: profile.name,
+      base: profile.base,
+      phone: profile.phone,
 
-  function validateTenkoCommon(t) {
+      updatedAt: new Date().toISOString()
+    };
+
+    // 必須最低限（あなたの運用に合わせてOK）
     const miss = [];
-    if (!t.name) miss.push("氏名（基本情報）");
-    if (!t.base) miss.push("拠点（基本情報）");
-    if (!t.at) miss.push("点呼日時");
-    if (!t.method) miss.push("点呼実施方法");
-    if (!t.condition) miss.push("体調");
-    if (!t.fatigue) miss.push("疲労");
-    if (!t.med) miss.push("服薬");
-    if (!t.alcState) miss.push("酒気帯び");
-    if (!t.alcJudge) miss.push("判定");
-    if (t.abnormal === "あり" && !t.abnormalDetail) miss.push("異常内容");
-    return miss;
+    if (!obj.at) miss.push("点呼日時（出発）");
+    if (!obj.method) miss.push("方法（出発）");
+    if (!obj.sleep) miss.push("睡眠（出発）");
+    if (!obj.temp) miss.push("体温（出発）");
+    if (!obj.condition) miss.push("体調（出発）");
+    if (!obj.fatigue) miss.push("疲労（出発）");
+    if (!obj.med) miss.push("服薬（出発）");
+    if (!obj.drink) miss.push("飲酒（出発）");
+    if (!obj.alcState) miss.push("酒気帯び（出発）");
+    if (!obj.alcValue) miss.push("アルコール数値（出発）");
+    if (!obj.alcJudge) miss.push("判定（出発）");
+    if (!obj.projectMain) miss.push("稼働案件（出発）");
+    if (!obj.area) miss.push("積込拠点/エリア（出発）");
+    if (!obj.danger) miss.push("危険物（出発）");
+    if (!obj.odoStart) miss.push("出発ODO（出発）");
+    if (!obj.abnormal) miss.push("異常申告（出発）");
+    if (obj.abnormal === "あり" && !obj.abnormalDetail) miss.push("異常内容（出発）");
+
+    if (miss.length) {
+      alertMsg(`未入力があります：\n${miss.join("\n")}`);
+      return;
+    }
+
+    await dbPut(STORE_TENKO_SAFE, obj);
+    await reloadHistory();
+    alertMsg("出発点呼を保存しました");
   }
 
-  async function onSaveDep() {
-    try {
-      const t = readDep();
-      const miss = validateTenkoCommon(t);
-      if (!t.sleep && t.sleep !== 0) miss.push("睡眠時間");
-      if (!t.temp && t.temp !== 0) miss.push("体温");
-      if (!t.projectMain) miss.push("稼働案件（メイン）");
-      if (!t.area) miss.push("積込拠点/エリア");
-      if (!t.danger) miss.push("危険物・高額品");
-      if (!t.odoStart && t.odoStart !== 0) miss.push("出発ODO");
+  async function saveArr() {
+    const profile = await requireProfile();
 
-      if (miss.length) {
-        alert(`未入力があります：\n${miss.join("\n")}`);
-        return;
-      }
+    const ck = readChecklist();
 
-      await DB.addTenko(t);
-      alert("出発点呼を保存しました");
-      await reloadHistory();
-    } catch (e) {
-      console.error(e);
-      alert("保存に失敗しました");
+    const obj = {
+      id: `tenko|${dateOnly(val("a_at"))}|${normalizePhone(profile.phone)}|arr|${val("a_at") || ""}`,
+      type: "arr",
+      at: val("a_at"),
+      method: val("a_method"),
+      breakMin: val("a_breakMin"),
+      temp: val("a_temp"),
+      condition: val("a_condition"),
+      fatigue: val("a_fatigue"),
+      med: val("a_med"),
+      medDetail: val("a_medDetail"),
+      alcState: val("a_alcState"),
+      alcValue: val("a_alcValue"),
+      alcJudge: val("a_alcJudge"),
+      odoEnd: val("a_odoEnd"),
+      abnormal: val("a_abnormal"),
+      abnormalDetail: val("a_abnormalDetail"),
+      checklist: ck.list,
+      checkMemo: ck.memo,
+
+      // ★検索キー（必須情報）
+      name: profile.name,
+      base: profile.base,
+      phone: profile.phone,
+
+      updatedAt: new Date().toISOString()
+    };
+
+    const miss = [];
+    if (!obj.at) miss.push("点呼日時（帰着）");
+    if (!obj.method) miss.push("方法（帰着）");
+    if (!obj.breakMin) miss.push("休憩（帰着）");
+    if (!obj.temp) miss.push("体温（帰着）");
+    if (!obj.condition) miss.push("体調（帰着）");
+    if (!obj.fatigue) miss.push("疲労（帰着）");
+    if (!obj.med) miss.push("服薬（帰着）");
+    if (!obj.alcState) miss.push("酒気帯び（帰着）");
+    if (!obj.alcValue) miss.push("アルコール数値（帰着）");
+    if (!obj.alcJudge) miss.push("判定（帰着）");
+    if (!obj.odoEnd) miss.push("帰着ODO（帰着）");
+    if (!obj.abnormal) miss.push("異常申告（帰着）");
+    if (obj.abnormal === "あり" && !obj.abnormalDetail) miss.push("異常内容（帰着）");
+
+    if (miss.length) {
+      alertMsg(`未入力があります：\n${miss.join("\n")}`);
+      return;
     }
-  }
 
-  async function onSaveArr() {
-    try {
-      const t = readArr();
-      const miss = validateTenkoCommon(t);
-      if (!t.breakMin && t.breakMin !== 0) miss.push("休憩時間");
-      if (!t.temp && t.temp !== 0) miss.push("体温");
-      if (!t.odoEnd && t.odoEnd !== 0) miss.push("帰着ODO");
-
-      if (miss.length) {
-        alert(`未入力があります：\n${miss.join("\n")}`);
-        return;
-      }
-
-      await DB.addTenko(t);
-      alert("帰着点呼を保存しました");
-      await reloadHistory();
-      await updateOdoState();
-    } catch (e) {
-      console.error(e);
-      alert("保存に失敗しました");
-    }
+    await dbPut(STORE_TENKO_SAFE, obj);
+    await updateOdoChip();
+    await reloadHistory();
+    alertMsg("帰着点呼を保存しました");
   }
 
   function clearDep() {
-    ["d_at","d_method","d_sleep","d_temp","d_condition","d_fatigue","d_med","d_medDetail","d_drink","d_alcState","d_alcValue","d_alcJudge","d_projectMain","d_area","d_danger","d_odoStart","d_abnormal","d_abnormalDetail"]
-      .forEach(id => { if ($(id)) $(id).value = ""; });
-    alert("出発点呼をクリアしました");
+    [
+      "d_at","d_method","d_sleep","d_temp","d_condition","d_fatigue","d_med","d_medDetail",
+      "d_drink","d_alcState","d_alcValue","d_alcJudge","d_projectMain","d_area","d_danger",
+      "d_odoStart","d_abnormal","d_abnormalDetail"
+    ].forEach(id => setVal(id, ""));
   }
 
   function clearArr() {
-    ["a_at","a_method","a_breakMin","a_temp","a_condition","a_fatigue","a_med","a_medDetail","a_alcState","a_alcValue","a_alcJudge","a_odoEnd","a_abnormal","a_abnormalDetail"]
-      .forEach(id => { if ($(id)) $(id).value = ""; });
-    alert("帰着点呼をクリアしました");
+    [
+      "a_at","a_method","a_breakMin","a_temp","a_condition","a_fatigue","a_med","a_medDetail",
+      "a_alcState","a_alcValue","a_alcJudge","a_odoEnd","a_abnormal","a_abnormalDetail"
+    ].forEach(id => setVal(id, ""));
   }
 
-  // ===== 日報（今回は“履歴表示・削除”が主。登録は既存運用があればそれを尊重） =====
-  // ※あなたの既存日報保存ロジックが別にある場合でも、
-  //   ここは壊さず、履歴読み出し/削除だけ確実に動かす。
+  async function updateOdoChip() {
+    const chipDot = $("dotOdo");
+    const chipText = $("odoState");
+    if (!chipText) return;
 
-  // ===== 履歴：見やすく＋個別削除 =====
-  function buildHistoryHtml(tenko, daily) {
-    const tenkoSorted = [...tenko].sort((a,b) => (parseDateLike(b.at)?.getTime() ?? 0) - (parseDateLike(a.at)?.getTime() ?? 0));
-    const dailySorted = [...daily].sort((a,b) => (parseDateLike(b.date)?.getTime() ?? 0) - (parseDateLike(a.date)?.getTime() ?? 0));
+    const tenko = await dbGetAll(STORE_TENKO_SAFE);
+    // 最新日っぽいもの同士でざっくり算出
+    const deps = tenko.filter(x => x.type === "dep" && x.at).sort((a,b)=> (b.at||"").localeCompare(a.at||""));
+    const arrs = tenko.filter(x => x.type === "arr" && x.at).sort((a,b)=> (b.at||"").localeCompare(a.at||""));
 
-    const tenkoItems = tenkoSorted.map(t => {
-      const when = fmtYMDHM(t.at);
-      const typeLabel = t.type === "arr" ? "帰着" : "出発";
-      const alc = (t.alcValue ?? 0);
-      const abn = (t.abnormal ?? "");
-      return `
-        <div class="histCard">
-          <div class="histTop">
-            <div class="histTitle">点呼：${esc(when)} / ${esc(typeLabel)}</div>
-            <button class="histDel" data-kind="tenko" data-id="${esc(t.id)}">削除</button>
-          </div>
-          <div class="histMeta">${esc(t.name)} / ${esc(t.base)} / alc:${esc(alc)} / ${esc(abn || "なし")}</div>
-        </div>
-      `;
-    }).join("");
+    const dep = deps[0] || null;
+    const arr = arrs[0] || null;
 
-    const dailyItems = dailySorted.map(d => {
-      const day = fmtYMD(d.date);
-      const sales = d.sales ?? d.uriage ?? d.total ?? "";
-      const profit = d.profit ?? d.rieki ?? "";
-      const km = d.km ?? d.distance ?? "";
-      return `
-        <div class="histCard">
-          <div class="histTop">
-            <div class="histTitle">日報：${esc(day)}</div>
-            <button class="histDel" data-kind="daily" data-id="${esc(d.id)}">削除</button>
-          </div>
-          <div class="histMeta">${esc(d.name)} / ${esc(d.base)}</div>
-          <div class="histMeta small">売上:${esc(sales)} 利益:${esc(profit)} 走行:${esc(km)}</div>
-        </div>
-      `;
-    }).join("");
+    const diff = calcOdoDiff(dep, arr);
+    chipText.textContent = diff ? `走行距離：${diff} km` : "走行距離：未計算";
+    if (chipDot) chipDot.className = "dot" + (diff ? " ok" : "");
+  }
 
-    const emptyTenko = tenkoItems ? "" : `<div class="small">点呼履歴：まだありません</div>`;
-    const emptyDaily = dailyItems ? "" : `<div class="small">日報履歴：まだありません</div>`;
+  // ------------------------------
+  // Daily（任意）
+  // ------------------------------
+  function buildDaily(profile) {
+    const date = val("r_date") || dateOnly(new Date().toISOString());
+    const payBase = safeNum(val("r_payBase"));
+    const incentive = safeNum(val("r_incentive"));
+    const salesTotal = payBase + incentive;
 
+    const costFuel = safeNum(val("r_fuel"));
+    const costHigh = safeNum(val("r_highway"));
+    const costPark = safeNum(val("r_parking"));
+    const costOther = safeNum(val("r_otherCost"));
+    const costs = costFuel + costHigh + costPark + costOther;
+
+    const profit = salesTotal - costs;
+
+    return {
+      id: `daily|${date}|${normalizePhone(profile.phone)}`,
+      date,
+      start: val("r_start"),
+      end: val("r_end"),
+      breakMin: val("r_break"),
+      count: val("r_count"),
+      absent: val("r_absent"),
+      redel: val("r_redel"),
+      returnCount: val("r_return"),
+      claim: val("r_claim"),
+      claimDetail: val("r_claimDetail"),
+      payBase,
+      incentive,
+      salesTotal,
+      fuel: costFuel,
+      highway: costHigh,
+      parking: costPark,
+      otherCost: costOther,
+      costs,
+      profit,
+      memo: val("r_memo"),
+
+      // ★検索キー（必須情報）
+      name: profile.name,
+      base: profile.base,
+      phone: profile.phone,
+
+      updatedAt: new Date().toISOString()
+    };
+  }
+
+  // ------------------------------
+  // PDF（今日 / 過去日）
+  // ------------------------------
+  async function makePdfForDate(targetDate, profile) {
+    // その日の dep/arr/daily を集める（電話番号で絞る）
+    const phoneN = normalizePhone(profile.phone);
+    const tenkoAll = await dbGetAll(STORE_TENKO_SAFE);
+    const dailyAll = await dbGetAll(STORE_DAILY_SAFE);
+
+    const tenko = tenkoAll.filter(x =>
+      dateOnly(x.at) === targetDate && normalizePhone(x.phone) === phoneN
+    );
+
+    const dep = tenko.filter(x => x.type === "dep").sort((a,b)=> (a.at||"").localeCompare(b.at||""))[0] || null;
+    const arr = tenko.filter(x => x.type === "arr").sort((a,b)=> (a.at||"").localeCompare(b.at||""))[0] || null;
+
+    const daily = dailyAll.find(x =>
+      (x.date === targetDate) && normalizePhone(x.phone) === phoneN
+    ) || null;
+
+    const odoDiff = calcOdoDiff(dep, arr);
+
+    if (typeof window.generateTodayPdf !== "function") {
+      alertMsg("PDF機能が読み込めていません（pdf.js）");
+      return;
+    }
+
+    // 過去日のため、ファイルは保存していない → 空で渡す（画像なしPDF）
+    const files = {
+      licenseImg: null,
+      alcDepImg: null,
+      alcArrImg: null,
+    };
+
+    await window.generateTodayPdf({
+      profile,
+      dep,
+      arr,
+      daily,
+      odoDiff,
+      files
+    });
+  }
+
+  async function makeTodayPdf() {
+    const profile = await requireProfile();
+
+    // 今日扱いの日付は「日報日付があればそれ」「なければ出発 or 帰着の日付」
+    const dDate = val("r_date");
+    let keyDate = dDate || "";
+
+    // 今日の入力から一時オブジェクトを組み立て（DBの有無に依存しない）
+    // ただしPDFは “保存済み” のデータを基本に出すほうが安全なので、
+    // まずはDBから該当日のデータを拾う。
+    if (!keyDate) {
+      keyDate = dateOnly(val("d_at")) || dateOnly(val("a_at")) || dateOnly(new Date().toISOString());
+    }
+
+    await makePdfForDate(keyDate, profile);
+  }
+
+  // ------------------------------
+  // 履歴表示（タップでPDF再出力）
+  // ------------------------------
+  function buildTenkoLine(x) {
+    const typeLabel = x.type === "dep" ? "出発" : "帰着";
+    const alc = (x.alcValue ?? "");
+    const abn = (x.abnormal ?? "");
+    const abnText = abn ? (abn === "あり" ? "あり" : "なし") : "";
     return `
-      <div class="histSection">
-        <div class="histSectionTitle">点呼履歴</div>
-        ${emptyTenko}
-        ${tenkoItems}
+      <div class="historyRow" data-kind="tenko" data-id="${x.id}" style="
+        border:1px solid #e7edf6;border-radius:16px;padding:12px 12px;
+        display:flex;align-items:flex-start;justify-content:space-between;gap:10px;
+        margin:10px 0; background:#fff;">
+        <div style="flex:1; min-width:0;">
+          <div style="font-weight:900; font-size:15px;">点呼：${fmt(x.at)} / ${typeLabel}</div>
+          <div style="margin-top:6px; color:#445; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+            ${x.name || ""} / ${x.base || ""} / alc:${alc} / ${abnText}
+          </div>
+          <div style="margin-top:6px; color:#2f6; font-weight:800; font-size:12px;">
+            タップでこの日のPDFを出力
+          </div>
+        </div>
+        <button class="btn secondary" data-del="1" style="padding:8px 10px; border-radius:12px;">削除</button>
       </div>
+    `;
+  }
 
-      <div class="divider"></div>
-
-      <div class="histSection">
-        <div class="histSectionTitle">日報履歴</div>
-        ${emptyDaily}
-        ${dailyItems}
+  function buildDailyLine(x) {
+    return `
+      <div class="historyRow" data-kind="daily" data-id="${x.id}" style="
+        border:1px solid #e7edf6;border-radius:16px;padding:12px 12px;
+        display:flex;align-items:flex-start;justify-content:space-between;gap:10px;
+        margin:10px 0; background:#fff;">
+        <div style="flex:1; min-width:0;">
+          <div style="font-weight:900; font-size:15px;">日報：${x.date}</div>
+          <div style="margin-top:6px; color:#445; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+            ${x.name || ""} / ${x.base || ""} / 売上:${x.salesTotal || 0} 利益:${x.profit || 0}
+          </div>
+          <div style="margin-top:6px; color:#2f6; font-weight:800; font-size:12px;">
+            タップでこの日のPDFを出力
+          </div>
+        </div>
+        <button class="btn secondary" data-del="1" style="padding:8px 10px; border-radius:12px;">削除</button>
       </div>
-
-      <style>
-        .histSectionTitle{font-weight:900;margin:6px 0 10px 0}
-        .histCard{border:1px solid rgba(0,0,0,.08); border-radius:14px; padding:10px; margin:8px 0; background:#fff}
-        .histTop{display:flex; align-items:center; justify-content:space-between; gap:10px}
-        .histTitle{font-weight:800; font-size:14px}
-        .histMeta{font-size:13px; opacity:.85; margin-top:4px; line-height:1.4}
-        .histMeta.small{font-size:12px; opacity:.7}
-        .histDel{border:none; padding:8px 10px; border-radius:12px; background:rgba(0,0,0,.08); font-weight:800}
-      </style>
     `;
   }
 
@@ -497,114 +605,177 @@
     const box = $("historyBox");
     if (!box) return;
 
-    try {
-      const [tenko, daily] = await Promise.all([DB.getTenkoAll(), DB.getDailyAll()]);
-      box.innerHTML = buildHistoryHtml(tenko, daily);
+    const profile = await dbGet(STORE_PROFILE_SAFE, "me");
+    const phoneN = profile ? normalizePhone(profile.phone) : "";
 
-      // 個別削除（イベント委譲）
-      box.onclick = async (ev) => {
-        const btn = ev.target?.closest?.(".histDel");
-        if (!btn) return;
-        const kind = btn.getAttribute("data-kind");
-        const id = btn.getAttribute("data-id");
-        if (!id) return;
+    const tenkoAll = await dbGetAll(STORE_TENKO_SAFE);
+    const dailyAll = await dbGetAll(STORE_DAILY_SAFE);
 
-        if (!confirm("この1件を削除しますか？")) return;
+    // 自端末＆自分の電話番号で絞る（誤爆防止）
+    const tenko = phoneN
+      ? tenkoAll.filter(x => normalizePhone(x.phone) === phoneN)
+      : tenkoAll;
 
-        try {
-          if (kind === "tenko") await DB.deleteTenko(id);
-          if (kind === "daily") await DB.deleteDaily(id);
-          await reloadHistory();
-        } catch (e) {
-          console.error(e);
-          alert("削除に失敗しました");
-        }
-      };
+    const daily = phoneN
+      ? dailyAll.filter(x => normalizePhone(x.phone) === phoneN)
+      : dailyAll;
 
-      await updateOdoState(tenko);
-    } catch (e) {
-      console.error(e);
-      box.innerHTML = `<div class="small">履歴の読み込みに失敗しました（IndexedDB権限/制限を確認）</div>`;
-    }
-  }
+    // 新しい順
+    tenko.sort((a,b)=> (b.at||"").localeCompare(a.at||""));
+    daily.sort((a,b)=> (b.date||"").localeCompare(a.date||""));
 
-  async function updateOdoState(tenkoOpt) {
-    try {
-      const tenko = tenkoOpt ?? await DB.getTenkoAll();
-      // 最新の出発ODOと帰着ODOを見て距離を表示（同日/同人の厳密突合は管理側で）
-      const dep = [...tenko].filter(x => x.type === "dep" && x.odoStart != null)
-        .sort((a,b) => (parseDateLike(b.at)?.getTime() ?? 0) - (parseDateLike(a.at)?.getTime() ?? 0))[0];
-      const arr = [...tenko].filter(x => x.type === "arr" && x.odoEnd != null)
-        .sort((a,b) => (parseDateLike(b.at)?.getTime() ?? 0) - (parseDateLike(a.at)?.getTime() ?? 0))[0];
+    let html = "";
 
-      if (!dep || !arr) {
-        setDot("dotOdo", false);
-        setText("odoState", "走行距離：未計算");
+    // 点呼履歴
+    html += `<div class="h3" style="font-weight:900;margin:10px 0 6px;">点呼履歴</div>`;
+    if (!tenko.length) html += `<div class="small" style="color:#666;">まだありません</div>`;
+    else html += tenko.slice(0, 200).map(buildTenkoLine).join("");
+
+    // 日報履歴
+    html += `<div class="h3" style="font-weight:900;margin:18px 0 6px;">日報履歴</div>`;
+    if (!daily.length) html += `<div class="small" style="color:#666;">まだありません</div>`;
+    else html += daily.slice(0, 200).map(buildDailyLine).join("");
+
+    box.innerHTML = html;
+
+    // クリック/タップ処理（イベント委譲）
+    box.onclick = async (ev) => {
+      const row = ev.target.closest(".historyRow");
+      if (!row) return;
+
+      const delBtn = ev.target.closest('button[data-del="1"]');
+      const id = row.dataset.id;
+      const kind = row.dataset.kind;
+
+      // 削除
+      if (delBtn) {
+        ev.preventDefault();
+        ev.stopPropagation();
+        const ok = confirm("この履歴を削除しますか？");
+        if (!ok) return;
+
+        if (kind === "tenko") await dbDelete(STORE_TENKO_SAFE, id);
+        if (kind === "daily") await dbDelete(STORE_DAILY_SAFE, id);
+
+        await reloadHistory();
         return;
       }
 
-      const dist = (arr.odoEnd ?? 0) - (dep.odoStart ?? 0);
-      setDot("dotOdo", Number.isFinite(dist) && dist >= 0);
-      setText("odoState", `走行距離：${Number.isFinite(dist) ? dist : "-"} km（直近）`);
-    } catch {
-      // ignore
-    }
-  }
+      // タップでPDF再出力
+      try {
+        const profile = await requireProfile();
 
-  async function onClearAll() {
-    if (!confirm("点呼/日報の履歴を全削除します。よろしいですか？")) return;
-    try {
-      await DB.clearAll();
-      alert("全削除しました");
-      await reloadHistory();
-    } catch (e) {
-      console.error(e);
-      alert("全削除に失敗しました");
-    }
-  }
+        if (kind === "tenko") {
+          // tenko の日付でPDF
+          const tenkoAll = await dbGetAll(STORE_TENKO_SAFE);
+          const t = tenkoAll.find(x => x.id === id);
+          if (!t) return;
+          const d = dateOnly(t.at);
+          if (!d) {
+            alertMsg("日付が取得できませんでした");
+            return;
+          }
+          await makePdfForDate(d, profile);
+        }
 
-  // ===== 初期化 =====
-  function bindOnce(id, fn) {
-    const el = $(id);
-    if (!el) return;
-    el.addEventListener("click", (e) => {
-      e.preventDefault();
-      fn();
-    }, { passive: false });
-  }
-
-  document.addEventListener("DOMContentLoaded", async () => {
-    // ボタン
-
-    bindOnce("btnSaveProfile", onSaveProfile);
-    bindOnce("btnLoadProfile", onLoadProfile);
-
-    bindOnce("btnSaveDep", onSaveDep);
-    bindOnce("btnClearDep", clearDep);
-
-    bindOnce("btnSaveArr", onSaveArr);
-    bindOnce("btnClearArr", clearArr);
-
-    bindOnce("btnReloadHistory", reloadHistory);
-    bindOnce("btnClearAll", onClearAll);
-
-    // 初期状態
-    if ($("d_at") && !$("d_at").value) $("d_at").value = toLocalInputValue(new Date());
-    if ($("a_at") && !$("a_at").value) $("a_at").value = toLocalInputValue(new Date());
-
-    // プロファイル状態だけ反映
-    try {
-      const p = await DB.loadProfile();
-      if (p) {
-        setDot("dotProfile", true);
-        setText("profileState", "保存済み");
-      } else {
-        setDot("dotProfile", false);
-        setText("profileState", "未保存");
+        if (kind === "daily") {
+          const dailyAll = await dbGetAll(STORE_DAILY_SAFE);
+          const d = dailyAll.find(x => x.id === id);
+          if (!d) return;
+          await makePdfForDate(d.date, profile);
+        }
+      } catch (e) {
+        console.error(e);
       }
-    } catch {}
+    };
+  }
 
+  async function clearAll() {
+    const ok = confirm("全履歴を削除します。よろしいですか？");
+    if (!ok) return;
+    await dbClear(STORE_TENKO_SAFE);
+    await dbClear(STORE_DAILY_SAFE);
     await reloadHistory();
-  });
+    alertMsg("全履歴を削除しました");
+  }
 
+  // ------------------------------
+  // CSV
+  // ------------------------------
+  async function exportCsvAll() {
+    // 既存csv.jsに関数があればそれを優先
+    if (typeof window.exportAllCsv === "function") {
+      await window.exportAllCsv();
+      return;
+    }
+    alertMsg("CSV機能が読み込めていません（csv.js）");
+  }
+
+  // ------------------------------
+  // Projects（任意・簡易：画面だけ追加）
+  // ※ DB保存は daily に入れたければ後で拡張OK
+  // ------------------------------
+  function addProjectRow() {
+    const box = $("projectsBox");
+    if (!box) return;
+    const row = document.createElement("div");
+    row.style.border = "1px solid #e7edf6";
+    row.style.borderRadius = "14px";
+    row.style.padding = "10px";
+    row.style.margin = "10px 0";
+    row.innerHTML = `
+      <div class="row">
+        <div style="flex:1">
+          <label>案件名</label>
+          <input class="p_name" placeholder="例：Amazon / 企業便" />
+        </div>
+        <div style="flex:1">
+          <label>売上（任意）</label>
+          <input class="p_sales" inputmode="decimal" placeholder="例：15000" />
+        </div>
+      </div>
+      <button class="btn secondary p_del" style="margin-top:8px">この案件を削除</button>
+    `;
+    row.querySelector(".p_del").onclick = () => row.remove();
+    box.appendChild(row);
+  }
+
+  // ------------------------------
+  // Init
+  // ------------------------------
+  function bind() {
+    // Chrome(iOS含む)でたまに click が死ぬ時の保険：pointerupも付ける
+    const onTap = (el, fn) => {
+      if (!el) return;
+      el.addEventListener("click", (e) => { e.preventDefault(); fn(); }, { passive: false });
+      el.addEventListener("pointerup", (e) => { e.preventDefault(); fn(); }, { passive: false });
+    };
+
+    onTap($("btnSaveProfile"), saveProfile);
+    onTap($("btnLoadProfile"), loadProfile);
+
+    onTap($("btnSaveDep"), saveDep);
+    onTap($("btnClearDep"), () => { clearDep(); alertMsg("出発点呼をクリアしました"); });
+
+    onTap($("btnSaveArr"), saveArr);
+    onTap($("btnClearArr"), () => { clearArr(); alertMsg("帰着点呼をクリアしました"); });
+
+    onTap($("btnMakePdf"), makeTodayPdf);
+    onTap($("btnMakeCsv"), exportCsvAll);
+
+    onTap($("btnReloadHistory"), reloadHistory);
+    onTap($("btnClearAll"), clearAll);
+
+    onTap($("btnAddProject"), addProjectRow);
+  }
+
+  async function bootstrap() {
+    renderChecklist();
+    bind();
+    await loadProfile().catch(()=>{});
+    await updateOdoChip().catch(()=>{});
+    await reloadHistory().catch(()=>{});
+  }
+
+  document.addEventListener("DOMContentLoaded", bootstrap);
 })();
