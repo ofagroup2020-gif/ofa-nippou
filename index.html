@@ -2,82 +2,107 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8" />
-  <title>OFA GROUP ドライバーエントリー</title>
+  <title>OFA GROUP 車両報告書</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <link rel="stylesheet" href="style.css" />
-  <meta name="theme-color" content="#ff7a00" />
 
-  <!-- jsPDF -->
-  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+  <!-- キャッシュ対策 -->
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <meta http-equiv="Pragma" content="no-cache" />
+  <meta http-equiv="Expires" content="0" />
+
+  <link rel="stylesheet" href="style.css?v=20260127" />
 </head>
-
 <body>
-  <div class="app">
 
-    <header class="header">
-      <div class="logo">OFA</div>
-      <div>
-        <h1>Driver Entry</h1>
-        <p>OFA GROUP</p>
-      </div>
-    </header>
-
-    <div class="progress">
-      <div id="bar"></div>
-    </div>
-
-    <main id="steps">
-
-      <!-- STEP 1 -->
-      <section class="step active">
-        <h2>基本情報</h2>
-        <input id="name" placeholder="氏名（漢字）" />
-        <input id="kana" placeholder="フリガナ" />
-        <input id="phone" placeholder="電話番号" />
-        <input id="email" placeholder="メールアドレス" />
-      </section>
-
-      <!-- STEP 2 -->
-      <section class="step">
-        <h2>住所</h2>
-        <input id="zip" placeholder="郵便番号" />
-        <input id="pref" placeholder="都道府県" />
-        <input id="city" placeholder="市区町村" />
-        <input id="addr" placeholder="番地・建物名" />
-      </section>
-
-      <!-- STEP 3 -->
-      <section class="step">
-        <h2>車両情報</h2>
-        <input id="vehicle" placeholder="車種（軽バンなど）" />
-        <input id="plate" placeholder="ナンバー" />
-      </section>
-
-      <!-- STEP 4 -->
-      <section class="step">
-        <h2>免許証</h2>
-        <label>表面（必須）</label>
-        <input id="licFront" type="file" accept="image/*" />
-        <label>裏面（任意）</label>
-        <input id="licBack" type="file" accept="image/*" />
-      </section>
-
-      <!-- STEP 5 -->
-      <section class="step">
-        <h2>完了</h2>
-        <p>登録内容を送信します</p>
-        <button id="submit">登録してLINEへ送信</button>
-      </section>
-
-    </main>
-
-    <div class="nav">
-      <button id="prev">戻る</button>
-      <button id="next">次へ</button>
-    </div>
-
+<header class="header">
+  <div class="logo">OFA</div>
+  <div class="title">
+    <div class="main">OFA GROUP 車両管理</div>
+    <div class="sub">車両報告書 作成</div>
   </div>
+</header>
 
-  <script src="js/app.js"></script>
+<main id="app">
+
+  <!-- 種別 -->
+  <section class="card">
+    <h2>種別選択</h2>
+    <div class="tabs">
+      <button class="tab active" data-type="loan">貸出</button>
+      <button class="tab" data-type="return">返却</button>
+      <button class="tab" data-type="inspect">定期点検</button>
+    </div>
+  </section>
+
+  <!-- 基本情報 -->
+  <section class="card">
+    <h2>基本情報</h2>
+    <label>管理番号（自動）<input id="manageId" readonly></label>
+    <label>作成日時<input id="createdAt" readonly></label>
+    <label>拠点（都道府県）
+      <select id="pref">
+        <option value="">選択</option>
+        <option>鹿児島県</option>
+        <option>福岡県</option>
+      </select>
+    </label>
+    <label>車両ナンバー<input id="carNo"></label>
+    <label>車台番号<input id="frameNo"></label>
+    <label>走行距離（km）<input id="mileage" type="number"></label>
+  </section>
+
+  <!-- 写真：外観 -->
+  <section class="card">
+    <h2>車両写真（外観）</h2>
+    <div class="grid">
+      <label>前方<input type="file" class="photo"></label>
+      <label>後方<input type="file" class="photo"></label>
+      <label>左側面<input type="file" class="photo"></label>
+      <label>右側面<input type="file" class="photo"></label>
+      <label>荷台（後）<input type="file" class="photo"></label>
+    </div>
+  </section>
+
+  <!-- タイヤ -->
+  <section class="card">
+    <h2>タイヤ4箇所</h2>
+    <div class="grid">
+      <label>左前<input type="file" class="photo"></label>
+      <label>右前<input type="file" class="photo"></label>
+      <label>左後<input type="file" class="photo"></label>
+      <label>右後<input type="file" class="photo"></label>
+    </div>
+  </section>
+
+  <!-- 日常点検 -->
+  <section class="card">
+    <h2>日常点検（15項目）</h2>
+    <div class="checklist" id="dailyCheck"></div>
+  </section>
+
+  <!-- 署名 -->
+  <section class="card">
+    <h2>署名（必須）</h2>
+    <canvas id="sign" width="300" height="120"></canvas>
+    <button id="clearSign">署名クリア</button>
+  </section>
+
+  <!-- 問い合わせ -->
+  <section class="card">
+    <h2>問い合わせ先</h2>
+    <a class="line-btn" href="https://lin.ee/ZsC6sxs" target="_blank">
+      OFAメンバーシップLINEを開く
+    </a>
+  </section>
+
+</main>
+
+<!-- フッター操作 -->
+<footer id="bottomBar">
+  <button id="makePdf">PDFを作成</button>
+</footer>
+
+<script src="script.js?v=20260127"></script>
+<script src="pdf.js?v=20260127"></script>
 </body>
 </html>
