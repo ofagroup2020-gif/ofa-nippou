@@ -1,220 +1,505 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-  <title>OFA GROUP 車両報告書 作成</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>OFA 点呼 / 日報（ドライバー）</title>
+  <link rel="stylesheet" href="./style.css" />
 
-  <!-- キャッシュ対策：手動で数字を変えると確実に反映 -->
-  <link rel="stylesheet" href="./styles.css?v=20260127_01" />
-
-  <!-- libs -->
-  <script defer src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
-  <script defer src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
-
-  <!-- app -->
-  <script defer src="./pdf.js?v=20260127_01"></script>
-  <script defer src="./script.js?v=20260127_01"></script>
+  <!-- キャッシュ殺し（iOS/Chrome対策） -->
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <meta http-equiv="Pragma" content="no-cache" />
+  <meta http-equiv="Expires" content="0" />
 </head>
 
 <body>
-  <!-- ヘッダー -->
-  <header class="topbar">
-    <div class="brand">
-      <div class="logo">OFA</div>
-      <div class="brandText">
-        <div class="brandTitle">OFA GROUP</div>
-        <div class="brandSub">株式会社OFA 車両管理</div>
-      </div>
+  <div class="header">
+    <div class="logo">OFA</div>
+    <div class="titlewrap">
+      <div class="title">点呼 / 日報（ドライバー）</div>
+      <div class="subtitle">端末内保存（IndexedDB） / 出発・帰着 分離 / PDF・CSV出力</div>
     </div>
-    <div class="status">
-      <span class="dot"></span>
-      <span id="nowText">--</span>
-    </div>
-  </header>
+    <a href="./admin/index.html"><button class="rightTopBtn">管理</button></a>
+  </div>
 
-  <main class="container">
-    <!-- 説明 -->
-    <section class="card cardBlue">
-      <h2>車両報告書 作成</h2>
-      <p class="desc">
-        貸出 / 返却 / 定期点検 の記録を「写真埋め込みPDF（報告書）」として作成し、LINE共有・印刷に使用できます。<br>
-        ※入力データ・写真は保存しません（端末内でPDF生成）。
-      </p>
-    </section>
-
-    <!-- 種別 -->
-    <section class="card">
-      <h2>種別選択</h2>
-      <div class="tabRow" role="tablist" aria-label="種別選択">
-        <button class="tab active" data-type="loan" type="button">貸出</button>
-        <button class="tab" data-type="return" type="button">返却</button>
-        <button class="tab" data-type="inspect" type="button">定期点検</button>
-      </div>
-      <p class="hint">
-        ※タブ切替時は入力を全てリセットし、常に最新データで作成します。
-      </p>
-    </section>
+  <div class="container">
 
     <!-- 基本情報 -->
-    <section class="card">
-      <h2>基本情報</h2>
+    <div class="card">
+      <div class="h2">① 基本情報（必須）</div>
+      <div class="note">
+        ここは端末内（IndexedDB）に保存されます。<br />
+        ※免許証写真は<strong>端末に保存しません</strong>（PDF生成時のみ使用）。
+      </div>
 
-      <div class="grid2">
-        <div class="field">
-          <label>管理番号（自動生成）</label>
-          <input id="manageNo" type="text" placeholder="自動生成されます" readonly>
-          <div class="mini">例：OFA-46-20260126-025501-8F2A</div>
+      <!-- ★ 追加：名前 or 電話で呼び出し（必須情報なので引ける仕様） -->
+      <div class="divider"></div>
+      <div class="h3" style="margin:0 0 8px;">基本情報を検索して自動入力</div>
+      <div class="note" style="margin-top:0">
+        <strong>氏名</strong> または <strong>電話番号</strong> のどちらかがあれば呼び出せます。
+      </div>
+      <label style="margin-top:0">検索（氏名 or 電話番号）</label>
+      <input id="p_lookup" placeholder="例：森下 / 090-1234-5678" />
+      <div class="actions" style="margin-top:10px">
+        <button class="btn secondary inline" id="btnLookupProfile">検索して自動入力</button>
+        <button class="btn secondary inline" id="btnClearProfileForm">入力欄クリア</button>
+      </div>
+
+      <div class="divider"></div>
+
+      <label>氏名（本名）*</label>
+      <input id="p_name" placeholder="例：森下 洸" />
+
+      <label>拠点（都道府県など）*</label>
+      <input id="p_base" placeholder="例：鹿児島 / 福岡 / 東京" />
+
+      <label>車両番号（ナンバー）*</label>
+      <input id="p_carNo" placeholder="例：鹿児島 580 あ 1234" />
+
+      <label>運転免許証番号*</label>
+      <input id="p_licenseNo" placeholder="例：第1234567890号" />
+
+      <label>電話番号*</label>
+      <input id="p_phone" inputmode="tel" placeholder="例：090-1234-5678" />
+
+      <label>メールアドレス*</label>
+      <input id="p_email" inputmode="email" placeholder="例：example@ofa.jp" />
+
+      <label>運転免許証写真（PDFに埋め込み：任意）</label>
+      <input id="f_licenseImg" type="file" accept="image/*" />
+      <div class="small">※端末保存しません。PDF生成時のみ使用</div>
+
+      <div class="actions" style="margin-top:12px">
+        <button class="btn" id="btnSaveProfile">基本情報を保存</button>
+        <button class="btn secondary" id="btnLoadProfile">この端末の基本情報を読み込み</button>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="note">
+        <span class="chip"><span class="dot" id="dotProfile"></span> <span id="profileState">未保存</span></span>
+      </div>
+    </div>
+
+    <!-- 出発点呼 -->
+    <div class="card">
+      <div class="h2">② 出発点呼（業務開始前）</div>
+      <div class="note">
+        出発時に<strong>出発の内容だけ</strong>入力します（帰着ODOはここでは入力しません）。
+      </div>
+
+      <label>点呼日時（手入力）*</label>
+      <input id="d_at" type="datetime-local" />
+
+      <label>点呼実施方法*</label>
+      <select id="d_method">
+        <option value="">選択</option>
+        <option>対面</option>
+        <option>電話</option>
+        <option>アプリ</option>
+        <option>その他</option>
+      </select>
+
+      <div class="row">
+        <div>
+          <label>睡眠時間（h）*</label>
+          <input id="d_sleep" inputmode="decimal" placeholder="例：6.5" />
         </div>
-
-        <div class="field">
-          <label>作成日時（自動）</label>
-          <input id="createdAt" type="text" readonly>
-          <div class="mini">※変更できません</div>
+        <div>
+          <label>体温（℃）*</label>
+          <input id="d_temp" inputmode="decimal" placeholder="例：36.5" />
         </div>
+      </div>
 
-        <div class="field">
-          <label>拠点（都道府県）<span class="req">必須</span></label>
-          <select id="pref" required></select>
-          <div class="mini">拠点コードは自動付与され、PDFに記載されます</div>
-        </div>
-
-        <div class="field">
-          <label>拠点コード（自動）</label>
-          <input id="prefCode" type="text" placeholder="自動" readonly>
-        </div>
-
-        <div class="field">
-          <label>車両ナンバー<span class="req">必須</span></label>
-          <input id="plateNo" type="text" placeholder="例）鹿児島 480 あ 12-34" required>
-        </div>
-
-        <div class="field">
-          <label>車体番号（車台番号）<span class="req">必須</span></label>
-          <input id="vin" type="text" placeholder="例）EBD-DA17V-123456" required>
-        </div>
-
-        <div class="field">
-          <label>走行距離（km）<span class="req">必須</span></label>
-          <input id="odometer" type="number" inputmode="numeric" placeholder="例）12345" required>
-        </div>
-
-        <div class="field">
-          <label>給油状況<span class="req">必須</span></label>
-          <select id="fuel" required>
+      <div class="row">
+        <div>
+          <label>体調*</label>
+          <select id="d_condition">
             <option value="">選択</option>
-            <option>満タン</option>
-            <option>3/4</option>
-            <option>1/2</option>
-            <option>1/4</option>
-            <option>ほぼ空</option>
+            <option>良好</option>
+            <option>注意</option>
+            <option>不良</option>
           </select>
         </div>
-
-        <div class="field">
-          <label>利用者 氏名<span class="req">必須</span></label>
-          <input id="userName" type="text" placeholder="例）森下 洸" required>
-        </div>
-
-        <div class="field">
-          <label>契約用メールアドレス<span class="req">必須</span></label>
-          <input id="email" type="email" inputmode="email" placeholder="example@gmail.com" required>
-        </div>
-
-        <div class="field span2">
-          <label>備考（任意）</label>
-          <textarea id="note" rows="3" placeholder="例）傷の位置、返却時の伝達事項など"></textarea>
+        <div>
+          <label>疲労*</label>
+          <select id="d_fatigue">
+            <option value="">選択</option>
+            <option>なし</option>
+            <option>少し</option>
+            <option>強い</option>
+          </select>
         </div>
       </div>
-    </section>
 
-    <!-- 写真（グループ化） -->
-    <section class="card">
-      <div class="rowBetween">
-        <h2>写真（必須）</h2>
-        <div class="badge" id="photoProgress">0 / 0</div>
+      <label>服薬・体調影響*</label>
+      <select id="d_med">
+        <option value="">選択</option>
+        <option value="なし">なし</option>
+        <option value="あり">あり</option>
+      </select>
+
+      <label>服薬内容（服薬ありの場合）</label>
+      <input id="d_medDetail" placeholder="例：花粉症薬" />
+
+      <label>飲酒の有無*</label>
+      <select id="d_drink">
+        <option value="">選択</option>
+        <option>なし</option>
+        <option>あり</option>
+      </select>
+
+      <label>酒気帯び有無*</label>
+      <select id="d_alcState">
+        <option value="">選択</option>
+        <option>なし</option>
+        <option>疑い</option>
+        <option>あり</option>
+      </select>
+
+      <div class="row">
+        <div>
+          <label>アルコール数値*</label>
+          <input id="d_alcValue" inputmode="decimal" placeholder="例：0.00" />
+        </div>
+        <div>
+          <label>判定*</label>
+          <select id="d_alcJudge">
+            <option value="">選択</option>
+            <option>OK</option>
+            <option>NG</option>
+          </select>
+        </div>
       </div>
-      <p class="hint">
-        ※未添付があるとPDF作成できません。すべて撮影・添付してください。
-      </p>
 
-      <div class="photoGroups" id="photoGroups"></div>
-    </section>
+      <label>アルコール測定写真（任意・推奨）</label>
+      <input id="f_alcDepImg" type="file" accept="image/*" />
+      <div class="small">※端末保存しません。PDF生成時のみ使用</div>
 
-    <!-- 日常点検（15項目） -->
-    <section class="card" id="dailyCheckCard">
-      <div class="rowBetween">
-        <h2>日常点検（15項目）</h2>
-        <div class="badge" id="checkProgress">0 / 15</div>
+      <label>稼働案件（メイン）*</label>
+      <input id="d_projectMain" placeholder="例：Amazon / ヤマト / 企業便" />
+
+      <label>積込拠点 / エリア*</label>
+      <input id="d_area" placeholder="例：福岡営業所 / 春日周辺" />
+
+      <label>危険物・高額品の有無*</label>
+      <select id="d_danger">
+        <option value="">選択</option>
+        <option>なし</option>
+        <option>あり</option>
+      </select>
+
+      <label>出発ODO（出発時のメーター）*</label>
+      <input id="d_odoStart" inputmode="decimal" placeholder="例：123456" />
+
+      <label>異常申告*</label>
+      <select id="d_abnormal">
+        <option value="">選択</option>
+        <option>なし</option>
+        <option>あり</option>
+      </select>
+
+      <label>異常内容（異常ありの場合は必須）</label>
+      <textarea id="d_abnormalDetail" placeholder="異常がある場合は詳細を記載"></textarea>
+
+      <label>異常写真（任意・推奨）</label>
+      <input id="f_abnDepImg" type="file" accept="image/*" />
+
+      <div class="actions" style="margin-top:12px">
+        <button class="btn" id="btnSaveDep">出発点呼を保存</button>
+        <button class="btn secondary" id="btnClearDep">出発点呼をクリア</button>
       </div>
-      <p class="hint">※点検した項目にチェックしてください（定期点検時は必須）。</p>
+    </div>
 
-      <div class="checkList" id="checkList"></div>
-    </section>
-
-    <!-- 状態確認 -->
-    <section class="card">
-      <h2>車両状態の確認（必須）</h2>
-      <ul class="bullets">
-        <li>貸出 / 返却時に、写真と記録を提出し状態確認を行います。</li>
-        <li>事故・破損・異常が発生した場合は速やかに当社へ報告します。</li>
-        <li>返却時は原則として貸出時と同等の状態で返却します。</li>
-        <li>損傷・汚損等が確認された場合、修理費等が発生する場合があります。</li>
-      </ul>
-
-      <label class="agree">
-        <input id="agree" type="checkbox">
-        <span>上記内容を確認し、状態確認を行いました（必須）</span>
-      </label>
-    </section>
-
-    <!-- 署名 -->
-    <section class="card">
-      <div class="rowBetween">
-        <h2>署名（必須）</h2>
-        <button class="btn small danger" id="btnClearSign" type="button">署名クリア</button>
+    <!-- 帰着点呼 -->
+    <div class="card">
+      <div class="h2">③ 帰着点呼（業務終了後）</div>
+      <div class="note">
+        帰着時に<strong>帰着の内容だけ</strong>入力します（出発ODOはここでは入力しません）。
       </div>
-      <p class="hint">※指で署名できます（iPhone対応）。PDFの右下に小さく挿入されます。</p>
 
-      <div class="signWrap">
-        <canvas id="signPad" width="900" height="300" aria-label="署名欄"></canvas>
+      <label>点呼日時（手入力）*</label>
+      <input id="a_at" type="datetime-local" />
+
+      <label>点呼実施方法*</label>
+      <select id="a_method">
+        <option value="">選択</option>
+        <option>対面</option>
+        <option>電話</option>
+        <option>アプリ</option>
+        <option>その他</option>
+      </select>
+
+      <div class="row">
+        <div>
+          <label>休憩時間（分）*</label>
+          <input id="a_breakMin" inputmode="numeric" placeholder="例：60" />
+        </div>
+        <div>
+          <label>体温（℃）*</label>
+          <input id="a_temp" inputmode="decimal" placeholder="例：36.5" />
+        </div>
       </div>
-    </section>
 
-    <!-- 問い合わせ（ボタンのみ） -->
-    <section class="card cardGreen">
-      <h2>問い合わせ先</h2>
-      <p class="desc">お問い合わせは、OFAメンバーシップLINEからお願いします。</p>
-      <a class="btnLineBig" id="lineLink" href="https://lin.ee/ZsC6sxs" target="_blank" rel="noopener">
-        OFAメンバーシップLINEを開く
-      </a>
-      <p class="mini">※開かない場合は、URLをコピーしてLINEで開いてください。</p>
-    </section>
+      <div class="row">
+        <div>
+          <label>体調*</label>
+          <select id="a_condition">
+            <option value="">選択</option>
+            <option>良好</option>
+            <option>注意</option>
+            <option>不良</option>
+          </select>
+        </div>
+        <div>
+          <label>疲労*</label>
+          <select id="a_fatigue">
+            <option value="">選択</option>
+            <option>なし</option>
+            <option>少し</option>
+            <option>強い</option>
+          </select>
+        </div>
+      </div>
 
-    <!-- 印刷説明 / キャッシュ対策 -->
-    <section class="card cardYellow">
-      <h2>印刷について</h2>
-      <p class="desc">
-        印刷やPDF保存で「切れる」場合は、印刷設定で <b>余白：標準</b> または <b>最小</b> をお試しください。<br>
-        本ツールはA4自動改ページで作成します。
-      </p>
-      <button class="btn ghost" id="btnHardReload" type="button">反映されない時（キャッシュ対策）</button>
-    </section>
+      <label>服薬・体調影響*</label>
+      <select id="a_med">
+        <option value="">選択</option>
+        <option value="なし">なし</option>
+        <option value="あり">あり</option>
+      </select>
 
-    <!-- PDF生成用のステージ（非表示） -->
-    <div id="pdfStage" aria-hidden="true"></div>
+      <label>服薬内容（服薬ありの場合）</label>
+      <input id="a_medDetail" placeholder="例：鎮痛薬" />
 
-    <div class="spacer"></div>
-  </main>
+      <label>酒気帯び有無*</label>
+      <select id="a_alcState">
+        <option value="">選択</option>
+        <option>なし</option>
+        <option>疑い</option>
+        <option>あり</option>
+      </select>
 
-  <!-- 下部メニュー -->
-  <nav class="bottomBar" id="bottomBar">
-    <button class="btn primary" id="btnMakePdf" type="button">PDFを作成</button>
-    <button class="btn green" id="btnShareLine" type="button">LINEに送る</button>
-    <button class="btn dark" id="btnDownload" type="button">PDFダウンロード</button>
-  </nav>
+      <div class="row">
+        <div>
+          <label>アルコール数値*</label>
+          <input id="a_alcValue" inputmode="decimal" placeholder="例：0.00" />
+        </div>
+        <div>
+          <label>判定*</label>
+          <select id="a_alcJudge">
+            <option value="">選択</option>
+            <option>OK</option>
+            <option>NG</option>
+          </select>
+        </div>
+      </div>
 
-  <!-- トースト -->
-  <div class="toast" id="toast"></div>
+      <label>アルコール測定写真（任意・推奨）</label>
+      <input id="f_alcArrImg" type="file" accept="image/*" />
+      <div class="small">※端末保存しません。PDF生成時のみ使用</div>
+
+      <label>帰着ODO（帰着時のメーター）*</label>
+      <input id="a_odoEnd" inputmode="decimal" placeholder="例：123789" />
+
+      <label>異常申告*</label>
+      <select id="a_abnormal">
+        <option value="">選択</option>
+        <option>なし</option>
+        <option>あり</option>
+      </select>
+
+      <label>異常内容（異常ありの場合は必須）</label>
+      <textarea id="a_abnormalDetail" placeholder="異常がある場合は詳細を記載"></textarea>
+
+      <label>異常写真（任意・推奨）</label>
+      <input id="f_abnArrImg" type="file" accept="image/*" />
+
+      <div class="actions" style="margin-top:12px">
+        <button class="btn" id="btnSaveArr">帰着点呼を保存</button>
+        <button class="btn secondary" id="btnClearArr">帰着点呼をクリア</button>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="note">
+        <span class="chip"><span class="dot ok" id="dotOdo"></span> <span id="odoState">走行距離：未計算</span></span>
+      </div>
+    </div>
+
+    <!-- 日常点検 -->
+    <div class="card">
+      <div class="h2">④ 日常点検（フル：スクロール入力）</div>
+      <div class="note">
+        各項目を OK / NG で選択してください。NGがある場合は詳細メモ推奨です。
+      </div>
+
+      <div class="checkWrap">
+        <div class="checkHeader">
+          <div class="checkCol item">項目</div>
+          <div class="checkCol ok c">OK</div>
+          <div class="checkCol ng c">NG</div>
+        </div>
+        <div class="checkScroll" id="checkScroll"></div>
+      </div>
+
+      <label>日常点検メモ（NGがある場合は詳細推奨）</label>
+      <textarea id="checkMemo" placeholder="例：タイヤ溝が浅い、ライト片側不点灯 など"></textarea>
+
+      <label>日常点検NG写真（任意・推奨）</label>
+      <input id="f_checkImg" type="file" accept="image/*" />
+      <div class="small">※端末保存しません。PDF生成時のみ使用</div>
+    </div>
+
+    <!-- 日報（任意） -->
+    <div class="card">
+      <div class="h2">⑤ 日報（任意：入力しなくてもOK）</div>
+      <div class="note">
+        日報・売上系は<strong>オプション</strong>です。必要な人だけ入力してください。
+      </div>
+
+      <label>稼働日（任意）</label>
+      <input id="r_date" type="date" />
+
+      <label>稼働時間：開始（任意）</label>
+      <input id="r_start" type="time" />
+
+      <label>稼働時間：終了（任意）</label>
+      <input id="r_end" type="time" />
+
+      <label>休憩時間（分）（任意）</label>
+      <input id="r_break" inputmode="numeric" placeholder="例：60" />
+
+      <label>配達個数（任意）</label>
+      <input id="r_count" inputmode="numeric" placeholder="例：120" />
+
+      <label>不在数（任意）</label>
+      <input id="r_absent" inputmode="numeric" placeholder="例：20" />
+
+      <label>再配達数（任意）</label>
+      <input id="r_redel" inputmode="numeric" placeholder="例：10" />
+
+      <label>返品 / 持戻り数（任意）</label>
+      <input id="r_return" inputmode="numeric" placeholder="例：2" />
+
+      <label>クレーム（任意）</label>
+      <select id="r_claim">
+        <option value="">未選択</option>
+        <option>なし</option>
+        <option>あり</option>
+      </select>
+
+      <label>クレーム内容（任意）</label>
+      <textarea id="r_claimDetail" placeholder="任意：内容があれば"></textarea>
+
+      <div class="divider"></div>
+      <div class="h2" style="margin-top:0;">売上・報酬（任意）</div>
+
+      <div class="row">
+        <div>
+          <label>日当（任意）</label>
+          <input id="r_payBase" inputmode="decimal" placeholder="例：15000" />
+        </div>
+        <div>
+          <label>インセンティブ（任意）</label>
+          <input id="r_incentive" inputmode="decimal" placeholder="例：3000" />
+        </div>
+      </div>
+
+      <div class="row">
+        <div>
+          <label>燃料（任意）</label>
+          <input id="r_fuel" inputmode="decimal" placeholder="例：2000" />
+        </div>
+        <div>
+          <label>高速（任意）</label>
+          <input id="r_highway" inputmode="decimal" placeholder="例：800" />
+        </div>
+      </div>
+
+      <div class="row">
+        <div>
+          <label>駐車（任意）</label>
+          <input id="r_parking" inputmode="decimal" placeholder="例：500" />
+        </div>
+        <div>
+          <label>その他経費（任意）</label>
+          <input id="r_otherCost" inputmode="decimal" placeholder="例：300" />
+        </div>
+      </div>
+
+      <label>メモ（任意）</label>
+      <textarea id="r_memo" placeholder="任意：気づき・報告"></textarea>
+
+      <label>日報写真（任意：PDFに埋め込み）</label>
+      <input id="f_dailyImg" type="file" accept="image/*" />
+      <div class="small">※端末保存しません。PDF生成時のみ使用</div>
+
+      <div class="divider"></div>
+      <div class="h2" style="margin-top:0;">複数案件（任意：追加式）</div>
+      <div class="note">1案件の人は入力不要。複数案件の人だけ追加してください。</div>
+
+      <div id="projectsBox"></div>
+      <button class="btn secondary" id="btnAddProject">＋ 案件を追加</button>
+    </div>
+
+    <!-- 出力 -->
+    <div class="card">
+      <div class="h2">⑥ 出力（PDF / CSV）</div>
+      <div class="note">
+        PDFは端末内で生成して保存します。iPhoneは保存後に「共有」からLINE/メール送信してください。
+      </div>
+
+      <div class="actions">
+        <button class="btn" id="btnMakePdf">今日のPDF（点呼＋日報）</button>
+        <button class="btn secondary" id="btnMakeCsv">CSV出力（全履歴）</button>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="note">
+        <span class="chip"><span class="dot ok"></span> PDFを保存したら「ファイル」→共有でLINE送信</span>
+      </div>
+    </div>
+
+    <!-- 履歴 -->
+    <div class="card">
+      <div class="h2">⑦ 履歴（端末内）</div>
+      <div class="note">
+        端末内の履歴です（IndexedDB）。<br>
+        <strong>履歴カードをタッチ</strong>すると、その日のデータからPDFを再生成できます（後日でもOK）。
+      </div>
+
+      <!-- ★ 追加：履歴検索 -->
+      <label style="margin-top:0">履歴検索（拠点/氏名/電話/日付 など）</label>
+      <input id="h_q" placeholder="例：鹿児島 / 森下 / 090 / 2026-01-24" />
+
+      <div class="actions" style="margin-top:10px">
+        <button class="btn secondary inline" id="btnReloadHistory">更新</button>
+        <button class="btn secondary inline" id="btnClearAll">全削除（注意）</button>
+      </div>
+
+      <div class="tapHint">※各履歴の右側に「削除」ボタン（個別削除）があります。</div>
+
+      <div id="historyBox"></div>
+    </div>
+
+    <div class="small" style="opacity:.7;margin-top:18px">
+      © OFA GROUP / ドライバー（端末内データのみ・アップロード無し）
+    </div>
+  </div>
+
+  <!-- 問い合わせ（固定） -->
+  <div class="floatingHelp">
+    <a href="https://lin.ee/7sO7SCQ">
+      <button class="btn">OFAメンバー専用LINEへ問い合わせ</button>
+    </a>
+  </div>
+
+  <!-- JS（必ずこの順。v=でキャッシュ殺し） -->
+  <script src="./js/db.js?v=20260129"></script>
+  <script src="./js/pdf.js?v=20260129"></script>
+  <script src="./js/csv.js?v=20260129"></script>
+  <script src="./js/app.js?v=20260129"></script>
 </body>
 </html>
