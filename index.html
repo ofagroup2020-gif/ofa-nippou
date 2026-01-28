@@ -1,167 +1,220 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8" />
-  <title>OFA GROUP 車両報告書</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <title>OFA GROUP 車両報告書 作成</title>
 
-  <!-- GitHub Pages キャッシュ対策 -->
-  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
-  <meta http-equiv="Pragma" content="no-cache" />
-  <meta http-equiv="Expires" content="0" />
+  <!-- キャッシュ対策：手動で数字を変えると確実に反映 -->
+  <link rel="stylesheet" href="./styles.css?v=20260127_01" />
 
-  <link rel="stylesheet" href="style.css?v=20260127_02" />
+  <!-- libs -->
+  <script defer src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 
-  <!-- PDF生成用（日本語崩れ防止：HTML→画像化してPDFへ） -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <!-- app -->
+  <script defer src="./pdf.js?v=20260127_01"></script>
+  <script defer src="./script.js?v=20260127_01"></script>
 </head>
+
 <body>
-
-<header class="header">
-  <div class="logo">OFA</div>
-  <div class="title">
-    <div class="main">OFA GROUP 車両管理</div>
-    <div class="sub">車両報告書 作成</div>
-  </div>
-</header>
-
-<main id="app">
-
-  <!-- 種別 -->
-  <section class="card">
-    <h2>種別選択</h2>
-    <div class="tabs">
-      <button class="tab active" data-type="loan">貸出</button>
-      <button class="tab" data-type="return">返却</button>
-      <button class="tab" data-type="inspect">定期点検</button>
+  <!-- ヘッダー -->
+  <header class="topbar">
+    <div class="brand">
+      <div class="logo">OFA</div>
+      <div class="brandText">
+        <div class="brandTitle">OFA GROUP</div>
+        <div class="brandSub">株式会社OFA 車両管理</div>
+      </div>
     </div>
-    <div style="margin-top:8px;color:#666;">※タブ切替時は入力をリセットし、常に最新データで作成します。</div>
-  </section>
-
-  <!-- 基本情報 -->
-  <section class="card">
-    <h2>基本情報</h2>
-    <label>管理番号（自動）<input id="manageId" readonly></label>
-    <label>作成日時<input id="createdAt" readonly></label>
-
-    <label>拠点（都道府県）
-      <select id="pref">
-        <option value="">選択</option>
-        <option>北海道</option><option>青森県</option><option>岩手県</option><option>宮城県</option><option>秋田県</option><option>山形県</option><option>福島県</option>
-        <option>茨城県</option><option>栃木県</option><option>群馬県</option><option>埼玉県</option><option>千葉県</option><option>東京都</option><option>神奈川県</option>
-        <option>新潟県</option><option>富山県</option><option>石川県</option><option>福井県</option><option>山梨県</option><option>長野県</option>
-        <option>岐阜県</option><option>静岡県</option><option>愛知県</option><option>三重県</option>
-        <option>滋賀県</option><option>京都府</option><option>大阪府</option><option>兵庫県</option><option>奈良県</option><option>和歌山県</option>
-        <option>鳥取県</option><option>島根県</option><option>岡山県</option><option>広島県</option><option>山口県</option>
-        <option>徳島県</option><option>香川県</option><option>愛媛県</option><option>高知県</option>
-        <option>福岡県</option><option>佐賀県</option><option>長崎県</option><option>熊本県</option><option>大分県</option><option>宮崎県</option><option>鹿児島県</option><option>沖縄県</option>
-      </select>
-    </label>
-
-    <label>車両ナンバー<input id="carNo" placeholder="例：鹿児島 480 あ 12-34"></label>
-    <label>車台番号<input id="frameNo" placeholder="例：EBD-DA17V-123456"></label>
-    <label>走行距離（km）<input id="mileage" type="number" placeholder="例：12345"></label>
-
-    <label>給油状況（必須）
-      <select id="fuel">
-        <option value="">選択</option>
-        <option>満タン</option>
-        <option>3/4</option>
-        <option>半分</option>
-        <option>1/4</option>
-        <option>残量少</option>
-      </select>
-    </label>
-
-    <label>利用者氏名（必須）<input id="userName" placeholder="例：森下 洸"></label>
-    <label>契約用メール（必須）<input id="email" type="email" placeholder="例：xxxxx@gmail.com"></label>
-    <label>電話番号（任意）<input id="tel" placeholder="例：090-0000-0000"></label>
-  </section>
-
-  <!-- 写真：書類 -->
-  <section class="card">
-    <h2>写真（書類）</h2>
-    <div class="grid">
-      <label>運転免許証（必須）<input type="file" accept="image/*" class="photo" data-key="lic"></label>
-      <label>車検証（自動車検査証）（必須）<input type="file" accept="image/*" class="photo" data-key="shaken"></label>
-      <label>オイルステッカー（必須）<input type="file" accept="image/*" class="photo" data-key="oil"></label>
-      <label>燃料計（メーター内）（必須）<input type="file" accept="image/*" class="photo" data-key="fuelMeter"></label>
+    <div class="status">
+      <span class="dot"></span>
+      <span id="nowText">--</span>
     </div>
-  </section>
+  </header>
 
-  <!-- 写真：外観 -->
-  <section class="card">
-    <h2>車両写真（外観）</h2>
-    <div class="grid">
-      <label>前方（必須）<input type="file" accept="image/*" class="photo" data-key="front"></label>
-      <label>後方（必須）<input type="file" accept="image/*" class="photo" data-key="rear"></label>
-      <label>左側面（必須）<input type="file" accept="image/*" class="photo" data-key="left"></label>
-      <label>右側面（必須）<input type="file" accept="image/*" class="photo" data-key="right"></label>
-      <label>荷台（後ろから）（必須）<input type="file" accept="image/*" class="photo" data-key="bed"></label>
-    </div>
-  </section>
+  <main class="container">
+    <!-- 説明 -->
+    <section class="card cardBlue">
+      <h2>車両報告書 作成</h2>
+      <p class="desc">
+        貸出 / 返却 / 定期点検 の記録を「写真埋め込みPDF（報告書）」として作成し、LINE共有・印刷に使用できます。<br>
+        ※入力データ・写真は保存しません（端末内でPDF生成）。
+      </p>
+    </section>
 
-  <!-- タイヤ -->
-  <section class="card">
-    <h2>タイヤ4箇所（必須）</h2>
-    <div class="grid">
-      <label>左前（必須）<input type="file" accept="image/*" class="photo" data-key="tlf"></label>
-      <label>右前（必須）<input type="file" accept="image/*" class="photo" data-key="trf"></label>
-      <label>左後（必須）<input type="file" accept="image/*" class="photo" data-key="tlr"></label>
-      <label>右後（必須）<input type="file" accept="image/*" class="photo" data-key="trr"></label>
-    </div>
-  </section>
+    <!-- 種別 -->
+    <section class="card">
+      <h2>種別選択</h2>
+      <div class="tabRow" role="tablist" aria-label="種別選択">
+        <button class="tab active" data-type="loan" type="button">貸出</button>
+        <button class="tab" data-type="return" type="button">返却</button>
+        <button class="tab" data-type="inspect" type="button">定期点検</button>
+      </div>
+      <p class="hint">
+        ※タブ切替時は入力を全てリセットし、常に最新データで作成します。
+      </p>
+    </section>
 
-  <!-- 日常点検 -->
-  <section class="card">
-    <h2>日常点検（15項目）</h2>
-    <div class="checklist" id="dailyCheck"></div>
-  </section>
+    <!-- 基本情報 -->
+    <section class="card">
+      <h2>基本情報</h2>
 
-  <!-- 状態確認 -->
-  <section class="card">
-    <h2>車両状態の確認（必須）</h2>
-    <div style="color:#444;line-height:1.7;">
-      ・貸出／返却時に、写真と記録を提出し状態確認を行います。<br>
-      ・事故・破損・異常が発生した場合は速やかに当社へ報告します。<br>
-      ・返却時は原則として貸出時と同等の状態で返却します。<br>
-      ・損傷・汚損等が確認された場合、修理費等が発生する場合があります。<br>
-      <small>※正式な電子契約はメールで締結します。</small>
-    </div>
-    <label style="margin-top:10px;">
-      <input type="checkbox" id="agree" />
-      上記内容を確認し、状態確認を行いました（必須）
-    </label>
-  </section>
+      <div class="grid2">
+        <div class="field">
+          <label>管理番号（自動生成）</label>
+          <input id="manageNo" type="text" placeholder="自動生成されます" readonly>
+          <div class="mini">例：OFA-46-20260126-025501-8F2A</div>
+        </div>
 
-  <!-- 署名 -->
-  <section class="card">
-    <h2>署名（必須）</h2>
-    <div style="color:#666;margin-bottom:6px;">※指で署名できます（iPhone対応）</div>
-    <canvas id="sign" width="320" height="140" style="width:100%;border:1px dashed #bcd;border-radius:12px;background:#fff;"></canvas>
-    <button id="clearSign" style="margin-top:8px;">署名クリア</button>
-  </section>
+        <div class="field">
+          <label>作成日時（自動）</label>
+          <input id="createdAt" type="text" readonly>
+          <div class="mini">※変更できません</div>
+        </div>
 
-  <!-- 問い合わせ（ボタンだけ） -->
-  <section class="card">
-    <h2>問い合わせ先</h2>
-    <a class="line-btn" href="https://lin.ee/ZsC6sxs" target="_blank" rel="noopener">
-      OFAメンバーシップLINEを開く
-    </a>
-  </section>
+        <div class="field">
+          <label>拠点（都道府県）<span class="req">必須</span></label>
+          <select id="pref" required></select>
+          <div class="mini">拠点コードは自動付与され、PDFに記載されます</div>
+        </div>
 
-</main>
+        <div class="field">
+          <label>拠点コード（自動）</label>
+          <input id="prefCode" type="text" placeholder="自動" readonly>
+        </div>
 
-<!-- 下部メニュー：入力中は自動で隠す -->
-<footer id="bottomBar">
-  <button id="makePdf">PDFを作成</button>
-</footer>
+        <div class="field">
+          <label>車両ナンバー<span class="req">必須</span></label>
+          <input id="plateNo" type="text" placeholder="例）鹿児島 480 あ 12-34" required>
+        </div>
 
-<!-- PDF用の組み立て領域（画面には出さない） -->
-<div id="pdfStage" style="position:fixed;left:-99999px;top:0;width:794px;background:#fff;color:#111;"></div>
+        <div class="field">
+          <label>車体番号（車台番号）<span class="req">必須</span></label>
+          <input id="vin" type="text" placeholder="例）EBD-DA17V-123456" required>
+        </div>
 
-<script src="script.js?v=20260127_02"></script>
-<script src="pdf.js?v=20260127_02"></script>
+        <div class="field">
+          <label>走行距離（km）<span class="req">必須</span></label>
+          <input id="odometer" type="number" inputmode="numeric" placeholder="例）12345" required>
+        </div>
+
+        <div class="field">
+          <label>給油状況<span class="req">必須</span></label>
+          <select id="fuel" required>
+            <option value="">選択</option>
+            <option>満タン</option>
+            <option>3/4</option>
+            <option>1/2</option>
+            <option>1/4</option>
+            <option>ほぼ空</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label>利用者 氏名<span class="req">必須</span></label>
+          <input id="userName" type="text" placeholder="例）森下 洸" required>
+        </div>
+
+        <div class="field">
+          <label>契約用メールアドレス<span class="req">必須</span></label>
+          <input id="email" type="email" inputmode="email" placeholder="example@gmail.com" required>
+        </div>
+
+        <div class="field span2">
+          <label>備考（任意）</label>
+          <textarea id="note" rows="3" placeholder="例）傷の位置、返却時の伝達事項など"></textarea>
+        </div>
+      </div>
+    </section>
+
+    <!-- 写真（グループ化） -->
+    <section class="card">
+      <div class="rowBetween">
+        <h2>写真（必須）</h2>
+        <div class="badge" id="photoProgress">0 / 0</div>
+      </div>
+      <p class="hint">
+        ※未添付があるとPDF作成できません。すべて撮影・添付してください。
+      </p>
+
+      <div class="photoGroups" id="photoGroups"></div>
+    </section>
+
+    <!-- 日常点検（15項目） -->
+    <section class="card" id="dailyCheckCard">
+      <div class="rowBetween">
+        <h2>日常点検（15項目）</h2>
+        <div class="badge" id="checkProgress">0 / 15</div>
+      </div>
+      <p class="hint">※点検した項目にチェックしてください（定期点検時は必須）。</p>
+
+      <div class="checkList" id="checkList"></div>
+    </section>
+
+    <!-- 状態確認 -->
+    <section class="card">
+      <h2>車両状態の確認（必須）</h2>
+      <ul class="bullets">
+        <li>貸出 / 返却時に、写真と記録を提出し状態確認を行います。</li>
+        <li>事故・破損・異常が発生した場合は速やかに当社へ報告します。</li>
+        <li>返却時は原則として貸出時と同等の状態で返却します。</li>
+        <li>損傷・汚損等が確認された場合、修理費等が発生する場合があります。</li>
+      </ul>
+
+      <label class="agree">
+        <input id="agree" type="checkbox">
+        <span>上記内容を確認し、状態確認を行いました（必須）</span>
+      </label>
+    </section>
+
+    <!-- 署名 -->
+    <section class="card">
+      <div class="rowBetween">
+        <h2>署名（必須）</h2>
+        <button class="btn small danger" id="btnClearSign" type="button">署名クリア</button>
+      </div>
+      <p class="hint">※指で署名できます（iPhone対応）。PDFの右下に小さく挿入されます。</p>
+
+      <div class="signWrap">
+        <canvas id="signPad" width="900" height="300" aria-label="署名欄"></canvas>
+      </div>
+    </section>
+
+    <!-- 問い合わせ（ボタンのみ） -->
+    <section class="card cardGreen">
+      <h2>問い合わせ先</h2>
+      <p class="desc">お問い合わせは、OFAメンバーシップLINEからお願いします。</p>
+      <a class="btnLineBig" id="lineLink" href="https://lin.ee/ZsC6sxs" target="_blank" rel="noopener">
+        OFAメンバーシップLINEを開く
+      </a>
+      <p class="mini">※開かない場合は、URLをコピーしてLINEで開いてください。</p>
+    </section>
+
+    <!-- 印刷説明 / キャッシュ対策 -->
+    <section class="card cardYellow">
+      <h2>印刷について</h2>
+      <p class="desc">
+        印刷やPDF保存で「切れる」場合は、印刷設定で <b>余白：標準</b> または <b>最小</b> をお試しください。<br>
+        本ツールはA4自動改ページで作成します。
+      </p>
+      <button class="btn ghost" id="btnHardReload" type="button">反映されない時（キャッシュ対策）</button>
+    </section>
+
+    <!-- PDF生成用のステージ（非表示） -->
+    <div id="pdfStage" aria-hidden="true"></div>
+
+    <div class="spacer"></div>
+  </main>
+
+  <!-- 下部メニュー -->
+  <nav class="bottomBar" id="bottomBar">
+    <button class="btn primary" id="btnMakePdf" type="button">PDFを作成</button>
+    <button class="btn green" id="btnShareLine" type="button">LINEに送る</button>
+    <button class="btn dark" id="btnDownload" type="button">PDFダウンロード</button>
+  </nav>
+
+  <!-- トースト -->
+  <div class="toast" id="toast"></div>
 </body>
 </html>
