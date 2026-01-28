@@ -1,111 +1,167 @@
-body {
-  margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, sans-serif;
-  background: #f4f6f8;
-  color: #111;
-}
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <title>OFA GROUP 車両報告書</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-.header {
-  display: flex;
-  align-items: center;
-  padding: 12px;
-  background: #fff;
-  border-bottom: 3px solid #f5c400;
-}
+  <!-- GitHub Pages キャッシュ対策 -->
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <meta http-equiv="Pragma" content="no-cache" />
+  <meta http-equiv="Expires" content="0" />
 
-.logo {
-  background: #f5c400;
-  color: #000;
-  font-weight: bold;
-  padding: 8px;
-  border-radius: 8px;
-  margin-right: 10px;
-}
+  <link rel="stylesheet" href="style.css?v=20260127_02" />
 
-.card {
-  background: #fff;
-  margin: 12px;
-  padding: 12px;
-  border-left: 6px solid #f5c400;
-  border-radius: 12px;
-}
+  <!-- PDF生成用（日本語崩れ防止：HTML→画像化してPDFへ） -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+</head>
+<body>
 
-h2 {
-  margin-top: 0;
-}
+<header class="header">
+  <div class="logo">OFA</div>
+  <div class="title">
+    <div class="main">OFA GROUP 車両管理</div>
+    <div class="sub">車両報告書 作成</div>
+  </div>
+</header>
 
-label {
-  display: block;
-  margin-bottom: 10px;
-}
+<main id="app">
 
-input, select {
-  width: 100%;
-  padding: 8px;
-  margin-top: 4px;
-}
+  <!-- 種別 -->
+  <section class="card">
+    <h2>種別選択</h2>
+    <div class="tabs">
+      <button class="tab active" data-type="loan">貸出</button>
+      <button class="tab" data-type="return">返却</button>
+      <button class="tab" data-type="inspect">定期点検</button>
+    </div>
+    <div style="margin-top:8px;color:#666;">※タブ切替時は入力をリセットし、常に最新データで作成します。</div>
+  </section>
 
-.grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 10px;
-}
+  <!-- 基本情報 -->
+  <section class="card">
+    <h2>基本情報</h2>
+    <label>管理番号（自動）<input id="manageId" readonly></label>
+    <label>作成日時<input id="createdAt" readonly></label>
 
-.tabs {
-  display: flex;
-  gap: 8px;
-}
+    <label>拠点（都道府県）
+      <select id="pref">
+        <option value="">選択</option>
+        <option>北海道</option><option>青森県</option><option>岩手県</option><option>宮城県</option><option>秋田県</option><option>山形県</option><option>福島県</option>
+        <option>茨城県</option><option>栃木県</option><option>群馬県</option><option>埼玉県</option><option>千葉県</option><option>東京都</option><option>神奈川県</option>
+        <option>新潟県</option><option>富山県</option><option>石川県</option><option>福井県</option><option>山梨県</option><option>長野県</option>
+        <option>岐阜県</option><option>静岡県</option><option>愛知県</option><option>三重県</option>
+        <option>滋賀県</option><option>京都府</option><option>大阪府</option><option>兵庫県</option><option>奈良県</option><option>和歌山県</option>
+        <option>鳥取県</option><option>島根県</option><option>岡山県</option><option>広島県</option><option>山口県</option>
+        <option>徳島県</option><option>香川県</option><option>愛媛県</option><option>高知県</option>
+        <option>福岡県</option><option>佐賀県</option><option>長崎県</option><option>熊本県</option><option>大分県</option><option>宮崎県</option><option>鹿児島県</option><option>沖縄県</option>
+      </select>
+    </label>
 
-.tab {
-  flex: 1;
-  padding: 10px;
-  border-radius: 20px;
-  border: none;
-  background: #e0e0e0;
-}
+    <label>車両ナンバー<input id="carNo" placeholder="例：鹿児島 480 あ 12-34"></label>
+    <label>車台番号<input id="frameNo" placeholder="例：EBD-DA17V-123456"></label>
+    <label>走行距離（km）<input id="mileage" type="number" placeholder="例：12345"></label>
 
-.tab.active {
-  background: #4da3ff;
-  color: #fff;
-}
+    <label>給油状況（必須）
+      <select id="fuel">
+        <option value="">選択</option>
+        <option>満タン</option>
+        <option>3/4</option>
+        <option>半分</option>
+        <option>1/4</option>
+        <option>残量少</option>
+      </select>
+    </label>
 
-.checklist label {
-  display: flex;
-  gap: 8px;
-  margin-bottom: 6px;
-}
+    <label>利用者氏名（必須）<input id="userName" placeholder="例：森下 洸"></label>
+    <label>契約用メール（必須）<input id="email" type="email" placeholder="例：xxxxx@gmail.com"></label>
+    <label>電話番号（任意）<input id="tel" placeholder="例：090-0000-0000"></label>
+  </section>
 
-#line {
-  text-decoration: none;
-}
+  <!-- 写真：書類 -->
+  <section class="card">
+    <h2>写真（書類）</h2>
+    <div class="grid">
+      <label>運転免許証（必須）<input type="file" accept="image/*" class="photo" data-key="lic"></label>
+      <label>車検証（自動車検査証）（必須）<input type="file" accept="image/*" class="photo" data-key="shaken"></label>
+      <label>オイルステッカー（必須）<input type="file" accept="image/*" class="photo" data-key="oil"></label>
+      <label>燃料計（メーター内）（必須）<input type="file" accept="image/*" class="photo" data-key="fuelMeter"></label>
+    </div>
+  </section>
 
-.line-btn {
-  display: block;
-  background: #1cc15a;
-  color: #fff;
-  text-align: center;
-  padding: 14px;
-  border-radius: 12px;
-  text-decoration: none;
-  font-weight: bold;
-}
+  <!-- 写真：外観 -->
+  <section class="card">
+    <h2>車両写真（外観）</h2>
+    <div class="grid">
+      <label>前方（必須）<input type="file" accept="image/*" class="photo" data-key="front"></label>
+      <label>後方（必須）<input type="file" accept="image/*" class="photo" data-key="rear"></label>
+      <label>左側面（必須）<input type="file" accept="image/*" class="photo" data-key="left"></label>
+      <label>右側面（必須）<input type="file" accept="image/*" class="photo" data-key="right"></label>
+      <label>荷台（後ろから）（必須）<input type="file" accept="image/*" class="photo" data-key="bed"></label>
+    </div>
+  </section>
 
-#bottomBar {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  background: #fff;
-  padding: 10px;
-  border-top: 1px solid #ccc;
-}
+  <!-- タイヤ -->
+  <section class="card">
+    <h2>タイヤ4箇所（必須）</h2>
+    <div class="grid">
+      <label>左前（必須）<input type="file" accept="image/*" class="photo" data-key="tlf"></label>
+      <label>右前（必須）<input type="file" accept="image/*" class="photo" data-key="trf"></label>
+      <label>左後（必須）<input type="file" accept="image/*" class="photo" data-key="tlr"></label>
+      <label>右後（必須）<input type="file" accept="image/*" class="photo" data-key="trr"></label>
+    </div>
+  </section>
 
-#makePdf {
-  width: 100%;
-  padding: 14px;
-  font-size: 16px;
-  background: #2d7cff;
-  color: #fff;
-  border: none;
-  border-radius: 12px;
-}
+  <!-- 日常点検 -->
+  <section class="card">
+    <h2>日常点検（15項目）</h2>
+    <div class="checklist" id="dailyCheck"></div>
+  </section>
+
+  <!-- 状態確認 -->
+  <section class="card">
+    <h2>車両状態の確認（必須）</h2>
+    <div style="color:#444;line-height:1.7;">
+      ・貸出／返却時に、写真と記録を提出し状態確認を行います。<br>
+      ・事故・破損・異常が発生した場合は速やかに当社へ報告します。<br>
+      ・返却時は原則として貸出時と同等の状態で返却します。<br>
+      ・損傷・汚損等が確認された場合、修理費等が発生する場合があります。<br>
+      <small>※正式な電子契約はメールで締結します。</small>
+    </div>
+    <label style="margin-top:10px;">
+      <input type="checkbox" id="agree" />
+      上記内容を確認し、状態確認を行いました（必須）
+    </label>
+  </section>
+
+  <!-- 署名 -->
+  <section class="card">
+    <h2>署名（必須）</h2>
+    <div style="color:#666;margin-bottom:6px;">※指で署名できます（iPhone対応）</div>
+    <canvas id="sign" width="320" height="140" style="width:100%;border:1px dashed #bcd;border-radius:12px;background:#fff;"></canvas>
+    <button id="clearSign" style="margin-top:8px;">署名クリア</button>
+  </section>
+
+  <!-- 問い合わせ（ボタンだけ） -->
+  <section class="card">
+    <h2>問い合わせ先</h2>
+    <a class="line-btn" href="https://lin.ee/ZsC6sxs" target="_blank" rel="noopener">
+      OFAメンバーシップLINEを開く
+    </a>
+  </section>
+
+</main>
+
+<!-- 下部メニュー：入力中は自動で隠す -->
+<footer id="bottomBar">
+  <button id="makePdf">PDFを作成</button>
+</footer>
+
+<!-- PDF用の組み立て領域（画面には出さない） -->
+<div id="pdfStage" style="position:fixed;left:-99999px;top:0;width:794px;background:#fff;color:#111;"></div>
+
+<script src="script.js?v=20260127_02"></script>
+<script src="pdf.js?v=20260127_02"></script>
+</body>
+</html>
