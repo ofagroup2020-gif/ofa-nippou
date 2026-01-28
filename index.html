@@ -1,108 +1,111 @@
-<!DOCTYPE html>
-<html lang="ja">
-<head>
-  <meta charset="UTF-8" />
-  <title>OFA GROUP 車両報告書</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+  background: #f4f6f8;
+  color: #111;
+}
 
-  <!-- キャッシュ対策 -->
-  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
-  <meta http-equiv="Pragma" content="no-cache" />
-  <meta http-equiv="Expires" content="0" />
+.header {
+  display: flex;
+  align-items: center;
+  padding: 12px;
+  background: #fff;
+  border-bottom: 3px solid #f5c400;
+}
 
-  <link rel="stylesheet" href="style.css?v=20260127" />
-</head>
-<body>
+.logo {
+  background: #f5c400;
+  color: #000;
+  font-weight: bold;
+  padding: 8px;
+  border-radius: 8px;
+  margin-right: 10px;
+}
 
-<header class="header">
-  <div class="logo">OFA</div>
-  <div class="title">
-    <div class="main">OFA GROUP 車両管理</div>
-    <div class="sub">車両報告書 作成</div>
-  </div>
-</header>
+.card {
+  background: #fff;
+  margin: 12px;
+  padding: 12px;
+  border-left: 6px solid #f5c400;
+  border-radius: 12px;
+}
 
-<main id="app">
+h2 {
+  margin-top: 0;
+}
 
-  <!-- 種別 -->
-  <section class="card">
-    <h2>種別選択</h2>
-    <div class="tabs">
-      <button class="tab active" data-type="loan">貸出</button>
-      <button class="tab" data-type="return">返却</button>
-      <button class="tab" data-type="inspect">定期点検</button>
-    </div>
-  </section>
+label {
+  display: block;
+  margin-bottom: 10px;
+}
 
-  <!-- 基本情報 -->
-  <section class="card">
-    <h2>基本情報</h2>
-    <label>管理番号（自動）<input id="manageId" readonly></label>
-    <label>作成日時<input id="createdAt" readonly></label>
-    <label>拠点（都道府県）
-      <select id="pref">
-        <option value="">選択</option>
-        <option>鹿児島県</option>
-        <option>福岡県</option>
-      </select>
-    </label>
-    <label>車両ナンバー<input id="carNo"></label>
-    <label>車台番号<input id="frameNo"></label>
-    <label>走行距離（km）<input id="mileage" type="number"></label>
-  </section>
+input, select {
+  width: 100%;
+  padding: 8px;
+  margin-top: 4px;
+}
 
-  <!-- 写真：外観 -->
-  <section class="card">
-    <h2>車両写真（外観）</h2>
-    <div class="grid">
-      <label>前方<input type="file" class="photo"></label>
-      <label>後方<input type="file" class="photo"></label>
-      <label>左側面<input type="file" class="photo"></label>
-      <label>右側面<input type="file" class="photo"></label>
-      <label>荷台（後）<input type="file" class="photo"></label>
-    </div>
-  </section>
+.grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
 
-  <!-- タイヤ -->
-  <section class="card">
-    <h2>タイヤ4箇所</h2>
-    <div class="grid">
-      <label>左前<input type="file" class="photo"></label>
-      <label>右前<input type="file" class="photo"></label>
-      <label>左後<input type="file" class="photo"></label>
-      <label>右後<input type="file" class="photo"></label>
-    </div>
-  </section>
+.tabs {
+  display: flex;
+  gap: 8px;
+}
 
-  <!-- 日常点検 -->
-  <section class="card">
-    <h2>日常点検（15項目）</h2>
-    <div class="checklist" id="dailyCheck"></div>
-  </section>
+.tab {
+  flex: 1;
+  padding: 10px;
+  border-radius: 20px;
+  border: none;
+  background: #e0e0e0;
+}
 
-  <!-- 署名 -->
-  <section class="card">
-    <h2>署名（必須）</h2>
-    <canvas id="sign" width="300" height="120"></canvas>
-    <button id="clearSign">署名クリア</button>
-  </section>
+.tab.active {
+  background: #4da3ff;
+  color: #fff;
+}
 
-  <!-- 問い合わせ -->
-  <section class="card">
-    <h2>問い合わせ先</h2>
-    <a class="line-btn" href="https://lin.ee/ZsC6sxs" target="_blank">
-      OFAメンバーシップLINEを開く
-    </a>
-  </section>
+.checklist label {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 6px;
+}
 
-</main>
+#line {
+  text-decoration: none;
+}
 
-<!-- フッター操作 -->
-<footer id="bottomBar">
-  <button id="makePdf">PDFを作成</button>
-</footer>
+.line-btn {
+  display: block;
+  background: #1cc15a;
+  color: #fff;
+  text-align: center;
+  padding: 14px;
+  border-radius: 12px;
+  text-decoration: none;
+  font-weight: bold;
+}
 
-<script src="script.js?v=20260127"></script>
-<script src="pdf.js?v=20260127"></script>
-</body>
-</html>
+#bottomBar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: #fff;
+  padding: 10px;
+  border-top: 1px solid #ccc;
+}
+
+#makePdf {
+  width: 100%;
+  padding: 14px;
+  font-size: 16px;
+  background: #2d7cff;
+  color: #fff;
+  border: none;
+  border-radius: 12px;
+}
