@@ -1,419 +1,74 @@
-/* style.css - OFA White UI (Driver + Admin 共通) */
-
-:root{
-  --bg:#ffffff;
-  --text:#222;
-  --muted:#667085;
-  --line:#e6eaf0;
-
-  /* OFA gradient */
-  --g1:#20d3c2;
-  --g2:#4a90ff;
-  --g3:#9b5cff;
-  --g4:#ff4d8d;
-
-  --card:#ffffff;
-  --shadow: 0 10px 30px rgba(15,23,42,.08);
-  --radius:16px;
-
-  --ok:#16a34a;
-  --ng:#ef4444;
-  --warn:#f59e0b;
-
-  --btnText:#fff;
-  --btnGrad: linear-gradient(90deg,var(--g1),var(--g2),var(--g3),var(--g4));
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Noto Sans JP", sans-serif;
+  background: #fff3e8;
 }
 
-*{ box-sizing:border-box; }
-html,body{ height:100%; }
-body{
-  margin:0;
-  font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Noto Sans JP",
-               "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-  background: var(--bg);
-  color: var(--text);
+.app {
+  max-width: 420px;
+  margin: auto;
+  padding: 20px;
 }
 
-/* ====== header ====== */
-.header{
-  position: sticky;
-  top:0;
-  z-index:10;
-  background: rgba(255,255,255,.92);
-  backdrop-filter: blur(10px);
-  border-bottom: 1px solid var(--line);
-  padding: 14px 14px;
-  display:flex;
-  align-items:center;
-  gap:12px;
-}
-
-.logo{
-  width:42px;
-  height:42px;
-  border-radius:12px;
-  display:grid;
-  place-items:center;
-  font-weight:900;
-  letter-spacing:.4px;
-  color:#fff;
-  background: var(--btnGrad);
-  box-shadow: 0 10px 20px rgba(0,0,0,.08);
-}
-
-.titlewrap{ flex:1; min-width:0; }
-.title{
-  font-weight:900;
-  font-size:16px;
-  line-height:1.2;
-  white-space:nowrap;
-  overflow:hidden;
-  text-overflow:ellipsis;
-}
-.subtitle{
-  margin-top:4px;
-  font-size:12px;
-  color:var(--muted);
-  white-space:nowrap;
-  overflow:hidden;
-  text-overflow:ellipsis;
-}
-
-.rightTopBtn{
-  border: 1px solid var(--line);
-  background:#fff;
-  border-radius: 12px;
-  padding: 10px 12px;
-  font-weight:800;
-  color:#111;
-}
-
-/* ====== layout ====== */
-.container{
-  max-width: 840px;
-  margin: 0 auto;
-  padding: 14px 12px 110px;
-}
-
-.card{
-  background: var(--card);
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  box-shadow: var(--shadow);
-  padding: 14px;
-  margin: 12px 0;
-}
-
-.h2{
-  font-size:15px;
-  font-weight:900;
-  margin:0 0 10px;
-  border-left:6px solid var(--g1);
-  padding-left:10px;
-}
-
-.h3{
-  font-size:14px;
-  font-weight:900;
-  margin:0 0 10px;
-}
-
-.note{
-  font-size:12px;
-  color: var(--muted);
-  line-height:1.6;
-  margin: 8px 0 10px;
-}
-
-.small{
-  font-size:12px;
-  color: var(--muted);
-  line-height:1.5;
-}
-
-.divider{
-  height:1px;
-  background: var(--line);
-  margin: 14px 0;
-}
-
-/* ====== form ====== */
-label{
-  display:block;
-  margin-top: 12px;
-  font-weight: 800;
-  font-size: 13px;
-}
-
-input, select, textarea{
-  width:100%;
-  margin-top:6px;
-  padding: 12px 12px;
-  border-radius: 12px;
-  border: 1px solid #d7dde7;
-  background: #fff;
-  color:#111;
-  font-size: 16px;
-  outline:none;
-}
-
-input:focus, select:focus, textarea:focus{
-  border-color: rgba(74,144,255,.8);
-  box-shadow: 0 0 0 3px rgba(74,144,255,.15);
-}
-
-textarea{
-  min-height: 90px;
-  resize: vertical;
-}
-
-/* rows (2 columns) */
-.row{
-  display:grid;
-  grid-template-columns: 1fr 1fr;
+.header {
+  display: flex;
+  align-items: center;
   gap: 12px;
 }
-@media (max-width:560px){
-  .row{ grid-template-columns: 1fr; }
-}
 
-/* ====== buttons ====== */
-.actions{
-  display:flex;
-  gap:10px;
-  flex-wrap:wrap;
-}
-
-/* 旧HTML互換（inlineクラスが来ても崩れない） */
-.inline{
-  width:auto !important;
-  flex:1;
-  min-width: 140px;
-}
-
-.btn{
-  width:100%;
-  border:none;
-  border-radius: 14px;
-  padding: 14px 12px;
-  font-size: 16px;
+.logo {
+  width: 48px;
+  height: 48px;
+  background: linear-gradient(135deg, #ff7a00, #ffb000);
+  color: #111;
   font-weight: 900;
-  color: var(--btnText);
-  background: var(--btnGrad);
-  cursor:pointer;
-  -webkit-tap-highlight-color: transparent;
-}
-.btn:active{ transform: translateY(1px); }
-
-.btn.secondary{
-  background:#fff;
-  color:#111;
-  border: 1px solid #d7dde7;
-}
-
-.miniBtn{
-  border: 1px solid #d7dde7;
-  background:#fff;
-  color:#111;
-  border-radius: 10px;
-  padding: 8px 10px;
-  font-weight: 900;
-  font-size: 12px;
-  cursor:pointer;
-  -webkit-tap-highlight-color: transparent;
-}
-.miniBtn:active{ transform: translateY(1px); }
-
-.miniBtn.danger{
-  border-color: rgba(239,68,68,.35);
-  color: #b91c1c;
-}
-
-/* ====== status badges ====== */
-.badges{
-  display:flex;
-  gap:10px;
-  flex-wrap:wrap;
-}
-.badge{
-  display:flex;
-  align-items:center;
-  gap:8px;
-  padding: 9px 10px;
-  border: 1px solid var(--line);
-  border-radius: 999px;
-  background:#fff;
-  font-size:12px;
-  color:#111;
-}
-.dot{
-  width:10px;
-  height:10px;
-  border-radius: 50%;
-  background: var(--ng);
-}
-.dot.ok{ background: var(--ok); }
-.dot.warn{ background: var(--warn); }
-
-/* ====== checklist (scroll) ======
-   ★ 統一：HTMLは checkHeader を使用する（checkHeadは廃止・互換で残す） */
-.checkWrap{
-  border: 1px solid #d7dde7;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   border-radius: 14px;
-  overflow:hidden;
-  background:#fff;
 }
 
-/* 統一クラス */
-.checkHeader{
-  display:grid;
-  grid-template-columns: 1fr 70px 70px;
-  gap:0;
-  background:#f7fbff;
-  border-bottom:1px solid var(--line);
-  font-weight:900;
-  font-size:12px;
-}
-.checkHeader div{
-  padding: 10px 10px;
-}
-.checkHeader .c{
-  text-align:center;
+.progress {
+  height: 6px;
+  background: #eee;
+  margin: 16px 0;
+  border-radius: 99px;
 }
 
-/* 旧互換（万が一 checkHead が残っててもOK） */
-.checkHead{
-  display:grid;
-  grid-template-columns: 1fr 70px 70px;
-  gap:0;
-  background:#f7fbff;
-  border-bottom:1px solid var(--line);
-  font-weight:900;
-  font-size:12px;
-}
-.checkHead div{ padding:10px 10px; }
-.checkHead .c{ text-align:center; }
-
-.checkScroll{
-  max-height: 280px;
-  overflow:auto;
+#bar {
+  height: 100%;
+  width: 20%;
+  background: linear-gradient(90deg, #ff7a00, #ffb000);
+  border-radius: 99px;
 }
 
-.checkRow{
-  display:grid;
-  grid-template-columns: 1fr 70px 70px;
-  border-top: 1px solid #eef2f7;
-}
-.checkRow:first-child{ border-top:none; }
-
-.checkCol{
-  padding: 10px 10px;
-  font-size: 13px;
-}
-.checkCol.item{
-  color:#111;
-}
-.checkCol.ok, .checkCol.ng{
-  display:flex;
-  justify-content:center;
-  align-items:center;
+.step {
+  display: none;
 }
 
-.checkCol input[type="radio"]{
-  width:18px;
-  height:18px;
-  margin:0;
-  accent-color: var(--g2);
+.step.active {
+  display: block;
 }
 
-/* ====== history ======
-   統一：historyItem を正として、histItem も互換で対応 */
-.historyItem,
-.histItem{
-  border:1px solid #e8edf5;
-  border-radius: 14px;
-  padding: 10px 10px;
-  margin: 10px 0;
-  background:#fff;
-}
-
-.historyItem{
-  cursor:pointer;
-  -webkit-tap-highlight-color: transparent;
-}
-.historyItem:active{
-  transform: translateY(1px);
-}
-
-.historyTop,
-.histTop{
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap:10px;
-}
-
-.historyTitle,
-.histTitle{
-  font-weight: 900;
-  font-size: 13px;
-}
-
-.historyBody,
-.histBody{
-  margin-top:6px;
-  font-size: 12px;
-  color: #334155;
-  line-height:1.5;
-  word-break: break-word;
-}
-
-/* 履歴の右側アクション（削除など） */
-.historyActions{
-  display:flex;
-  gap:8px;
-  align-items:center;
-}
-
-/* ====== projects (daily optional) ====== */
-.pjRow{
-  border:1px dashed #d7dde7;
-  border-radius: 14px;
-  padding: 10px;
-  margin: 10px 0;
-}
-
-/* ====== links / footer buttons ====== */
-.linkBtn{
-  display:block;
-  text-decoration:none;
-}
-.footerBtn{
-  width:100%;
-  border: 1px solid var(--line);
-  background:#fff;
-  border-radius: 14px;
-  padding: 14px 12px;
-  font-size: 15px;
-  font-weight: 900;
-  color:#111;
-}
-
-/* ====== floating help ====== */
-.floatingHelp{
-  position: fixed;
-  left: 0;
-  right: 0;
-  bottom: 0;
+input {
+  width: 100%;
   padding: 12px;
-  background: rgba(255,255,255,.92);
-  backdrop-filter: blur(10px);
-  border-top: 1px solid var(--line);
-}
-.floatingHelp .btn{
-  width:100%;
+  margin: 8px 0;
+  border-radius: 10px;
+  border: 1px solid #ddd;
 }
 
-/* ====== utilities ====== */
-.hidden{ display:none !important; }
-.center{ text-align:center; }
+button {
+  width: 100%;
+  padding: 14px;
+  background: linear-gradient(135deg, #ff7a00, #ffb000);
+  border: none;
+  border-radius: 12px;
+  font-weight: bold;
+}
+
+.nav {
+  display: flex;
+  gap: 10px;
+  margin-top: 12px;
+}
