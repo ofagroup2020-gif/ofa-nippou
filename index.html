@@ -503,3 +503,25 @@
   <script src="./js/app.js?v=20260129"></script>
 </body>
 </html>
+<!-- ⑥-2 月報（期間指定：ドライバー） -->
+<div class="card">
+  <div class="h2">⑥-2 月報（期間指定）</div>
+  <div class="note">
+    期間を指定して、<strong>この端末に保存されているデータ</strong>から月報PDFを作成します。<br/>
+    ※自分のデータのみ抽出（氏名 or 電話番号で特定）
+  </div>
+
+  <label>期間（開始）*</label>
+  <input id="m_start" type="date" />
+
+  <label>期間（終了）*</label>
+  <input id="m_end" type="date" />
+
+  <div class="actions" style="margin-top:12px">
+    <button class="btn" id="btnMonthlyPdfDriver">月報PDFを作成</button>
+    <button class="btn secondary" id="btnMonthlyCsvDriver">月報CSV（JSON）出力</button>
+  </div>
+
+  <div class="divider"></div>
+  <div class="note" id="monthlyStateDriver">まだ作成していません</div>
+</div>
