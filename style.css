@@ -1,4 +1,4 @@
-/* style.css - OFA Unified UI (Driver + Admin 共通) */
+/* style.css - OFA White UI (Driver + Admin 共通) */
 
 :root{
   --bg:#ffffff;
@@ -92,7 +92,7 @@ body{
 .container{
   max-width: 840px;
   margin: 0 auto;
-  padding: 14px 12px 90px;
+  padding: 14px 12px 120px;
 }
 
 .card{
@@ -203,14 +203,15 @@ textarea{
   border: 1px solid #d7dde7;
 }
 
-/* 2つ以上横並び用（inline class） */
-.btn.inline,
-.miniBtn.inline{
+/* inline buttons (history: 更新/全削除など) */
+.btn.inline{
   width:auto;
-  flex:1;
-  min-width: 140px;
+  padding: 10px 12px;
+  font-size: 14px;
+  border-radius: 12px;
 }
 
+/* small button */
 .miniBtn{
   border: 1px solid #d7dde7;
   background:#fff;
@@ -219,26 +220,18 @@ textarea{
   padding: 8px 10px;
   font-weight: 900;
   font-size: 12px;
-  cursor:pointer;
 }
-.miniBtn:active{ transform: translateY(1px); }
-
 .miniBtn.danger{
   border-color: rgba(239,68,68,.35);
   color: #b91c1c;
 }
 
-/* ====== status badges / chips ====== */
-.badges{
-  display:flex;
-  gap:10px;
-  flex-wrap:wrap;
-}
-.badge, .chip{
-  display:flex;
+/* ====== chips / status ====== */
+.chip{
+  display:inline-flex;
   align-items:center;
   gap:8px;
-  padding: 9px 10px;
+  padding: 8px 10px;
   border: 1px solid var(--line);
   border-radius: 999px;
   background:#fff;
@@ -263,8 +256,7 @@ textarea{
   background:#fff;
 }
 
-/* ✅ HTMLは checkHeader を使ってるので、CSSも合わせる */
-.checkHeader{
+.checkHead{
   display:grid;
   grid-template-columns: 1fr 70px 70px;
   gap:0;
@@ -273,15 +265,11 @@ textarea{
   font-weight:900;
   font-size:12px;
 }
-
-.checkHeader .checkCol{
+.checkHead div{
   padding: 10px 10px;
 }
-
-.checkHeader .checkCol.ok,
-.checkHeader .checkCol.ng{
+.checkHead .c{
   text-align:center;
-  justify-content:center;
 }
 
 .checkScroll{
@@ -300,7 +288,9 @@ textarea{
   padding: 10px 10px;
   font-size: 13px;
 }
-.checkCol.item{ color:#111; }
+.checkCol.item{
+  color:#111;
+}
 .checkCol.ok, .checkCol.ng{
   display:flex;
   justify-content:center;
@@ -315,57 +305,38 @@ textarea{
 }
 
 /* ====== history ====== */
-#historyBox{ margin-top: 8px; }
-
 .histItem{
   border:1px solid #e8edf5;
   border-radius: 14px;
-  padding: 12px 12px;
+  padding: 10px 10px;
   margin: 10px 0;
   background:#fff;
 }
 
+.histItem.tapable{
+  cursor:pointer;
+  user-select:none;
+}
+.histItem.tapable:active{
+  transform: translateY(1px);
+}
+
 .histTop{
   display:flex;
-  align-items:flex-start;
+  align-items:center;
   justify-content:space-between;
   gap:10px;
 }
-
 .histTitle{
   font-weight: 900;
   font-size: 13px;
-  line-height: 1.25;
 }
-
-.histMeta{
-  margin-top:4px;
-  font-size: 12px;
-  color: var(--muted);
-  line-height:1.4;
-}
-
 .histBody{
-  margin-top:8px;
+  margin-top:6px;
   font-size: 12px;
   color: #334155;
-  line-height:1.6;
+  line-height:1.5;
   word-break: break-word;
-}
-
-.histBtns{
-  display:flex;
-  gap:8px;
-  flex-wrap:wrap;
-  justify-content:flex-end;
-}
-
-/* “クリックできる” 表示（履歴タップでPDF出したい時に使う） */
-.clickable{
-  cursor:pointer;
-}
-.clickable:active{
-  transform: translateY(1px);
 }
 
 /* ====== projects (daily optional) ====== */
@@ -376,21 +347,37 @@ textarea{
   margin: 10px 0;
 }
 
-/* ====== table helpers (admin results) ====== */
-table{ max-width:100%; }
-th,td{ word-break: break-word; }
+/* ====== links / footer buttons ====== */
+.linkBtn{
+  display:block;
+  text-decoration:none;
+}
+.footerBtn{
+  width:100%;
+  border: 1px solid var(--line);
+  background:#fff;
+  border-radius: 14px;
+  padding: 14px 12px;
+  font-size: 15px;
+  font-weight: 900;
+  color:#111;
+}
 
 /* ====== floating help ====== */
 .floatingHelp{
   position: fixed;
   left: 0;
   right: 0;
-  bottom: 12px;
-  padding: 0 12px;
-  z-index: 50;
+  bottom: 0;
+  padding: 10px 12px calc(10px + env(safe-area-inset-bottom));
+  background: rgba(255,255,255,.92);
+  backdrop-filter: blur(10px);
+  border-top: 1px solid var(--line);
+  z-index: 20;
 }
-.floatingHelp .btn{
-  box-shadow: 0 16px 40px rgba(0,0,0,.12);
+.floatingHelp a{
+  text-decoration:none;
+  display:block;
 }
 
 /* ====== utilities ====== */
