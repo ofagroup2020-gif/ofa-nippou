@@ -1,124 +1,210 @@
-<!-- admin/index.html -->
-<!DOCTYPE html>
-<html lang="ja">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-  <title>OFA 管理者（月報PDF・期間検索）</title>
-  <link rel="stylesheet" href="./style.css" />
-</head>
+// admin/js/admin.js
+// Admin page logic (local admin pass + period search)
 
-<body>
-  <div class="header">
-    <div class="logo">OFA</div>
-    <div class="titlewrap">
-      <div class="title">管理者（月報PDF・期間検索）</div>
-      <div class="subtitle">端末内データ（IndexedDB）を検索して月報PDF/CSV出力</div>
-    </div>
-    <a href="./index.html"><button class="rightTopBtn">戻る</button></a>
-  </div>
+(function(){
+  "use strict";
+  const $ = (id)=> document.getElementById(id);
 
-  <div class="container">
+  const PASS_KEY = "ofa_admin_pass";
+  const LOGIN_KEY = "ofa_admin_logged_in";
 
-    <!-- ① 管理者認証 -->
-    <div class="card">
-      <div class="h2">① 管理者認証（簡易）</div>
-      <div class="note">
-        このページは「この端末に溜まったデータ」を検索します。<br>
-        管理者パスは端末内保存（localStorage）です。<br>
-        ※パスワードは別途（LINE等）で管理してください。
-      </div>
+  const state = { loggedIn:false, results:{tenko:[],daily:[],filters:null} };
 
-      <label>管理者パス</label>
-      <input id="a_pass" type="password" placeholder="管理者パスを入力">
+  function normPhone(p){ return window.OFADB.normalizePhone(p); }
 
-      <div class="actions" style="margin-top:12px">
-        <button class="btn" id="btnAdminLogin">ログイン</button>
-        <button class="btn secondary" id="btnChangePass">管理者パス変更</button>
-      </div>
+  function toast(msg){ alert(msg); }
 
-      <div id="a_ok" class="small" style="display:none;margin-top:10px;color:#0a7;">OK</div>
-      <div id="a_err" class="small" style="display:none;margin-top:10px;color:#d33;">エラー</div>
+  function ensureDefaultPass(){
+    const cur = localStorage.getItem(PASS_KEY);
+    if(!cur){
+      // 初期パス（現場で必ず変更推奨）
+      localStorage.setItem(PASS_KEY, "OFA-ADMIN");
+    }
+  }
 
-      <div class="divider" style="margin-top:14px"></div>
+  function setAdminState(){
+    $("adminState").textContent = state.loggedIn ? "ログイン中" : "未ログイン";
+    $("adminPanel").style.display = state.loggedIn ? "" : "none";
+  }
 
-      <div class="h2">管理メモ</div>
-      <p class="note">
-        この管理ページは「この端末に溜まったデータ」を検索します。<br>
-        ドライバー全員のデータを一括で集めたい場合は、運用として<br>
-        <b>各ドライバーが日次PDF/CSVを共有 → 管理者が集約</b><br>
-        の形が安全・確実です（端末内データは端末から出ません）。
-      </p>
-    </div>
+  function login(){
+    ensureDefaultPass();
+    const pass = $("a_pass").value;
+    const real = localStorage.getItem(PASS_KEY);
+    if(pass && pass === real){
+      state.loggedIn = true;
+      localStorage.setItem(LOGIN_KEY, "1");
+      setAdminState();
+      toast("ログインしました");
+    }else{
+      toast("パスが違います");
+    }
+  }
 
-    <!-- ②-④ 管理パネル（ログイン後に表示） -->
-    <div class="card hidden" id="adminPanel">
+  function changePass(){
+    ensureDefaultPass();
+    const cur = localStorage.getItem(PASS_KEY);
+    const p1 = prompt("現在の管理者パスを入力してください");
+    if(p1 !== cur){ toast("現在パスが違います"); return; }
+    const p2 = prompt("新しい管理者パス（8文字以上推奨）");
+    if(!p2 || p2.length < 4){ toast("短すぎます"); return; }
+    localStorage.setItem(PASS_KEY, p2);
+    toast("管理者パスを変更しました");
+  }
 
-      <div class="h2">② 月報検索</div>
+  function inRange(d, start, end){
+    return d && d >= start && d <= end;
+  }
 
-      <div class="row">
-        <div>
-          <label>期間（開始）*</label>
-          <input type="date" id="m_from">
+  function matchLike(text, key){
+    if(!key) return true;
+    return String(text||"").includes(key);
+  }
+
+  async function search(){
+    if(!state.loggedIn){ toast("先にログインしてください"); return; }
+
+    const start = $("q_start").value;
+    const end   = $("q_end").value;
+    if(!start || !end){ toast("期間（開始/終了）は必須です"); return; }
+
+    const baseKey  = $("q_base").value.trim();
+    const nameKey  = $("q_name").value.trim();
+    const phoneKey = normPhone($("q_phone").value);
+
+    // ルール：氏名 or 電話 どちらかが入っていればOK（片方で可）
+    if(!nameKey && !phoneKey){
+      toast("氏名 or 電話 のどちらかを入力してください（片方でOK）");
+      return;
+    }
+
+    const tenko = await window.OFADB.getAll(window.OFADB.STORES.tenko);
+    const daily = await window.OFADB.getAll(window.OFADB.STORES.daily);
+
+    const tenkoHit = tenko.filter(t=>{
+      const d = (t.at||"").slice(0,10);
+      if(!inRange(d, start, end)) return false;
+      if(baseKey && !matchLike(t.base, baseKey)) return false;
+
+      const okName = nameKey && matchLike(t.name, nameKey);
+      const okPhone= phoneKey && matchLike(t.phoneN || normPhone(t.phone), phoneKey);
+      return okName || okPhone;
+    });
+
+    const dailyHit = daily.filter(r=>{
+      const d = (r.date||"").slice(0,10);
+      if(!inRange(d, start, end)) return false;
+      if(baseKey && !matchLike(r.base, baseKey)) return false;
+
+      const okName = nameKey && matchLike(r.name, nameKey);
+      const okPhone= phoneKey && matchLike(r.phoneN || normPhone(r.phone), phoneKey);
+      return okName || okPhone;
+    });
+
+    state.results = {
+      tenko: tenkoHit,
+      daily: dailyHit,
+      filters: { start, end, base: baseKey, name: nameKey, phone: $("q_phone").value.trim() }
+    };
+
+    renderResults();
+  }
+
+  function renderResults(){
+    const {tenko,daily,filters} = state.results;
+    const box = $("resultBox");
+    box.innerHTML = "";
+
+    const sumSales  = daily.reduce((a,r)=> a + (Number(r.salesTotal)||0), 0);
+    const sumProfit = daily.reduce((a,r)=> a + (Number(r.profit)||0), 0);
+    const sumKm     = daily.reduce((a,r)=> a + (Number(r.km)||0), 0);
+
+    $("resultSummary").textContent =
+      `期間 ${filters.start}〜${filters.end} / 点呼 ${tenko.length}件 / 日報 ${daily.length}件 / 売上 ${sumSales} / 利益 ${sumProfit} / 走行 ${sumKm}km`;
+
+    // group daily by driver (phoneN if available else name)
+    const map = new Map();
+    for(const r of daily){
+      const key = (r.phoneN || normPhone(r.phone) || r.name || "unknown");
+      if(!map.has(key)) map.set(key, {name:r.name, base:r.base, phone:r.phone, daily:[], tenko:[]});
+      map.get(key).daily.push(r);
+    }
+    for(const t of tenko){
+      const key = (t.phoneN || normPhone(t.phone) || t.name || "unknown");
+      if(!map.has(key)) map.set(key, {name:t.name, base:t.base, phone:t.phone, daily:[], tenko:[]});
+      map.get(key).tenko.push(t);
+    }
+
+    const list = Array.from(map.values()).sort((a,b)=> (a.base||"").localeCompare(b.base||""));
+    if(!list.length){
+      box.innerHTML = `<div class="note">該当なし</div>`;
+      return;
+    }
+
+    for(const g of list){
+      const sales  = g.daily.reduce((a,r)=> a + (Number(r.salesTotal)||0), 0);
+      const profit = g.daily.reduce((a,r)=> a + (Number(r.profit)||0), 0);
+      const km     = g.daily.reduce((a,r)=> a + (Number(r.km)||0), 0);
+
+      const el = document.createElement("div");
+      el.className = "monthRow";
+      el.innerHTML = `
+        <div class="top">
+          <div style="font-weight:900">${g.name || "不明"} / ${g.base || "-"}</div>
+          <div class="meta">${g.phone || ""}</div>
         </div>
-        <div>
-          <label>期間（終了）*</label>
-          <input type="date" id="m_to">
+        <div class="kpi">
+          <span>点呼：${g.tenko.length}</span>
+          <span>日報：${g.daily.length}</span>
+          <span>売上：${sales}</span>
+          <span>利益：${profit}</span>
+          <span>走行：${km}km</span>
         </div>
-      </div>
+      `;
+      box.appendChild(el);
+    }
+  }
 
-      <div class="row">
-        <div>
-          <label>拠点（部分一致）</label>
-          <input id="m_base" placeholder="例：鹿児島">
-        </div>
-        <div>
-          <label>氏名（部分一致）</label>
-          <input id="m_name" placeholder="例：森下">
-        </div>
-      </div>
+  async function exportCsv(){
+    if(!state.results.filters){ toast("先に検索してください"); return; }
+    const start = state.results.filters.start.replaceAll("-","");
+    const end   = state.results.filters.end.replaceAll("-","");
+    await window.OFACSV.exportSearchCsv({
+      tenko: state.results.tenko,
+      daily: state.results.daily,
+      title: `OFA_search_${start}_${end}`
+    });
+  }
 
-      <div class="actions" style="margin-top:12px">
-        <button class="btn" id="btnMonthlySearch">検索</button>
-        <button class="btn secondary" id="btnMonthlyCsv">CSV出力（検索結果）</button>
-      </div>
+  async function monthlyPdf(){
+    if(!state.results.filters){ toast("先に検索してください"); return; }
+    await window.createMonthlyPdf({
+      tenko: state.results.tenko,
+      daily: state.results.daily,
+      filters: state.results.filters,
+      title: "OFA_月報_管理者"
+    });
+  }
 
-      <div class="divider"></div>
+  function init(){
+    ensureDefaultPass();
+    state.loggedIn = localStorage.getItem(LOGIN_KEY) === "1";
+    setAdminState();
 
-      <div class="h2">③ 月報PDF（OFAフォーマット）</div>
-      <div class="note">
-        検索結果をもとに月報PDFを作成します。<br>
-        PDFは日本語文字化けしない方式（HTML→canvas→PDF）で生成します。
-      </div>
-      <button class="btn" id="btnMonthlyPdf">月報PDFを作成</button>
+    // default dates: this month
+    const now = new Date();
+    const start = new Date(now.getFullYear(), now.getMonth(), 1);
+    const end = new Date(now.getFullYear(), now.getMonth()+1, 0);
+    const f = (d)=> `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+    $("q_start").value = f(start);
+    $("q_end").value = f(end);
 
-      <div class="divider"></div>
+    $("btnAdminLogin").addEventListener("click", login);
+    $("btnChangePass").addEventListener("click", changePass);
+    $("btnSearch").addEventListener("click", search);
+    $("btnCsv").addEventListener("click", exportCsv);
+    $("btnMonthlyPdf").addEventListener("click", monthlyPdf);
+  }
 
-      <div class="h2">④ 検索結果</div>
-      <div id="monthlyList" class="small" style="opacity:.9">
-        まだ検索していません。
-      </div>
-
-    </div>
-
-  </div>
-
-  <!-- deps（順番が超重要） -->
-  <script src="./js/db.js"></script>
-  <script src="./js/pdf.js"></script>
-  <script src="./js/csv.js"></script>
-  <script src="./js/admin.js"></script>
-
-  <!-- Chromeが古いSW/キャッシュ掴む場合の保険（入れとくと安定） -->
-  <script>
-    (async () => {
-      try {
-        if ('serviceWorker' in navigator) {
-          const regs = await navigator.serviceWorker.getRegistrations();
-          for (const r of regs) await r.unregister();
-        }
-      } catch (e) {}
-    })();
-  </script>
-</body>
-</html>
+  window.addEventListener("DOMContentLoaded", init);
+})();
